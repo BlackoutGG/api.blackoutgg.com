@@ -22,7 +22,7 @@ const getSingleUser = async function (req, res, next) {
 
     res.status(200).send({ user });
   } catch (err) {
-    next(new Error(err));
+    next(err);
   }
 };
 

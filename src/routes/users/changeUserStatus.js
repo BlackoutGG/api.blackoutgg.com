@@ -16,7 +16,7 @@ const changeUserStatus = async function (req, res, next) {
     const user = { id: results.id, disabled: results.is_disabled };
     res.status(200).send({ user });
   } catch (err) {
-    next(new Error(err));
+    next(err);
   }
 };
 

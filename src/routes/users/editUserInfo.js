@@ -37,7 +37,7 @@ const editUserInfo = async function (req, res, next) {
     res.status(200).send({ user });
   } catch (err) {
     console.log(err);
-    next(new Error(err));
+    next(err);
   }
 };
 

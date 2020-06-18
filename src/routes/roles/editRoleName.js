@@ -3,7 +3,6 @@ const Roles = require("./models/Roles");
 const guard = require("express-jwt-permissions")();
 const { param, body } = require("express-validator");
 const { validateRequest } = require("$util");
-const createError = require("http-errors");
 
 const editGroupName = async function (req, res) {
   try {
@@ -15,9 +14,6 @@ const editGroupName = async function (req, res) {
       .returning(["id", "name"]);
     res.status(200).send({ role });
   } catch (err) {
-    if (err.name && err.name === "NotFoundError") {
-      return next(createError(404, "Role doesn't exist."));
-    }
     next(new Error(err));
   }
 };

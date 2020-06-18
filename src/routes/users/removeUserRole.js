@@ -16,7 +16,7 @@ const removeUserRole = async function (req, res, next) {
       .delete();
     res.status(200).send({ user });
   } catch (err) {
-    next(new Error(err));
+    next(err);
   }
 };
 

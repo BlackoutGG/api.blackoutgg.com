@@ -11,34 +11,69 @@ class User extends Base {
   }
 
   getScope() {
-    return this.roles.reduce((result, perm) => {
-      result = Object.entries(perm)
-        .filter(
-          ([key, value]) =>
-            typeof value === "boolean" && value && /^can_/.test(key)
-        )
-        .map(([key, val]) => {
-          if (/^can_/.test(key)) {
-            let scope = key.split("_"),
-              prefix,
-              priv;
-
-            if (val) {
-              if (scope.length > 2) {
-                prefix = scope[2];
-                priv = scope[1];
-              } else {
-                prefix = scope[1];
-                priv = scope[0];
-              }
-            }
-
-            return `${prefix}:${priv}`;
-          }
-        });
-
+    const roles = this.roles.reduce((result, perm) => {
+      for (let key in perm) {
+        if (!perm.hasOwnProperty(key)) continue;
+        if (perm[key] && typeof perm[key] === "boolean") {
+          result[key] = perm[key];
+        }
+      }
       return result;
+    }, {});
+
+    const scope = Object.entries(roles).reduce((arr, [key, val]) => {
+      if (typeof val !== "boolean") return;
+
+      if (/^can_/.test(key)) {
+        let args = key.split("_"),
+          perms,
+          type;
+
+        if (val) {
+          if (args.length > 2) {
+            perms = args[1];
+            type = args[2];
+          } else {
+            perms = args[0];
+            type = args[1];
+          }
+
+          arr.push(`${type}:${perms}`);
+        }
+      }
+
+      return arr;
     }, []);
+
+    return scope;
+    // return this.roles.reduce((result, perm) => {
+    //   result = Object.entries(perm)
+    //     .filter(
+    //       ([key, value]) =>
+    //         typeof value === "boolean" && value && /^can_/.test(key)
+    //     )
+    //     .map(([key, val]) => {
+    //       if (/^can_/.test(key)) {
+    //         let scope = key.split("_"),
+    //           prefix,
+    //           priv;
+
+    //         if (val) {
+    //           if (scope.length > 2) {
+    //             prefix = scope[2];
+    //             priv = scope[1];
+    //           } else {
+    //             prefix = scope[1];
+    //             priv = scope[0];
+    //           }
+    //         }
+
+    //         return `${prefix}:${priv}`;
+    //       }
+    //     });
+
+    //   return result;
+    // }, []);
   }
 
   static get jsonSchema() {

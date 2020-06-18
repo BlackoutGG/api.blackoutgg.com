@@ -9,6 +9,8 @@ const generateScope = function (perms) {
     return result;
   }, {});
 
+  console.log(permissions);
+
   const scope = Object.entries(permissions).reduce((arr, [key, val]) => {
     if (typeof val !== "boolean") return;
 
@@ -32,6 +34,8 @@ const generateScope = function (perms) {
 
     return arr;
   }, []);
+
+  console.log(scope);
 
   return scope;
 };

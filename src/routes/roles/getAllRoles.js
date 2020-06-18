@@ -5,12 +5,15 @@ const { query } = require("express-validator");
 const { validate, buildQuery } = require("$util");
 
 const getAllRoles = async function (req, res) {
+  const query = Roles.query().select(
+    "id",
+    "name",
+    "is_disabled",
+    "is_removable",
+    "created_at"
+  );
   try {
-    const roles = await buildQuery.call(
-      Roles.query(),
-      req.query.page,
-      req.query.limit
-    );
+    const roles = await buildQuery.call(query, req.query.page, req.query.limit);
     res.status(200).send({ roles });
   } catch (err) {
     console.log(err);

@@ -30,7 +30,7 @@ const register = async function (req, res) {
 
     res.status(200).send({ success: true, user: query.username });
   } catch (err) {
-    next(new Error(err));
+    next(err);
   }
 };
 

@@ -13,7 +13,7 @@ const validateEmail = async function (req, res, next) {
     if (user) return res.status(422).send("Email already in use.");
     res.status(200).send();
   } catch (err) {
-    next(new Error(err));
+    next(err);
   }
 };
 

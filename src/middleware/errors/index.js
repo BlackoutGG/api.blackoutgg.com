@@ -125,13 +125,6 @@ function errorHandler(err, req, res, next) {
       type: "UnknownDatabaseError",
       data: {},
     });
-  } else if (err.statusCode) {
-    const status = err.statusCode ? err.statusCode : err.status;
-    res.status(status).send({
-      message: err.message,
-      status: status,
-      type: types.get(status),
-    });
   } else {
     res.status(500).send({ message: err.message });
   }

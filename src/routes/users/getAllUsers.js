@@ -6,7 +6,7 @@ const { buildQuery, validate } = require("$util");
 
 const getAllUsers = async function (req, res, next) {
   const query = User.query()
-    .select("id", "avatar", "username", "created_at")
+    .select("id", "avatar", "username", "email", "created_at")
     .withGraphFetched("roles");
   try {
     const users = await buildQuery.call(query, req.query.page, req.query.limit);
@@ -16,6 +16,7 @@ const getAllUsers = async function (req, res, next) {
         id: user.id,
         avatar: user.avatar,
         username: user.username,
+        email: user.email,
         roles: user.getRoles(),
         joined_on: user.created_at,
       };
@@ -23,7 +24,7 @@ const getAllUsers = async function (req, res, next) {
 
     res.status(200).send({ users });
   } catch (err) {
-    next(new Error(err));
+    next(err);
   }
 };
 

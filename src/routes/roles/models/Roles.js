@@ -1,7 +1,7 @@
 "use strict";
 const Base = require("$base");
 
-class Group extends Base {
+class Role extends Base {
   static get tableName() {
     return "roles";
   }
@@ -75,4 +75,4 @@ class Group extends Base {
   }
 }
 
-module.exports = Group;
+module.exports = Role;

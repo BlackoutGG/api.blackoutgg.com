@@ -26,7 +26,7 @@ const changeUserGroup = async function (req, res, next) {
 
     return res.status(200).send({ id: query.user_id, group: query.group_id });
   } catch (err) {
-    next(new Error(err));
+    next(err);
   }
 };
 

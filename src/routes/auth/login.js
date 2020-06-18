@@ -5,7 +5,7 @@ const User = require("$models/User");
 const verifyRecaptcha = require("$services/recaptcha")(
   process.env.RECAPTCHA_SECRET
 );
-const { validate } = require("$util");
+const { validate, generateScope } = require("$util");
 const { body, header } = require("express-validator");
 const createError = require("http-errors");
 
@@ -36,14 +36,18 @@ const login = async function (req, res, next) {
       permissions: user.getScope(),
     };
 
+    console.log(data.permissions);
+
     const token = jwt.sign(data, process.env.JWT_SECRET, {
       expiresIn: "5h",
     });
 
     res.status(200).send({ token });
   } catch (err) {
-    console.log(err);
-    next(new Error(err));
+    // if (err.name === "NotFoundError") {
+    //   return next(new createError.NotFound("User account doesn't exist."));
+    // }
+    next(err);
   }
 };
 
