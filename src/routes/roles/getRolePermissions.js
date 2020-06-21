@@ -6,18 +6,23 @@ const { validate } = require("$util");
 
 const getRolePermissions = async function (req, res, next) {
   try {
-    const perm = Role.query()
+    const result = await Role.query().where("id", 1).first();
+
+    const columns = Object.keys(result).filter((key) => /^can_/.test(key));
+
+    const permissions = await Role.query()
       .where("id", req.params.id)
-      .select("permissions")
+      .columns(columns)
       .first();
-    res.status(200).send({ perm });
+
+    res.status(200).send({ permissions });
   } catch (err) {
-    next(new Error(err));
+    next(err);
   }
 };
 
 module.exports = {
-  path: "/:id/perms",
+  path: "/perms/:id",
   method: "GET",
   middleware: [guard.check("roles:view"), validate([param("id").isNumeric()])],
   handler: getRolePermissions,

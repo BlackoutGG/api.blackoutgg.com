@@ -40,7 +40,6 @@ app.use(
       `${apiVersion}/auth/discord/state`,
       `${apiVersion}/auth/discord`,
       `${apiVersion}/users/register`,
-      `${apiVersion}/test`,
     ],
   })
 );
