@@ -12,9 +12,8 @@ const middleware = [
   guard.check("roles:edit"),
   validate([
     param("id").isNumeric(),
-    body("name").isAlphanumeric().escape().trim(),
-    body("page").optional().isNumeric(),
-    body("limit").optional().isNumeric(),
+    body("name").optional().isAlphanumeric().escape().trim(),
+    body("disable").optional().isBoolean(),
     body("permissions")
       .optional()
       .custom((value) => {
@@ -26,24 +25,38 @@ const middleware = [
   ]),
 ];
 
-const addRole = async function (req, res, next) {
-  const name = req.body.name,
-    perms = req.body.permissions || null;
+const editRole = async function (req, res, next) {
+  const name = req.body.name || null,
+    perms = req.body.permissions || null,
+    is_disabled = req.body.disable || null,
+    roleId = parseInt(req.params.id, 10);
 
-  let insert = {},
+  let patch = {},
     returning = [],
     permissions;
 
+  if (name) {
+    patch.name = name;
+    returning.push("name");
+  }
+
+  if (is_disabled) {
+    patch.is_disabled = is_disabled;
+    returning.push("is_disabled");
+  }
+
   if (perms && Object.keys(perms).length) {
-    insert = Object.assign(patch, { ...perms });
-    returning = Object.keys(perms);
+    patch = Object.assign(patch, { ...perms });
+    returning = returning.concat(Object.keys(perms));
   }
 
   try {
     const results = await Roles.query()
-      .insert({ name, ...insert })
+      .patch(patch)
+      .where("id", roleId)
+      .throwIfNotFound()
       .first()
-      .returning(["id", "created_at", "updated_at", "name", ...returning]);
+      .returning(["id", "created_at", "updated_at", ...returning]);
 
     const role = pick(results, ["id", "name", "update_at", "is_disabled"]);
 
@@ -66,8 +79,8 @@ const addRole = async function (req, res, next) {
 };
 
 module.exports = {
-  path: "/",
-  method: "POST",
+  path: "/:id",
+  method: "PUT",
   middleware,
-  handler: addRole,
+  handler: editRole,
 };

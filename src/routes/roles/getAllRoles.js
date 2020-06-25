@@ -12,12 +12,13 @@ const getAllRoles = async function (req, res) {
     "is_removable",
     "created_at"
   );
+  // const query = Roles.query();
   try {
     const roles = await buildQuery.call(query, req.query.page, req.query.limit);
     res.status(200).send({ roles });
   } catch (err) {
     console.log(err);
-    next(new Error(err));
+    next(err);
   }
 };
 
@@ -25,7 +26,7 @@ module.exports = {
   path: "/",
   method: "GET",
   middleware: [
-    guard.check("roles:add"),
+    guard.check("roles:view"),
     validate([query("page").isNumeric(), query("limit").isNumeric()]),
   ],
   handler: getAllRoles,
