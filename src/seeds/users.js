@@ -53,7 +53,7 @@ exports.seed = async function (knex) {
         can_upload_maps: true,
         can_upload_pins: true,
         can_upload_media: true,
-        is_disabled: true,
+        is_disabled: false,
         is_removable: false,
         created_at: date,
         updated_at: date,

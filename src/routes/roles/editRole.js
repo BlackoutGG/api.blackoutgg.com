@@ -71,6 +71,8 @@ const editRole = async function (req, res, next) {
       role.permissions = permissions;
     }
 
+    console.log(role);
+
     res.status(200).send({ role });
   } catch (err) {
     console.log(err);

@@ -1,9 +1,24 @@
 "use strict";
 const Base = require("$base");
+const columns = require("$util/permissions");
 
 class Role extends Base {
   static get tableName() {
     return "roles";
+  }
+
+  static async getAndFormatPerms(id) {
+    const results = await this.query().where("id", id).columns(columns).first();
+    return Object.entries(results).map(([name, value]) => ({ name, value }));
+  }
+
+  get permissions() {
+    return Object.entries(this)
+      .filter(([key, value]) => /^can_/.test(key))
+      .map(([key, value]) => ({
+        name: key,
+        value,
+      }));
   }
 
   static get jsonSchema() {

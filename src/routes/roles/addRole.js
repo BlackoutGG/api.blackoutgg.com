@@ -2,16 +2,21 @@
 const Roles = require("./models/Roles");
 const guard = require("express-jwt-permissions")();
 const pick = require("lodash").pick;
-const { param, body } = require("express-validator");
-const { validate } = require("$util");
+const { body } = require("express-validator");
+const { validate, buildQuery } = require("$util");
 
 const isObject = (val) =>
   val && typeof val === "object" && val.constructor === Object;
 
+const consoleLog = (req, res, next) => {
+  console.log(req.body, req.query);
+  next();
+};
+
 const middleware = [
-  guard.check("roles:edit"),
+  guard.check("roles:add"),
+  consoleLog,
   validate([
-    param("id").isNumeric(),
     body("name").isAlphanumeric().escape().trim(),
     body("page").optional().isNumeric(),
     body("limit").optional().isNumeric(),
@@ -30,35 +35,35 @@ const addRole = async function (req, res, next) {
   const name = req.body.name,
     perms = req.body.permissions || null;
 
-  let insert = {},
-    returning = [],
-    permissions;
+  let insert = {};
+
+  if (name) {
+    insert.name = name;
+  }
 
   if (perms && Object.keys(perms).length) {
-    insert = Object.assign(patch, { ...perms });
-    returning = Object.keys(perms);
+    insert = Object.assign(insert, { ...perms });
   }
 
   try {
-    const results = await Roles.query()
-      .insert({ name, ...insert })
-      .first()
-      .returning(["id", "created_at", "updated_at", "name", ...returning]);
+    const results = await Roles.transaction(async (trx) => {
+      await Roles.query(trx).insert(insert);
 
-    const role = pick(results, ["id", "name", "update_at", "is_disabled"]);
+      const q = Roles.query(trx).select(
+        "id",
+        "name",
+        "is_disabled",
+        "is_removable",
+        "created_at"
+      );
 
-    if (perms) {
-      permissions = Object.entries(results)
-        .filter(([key, value]) => /^can_/.test(key))
-        .map(([key, value]) => ({
-          name: key,
-          value,
-        }));
+      const roles = await buildQuery.call(q, req.body.page, req.body.limit);
 
-      role.permissions = permissions;
-    }
+      /** RETURN ROLE WHICH IS THE NEW INSERTED ROLE, AND ROLES WHICH IS A NEW COLLECTION */
+      return roles;
+    });
 
-    res.status(200).send({ role });
+    res.status(200).send({ roles: results });
   } catch (err) {
     console.log(err);
     next(err);
