@@ -12,13 +12,15 @@ class Role extends Base {
     return Object.entries(results).map(([name, value]) => ({ name, value }));
   }
 
+  static async getPerms() {
+    const results = await this.query().where("id", 1).columns(columns).first();
+    return Object.keys(results);
+  }
+
   get permissions() {
     return Object.entries(this)
       .filter(([key, value]) => /^can_/.test(key))
-      .map(([key, value]) => ({
-        name: key,
-        value,
-      }));
+      .map(([name, value]) => ({ name, value }));
   }
 
   static get jsonSchema() {
@@ -27,7 +29,8 @@ class Role extends Base {
       properties: {
         id: { type: "integer" },
         name: { type: "string" },
-        can_access_admin: { type: "boolean" },
+        can_view_admin: { type: "boolean" },
+        can_edit_fp: { type: "boolean" },
         can_view_maps: { type: "boolean" },
         can_view_events: { type: "boolean" },
         can_view_pins: { type: "boolean" },

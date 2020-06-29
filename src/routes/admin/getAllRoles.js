@@ -1,5 +1,5 @@
 "use strict";
-const Roles = require("./models/Roles");
+const Roles = require("$models/Roles");
 const guard = require("express-jwt-permissions")();
 const { query } = require("express-validator");
 const { validate, buildQuery } = require("$util");
@@ -13,8 +13,10 @@ const getAllRoles = async function (req, res) {
     "created_at"
   );
   // const query = Roles.query();
+  const roles = buildQuery.call(query, req.query.page, req.query.limit);
+  const perms = Roles.getPerms();
   try {
-    const roles = await buildQuery.call(query, req.query.page, req.query.limit);
+    const [roles, perms] = await Promise.all([roles, perms]);
     // roles.map((role) => ({
     //   id: role.id,
     //   name: role.name,
@@ -24,7 +26,7 @@ const getAllRoles = async function (req, res) {
     //   updated_at: role.updated_at,
     //   permissions: role.permissions,
     // }));
-    res.status(200).send({ roles });
+    res.status(200).send({ roles, perms });
   } catch (err) {
     console.log(err);
     next(err);
@@ -32,7 +34,7 @@ const getAllRoles = async function (req, res) {
 };
 
 module.exports = {
-  path: "/",
+  path: "/roles",
   method: "GET",
   middleware: [
     guard.check("roles:view"),

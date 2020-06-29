@@ -18,7 +18,9 @@ exports.up = function (knex) {
       return knex.schema.createTable("roles", (t) => {
         t.increments("id").primary();
         t.string("name").unique();
-        t.boolean("can_access_admin").defaultTo(false);
+        t.enum("level", [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+        t.boolean("can_view_admin").defaultTo(false);
+        t.boolean("can_edit_fp").defaultTo(false);
 
         t.boolean("can_view_posts").defaultTo(false);
         t.boolean("can_view_maps").defaultTo(false);
@@ -80,6 +82,25 @@ exports.up = function (knex) {
         t.string("name");
         t.boolean("is_disabled").defaultTo(false);
         t.timestamps();
+      });
+    }),
+    knex.schema.hasTable("events").then((exists) => {
+      if (exists) return;
+      return knex.schema.createTable("events", (t) => {
+        t.increments("id").primary();
+        t.string("name");
+        t.string("start");
+        t.string("end");
+        t.text("description");
+        t.boolean("joinable").defaultTo(true);
+        t.timestamps();
+      });
+    }),
+    knex.schema.hasTable("event_participants").then((exists) => {
+      if (exists) return;
+      return knex.schema.createTable("event_participants", (t) => {
+        t.integer("event_id").references("events.id");
+        t.integer("user_id").references("users.id");
       });
     }),
     knex.schema.hasTable("post_types").then((exists) => {
@@ -162,6 +183,9 @@ exports.up = function (knex) {
 
 exports.down = function (knex) {
   return Promise.all([
+    knex.schema.dropTableIfExists("event_participants"),
+    knex.schema.dropTableIfExists("events"),
+
     knex.schema.dropTableIfExists("user_roles"),
     knex.schema.dropTableIfExists("roles"),
 

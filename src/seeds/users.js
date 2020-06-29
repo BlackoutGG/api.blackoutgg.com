@@ -19,12 +19,14 @@ exports.seed = async function (knex) {
   const date = new Date().toISOString();
   try {
     await knex.raw(
-      "TRUNCATE users, roles, maps, pins RESTART IDENTITY CASCADE"
+      "TRUNCATE users, roles, maps, pins, posts, events RESTART IDENTITY CASCADE"
     );
     await knex.into("roles").insert([
       {
         name: "admin",
-        can_access_admin: true,
+        level: 0,
+        can_view_admin: true,
+        can_edit_fp: true,
         can_view_maps: true,
         can_view_events: true,
         can_view_pins: true,
@@ -60,12 +62,14 @@ exports.seed = async function (knex) {
       },
       {
         name: "guest",
+        level: 10,
         can_view_maps: true,
         created_at: date,
         updated_at: date,
       },
       {
         name: "member",
+        level: 9,
         can_view_maps: true,
         can_add_pins: true,
         can_remove_pins: true,

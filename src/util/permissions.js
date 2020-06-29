@@ -1,5 +1,6 @@
 module.exports = [
-  "can_access_admin",
+  "can_view_admin",
+  "can_edit_fp",
   "can_view_posts",
   "can_view_maps",
   "can_view_events",

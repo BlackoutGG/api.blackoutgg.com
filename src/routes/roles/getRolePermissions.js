@@ -3,7 +3,6 @@ const Role = require("./models/Roles");
 const guard = require("express-jwt-permissions")();
 const { param } = require("express-validator");
 const { validate } = require("$util");
-const columns = require("$util/permissions");
 
 const getRolePermissions = async function (req, res, next) {
   try {
