@@ -74,8 +74,6 @@ const editUser = async function (req, res, next) {
       };
     });
 
-    console.log(user);
-
     res.status(200).send({ user });
   } catch (err) {
     console.log(err);

@@ -15,15 +15,16 @@ const fileFilter = function (req, file, cb) {
   else cb(new Error("Images with types: 'png' or 'webp' only."));
 };
 
-/*** SETUP MULTER ***/
-
+/**
+ *
+ */
 module.exports = function (opts) {
   opts.dest = typeof opts.dest === undefined ? "maps/" : opts.dest;
 
   const storage = multerS3({
     s3: s3,
     bucket: opts.bucket,
-    acl: "public-read",
+    acl: opts.acl || "public-read",
     metadata(req, file, cb) {
       cb(null, { fileName: file.fieldname });
     },

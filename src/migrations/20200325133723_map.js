@@ -59,7 +59,10 @@ exports.up = function (knex) {
 
         t.boolean("can_upload_maps").defaultTo(false);
         t.boolean("can_upload_pins").defaultTo(false);
+
         t.boolean("can_upload_media").defaultTo(false);
+        t.boolean("can_view_media").defaultTo(false);
+        t.boolean("can_remove_media").defaultTo(false);
 
         t.boolean("is_disabled").defaultTo(false);
         t.boolean("is_removable").defaultTo(true);
@@ -88,11 +91,19 @@ exports.up = function (knex) {
       if (exists) return;
       return knex.schema.createTable("events", (t) => {
         t.increments("id").primary();
+        t.integer("category_id");
+        t.integer("user_id").references("users.id");
         t.string("name");
-        t.string("start");
-        t.string("end");
+        t.string("color");
+        t.integer("year");
+        t.integer("month");
+        t.integer("day");
+        t.string("startDate");
+        t.string("startTime");
+        t.string("endDate");
+        t.string("endTime");
         t.text("description");
-        t.boolean("joinable").defaultTo(true);
+        t.boolean("rvsp").defaultTo(true);
         t.timestamps();
       });
     }),
@@ -101,6 +112,15 @@ exports.up = function (knex) {
       return knex.schema.createTable("event_participants", (t) => {
         t.integer("event_id").references("events.id");
         t.integer("user_id").references("users.id");
+      });
+    }),
+    knex.schema.hasTable("event_categories").then((exists) => {
+      if (exists) return;
+      return knex.schema.createTable("event_categories", (t) => {
+        t.increments("id").primary();
+        t.integer("media_id").references("media.id");
+        t.string("name");
+        t.timestamps();
       });
     }),
     knex.schema.hasTable("post_types").then((exists) => {
@@ -161,7 +181,7 @@ exports.up = function (knex) {
         t.increments("id").primary();
         t.string("mimetype");
         t.string("url");
-        t.string("s3_key");
+        t.string("storage_key");
         t.integer("user_id").references("users.id");
         t.timestamps();
       });
@@ -185,6 +205,7 @@ exports.down = function (knex) {
   return Promise.all([
     knex.schema.dropTableIfExists("event_participants"),
     knex.schema.dropTableIfExists("events"),
+    knex.schema.dropTableIfExists("event_categories"),
 
     knex.schema.dropTableIfExists("user_roles"),
     knex.schema.dropTableIfExists("roles"),

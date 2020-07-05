@@ -4,7 +4,7 @@ const guard = require("express-jwt-permissions")();
 const { query } = require("express-validator");
 const { validate, buildQuery } = require("$util");
 
-const getAllRoles = async function (req, res) {
+const adminGetAllRoles = async function (req, res) {
   const query = Roles.query().select(
     "id",
     "name",
@@ -12,11 +12,11 @@ const getAllRoles = async function (req, res) {
     "is_removable",
     "created_at"
   );
-  // const query = Roles.query();
-  const roles = buildQuery.call(query, req.query.page, req.query.limit);
-  const perms = Roles.getPerms();
+
+  const r = buildQuery.call(query, req.query.page, req.query.limit);
+  const p = Roles.getPerms();
   try {
-    const [roles, perms] = await Promise.all([roles, perms]);
+    const [roles, perms] = await Promise.all([r, p]);
     // roles.map((role) => ({
     //   id: role.id,
     //   name: role.name,
@@ -40,5 +40,5 @@ module.exports = {
     guard.check("roles:view"),
     validate([query("page").isNumeric(), query("limit").isNumeric()]),
   ],
-  handler: getAllRoles,
+  handler: adminGetAllRoles,
 };
