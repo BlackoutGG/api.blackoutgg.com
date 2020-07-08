@@ -6,8 +6,8 @@ const { validate } = require("$util");
 
 const validators = validate([
   query("category").optional().isArray(),
-  query("month").isString().toInt(10),
-  query("year").isString().toInt(10),
+  query("month").isNumeric(),
+  query("year").isNumeric(),
 ]);
 
 const columns = [
@@ -20,26 +20,36 @@ const columns = [
   "endDate",
   "description",
   "rvsp",
+  "day",
+  "month",
+  "year",
 ];
 
 const getAllEvents = async function (req, res, next) {
   let query = Event.query(),
-    categories = req.body.categories || null,
-    where = {};
-
-  where.month = req.body.month;
-  where.year = req.body.year;
+    categories = req.query.categories || null,
+    where = req.query;
 
   if (categories) {
     query = Array.isArray(categories)
       ? query.whereIn("category_id", categories).andWhere(where)
       : query.where({ ...where, category_id: category });
+  } else {
+    query = query.where(where);
   }
 
   try {
-    const events = await query.withGraphFetched("organizer").columns(columns);
+    const events = await query
+      .withGraphFetched(
+        `[organizer(defaultSelects), 
+          category(defaultSelects)]`
+      )
+      .select(columns);
+
+    console.log(events);
     res.status(200).send({ events });
   } catch (err) {
+    console.log(err);
     next(err);
   }
 };

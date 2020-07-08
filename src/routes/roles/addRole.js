@@ -32,14 +32,8 @@ const middleware = [
 ];
 
 const addRole = async function (req, res, next) {
-  const name = req.body.name,
+  let insert = pick(["name", "is_disabled"], req.body),
     perms = req.body.permissions || null;
-
-  let insert = {};
-
-  if (name) {
-    insert.name = name;
-  }
 
   if (perms && Object.keys(perms).length) {
     insert = Object.assign(insert, { ...perms });

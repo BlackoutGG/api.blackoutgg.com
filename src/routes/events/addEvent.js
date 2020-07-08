@@ -5,16 +5,16 @@ const { body } = require("express-validator");
 const { validate } = require("$util");
 
 const validators = validate([
-  body("name").isAlphanumeric().escape().trim(),
+  // body("name").isAlphanumeric().escape().trim(),
   // body("color").optional().isString().escape().trim(),
   // body("category").optional().isNumeric(),
-  // body("month").isNumeric(),
-  // body("year").isNumeric(),
-  // body("startDate").isString().escape().trim(),
-  // body("endDate").optional().isString().escape().trim(),
-  // body("startTime").isString().escape().trim(),
-  // body("endTime").optional().isString().escape().trim(),
-  // body("description").optional().isString().escape().trim(),
+  body("month").isNumeric(),
+  body("year").isNumeric(),
+  body("startDate").isString().escape().trim(),
+  body("endDate").optional().isString().escape().trim(),
+  body("startTime").isString().escape().trim(),
+  body("endTime").optional().isString().escape().trim(),
+  body("description").optional().isString().escape().trim(),
   // body("rvsp").optional().isBoolean(),
 ]);
 
@@ -27,6 +27,7 @@ const addEvent = async function (req, res, next) {
   try {
     const event = await Event.query()
       .insert({ ...req.body, user_id: req.user.id })
+      .first()
       .returning("*");
     res.status(200).send({ event });
   } catch (err) {
@@ -38,6 +39,6 @@ const addEvent = async function (req, res, next) {
 module.exports = {
   path: "/",
   method: "POST",
-  middleware: [guard.check("events:add"), log],
+  middleware: [guard.check("events:add")],
   handler: addEvent,
 };

@@ -91,7 +91,7 @@ exports.up = function (knex) {
       if (exists) return;
       return knex.schema.createTable("events", (t) => {
         t.increments("id").primary();
-        t.integer("category_id");
+        t.integer("category_id").references("categories.id").defaultTo(1);
         t.integer("user_id").references("users.id");
         t.string("name");
         t.string("color");
@@ -103,8 +103,15 @@ exports.up = function (knex) {
         t.string("endDate");
         t.string("endTime");
         t.text("description");
-        t.boolean("rvsp").defaultTo(true);
+        t.boolean("rvsp").defaultTo(false);
         t.timestamps();
+      });
+    }),
+    knex.schema.hasTable("event_roles").then((exists) => {
+      if (exists) return;
+      return knex.schema.createTable("event_roles", (t) => {
+        t.integer("event_id").references("events.id");
+        t.integer("role_id").references("roles.id");
       });
     }),
     knex.schema.hasTable("event_participants").then((exists) => {
@@ -114,11 +121,12 @@ exports.up = function (knex) {
         t.integer("user_id").references("users.id");
       });
     }),
-    knex.schema.hasTable("event_categories").then((exists) => {
+    knex.schema.hasTable("categories").then((exists) => {
       if (exists) return;
-      return knex.schema.createTable("event_categories", (t) => {
+      return knex.schema.createTable("categories", (t) => {
         t.increments("id").primary();
-        t.integer("media_id").references("media.id");
+        t.integer("event_banner").references("media.id");
+        t.integer("page_header").references("media.id");
         t.string("name");
         t.timestamps();
       });
@@ -205,7 +213,7 @@ exports.down = function (knex) {
   return Promise.all([
     knex.schema.dropTableIfExists("event_participants"),
     knex.schema.dropTableIfExists("events"),
-    knex.schema.dropTableIfExists("event_categories"),
+    knex.schema.dropTableIfExists("categories"),
 
     knex.schema.dropTableIfExists("user_roles"),
     knex.schema.dropTableIfExists("roles"),

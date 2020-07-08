@@ -6,6 +6,14 @@ class User extends Base {
     return "users";
   }
 
+  static get modifiers() {
+    return {
+      defaultSelects(builder) {
+        builder.select("id", "username", "avatar");
+      },
+    };
+  }
+
   getRoles() {
     return this.roles.map((role) => ({ id: role.id, name: role.name }));
   }

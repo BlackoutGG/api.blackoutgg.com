@@ -26,24 +26,10 @@ const middleware = [
 ];
 
 const editRole = async function (req, res, next) {
-  const name = req.body.name || null,
+  let patch = pick(["name", "is_disabled"], req.body),
+    returning = Object.keys(patch),
     perms = req.body.permissions || null,
-    is_disabled = req.body.disable || null,
     roleId = parseInt(req.params.id, 10);
-
-  let patch = {},
-    returning = [],
-    permissions;
-
-  if (name) {
-    patch.name = name;
-    returning.push("name");
-  }
-
-  if (is_disabled) {
-    patch.is_disabled = is_disabled;
-    returning.push("is_disabled");
-  }
 
   if (perms && Object.keys(perms).length) {
     patch = Object.assign(patch, { ...perms });
@@ -61,7 +47,7 @@ const editRole = async function (req, res, next) {
     const role = pick(results, ["id", "name", "update_at", "is_disabled"]);
 
     if (perms) {
-      permissions = Object.entries(results)
+      const permissions = Object.entries(results)
         .filter(([key, value]) => /^can_/.test(key))
         .map(([key, value]) => ({
           name: key,
@@ -70,8 +56,6 @@ const editRole = async function (req, res, next) {
 
       role.permissions = permissions;
     }
-
-    console.log(role);
 
     res.status(200).send({ role });
   } catch (err) {

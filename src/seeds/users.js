@@ -21,13 +21,11 @@ exports.seed = async function (knex) {
     await knex.raw(
       "TRUNCATE users, roles, maps, pins, posts, events RESTART IDENTITY CASCADE"
     );
-    await knex
-      .into("event_categories")
-      .insert([
-        { name: "General" },
-        { name: "Last Oasis" },
-        { name: "New World" },
-      ]);
+    await knex.into("categories").insert([
+      { name: "General", created_at: date, updated_at: date },
+      { name: "Last Oasis", created_at: date, updated_at: date },
+      { name: "New World", created_at: date, updated_at: date },
+    ]);
     await knex.into("roles").insert([
       {
         name: "admin",

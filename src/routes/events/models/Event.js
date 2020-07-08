@@ -6,14 +6,6 @@ class Event extends Base {
     return "events";
   }
 
-  static get start() {
-    return this.startDate + " " + this.startTime;
-  }
-
-  static get end() {
-    return this.endDate + " " + this.endTime;
-  }
-
   static get jsonSchema() {
     return {
       type: "object",
@@ -40,14 +32,14 @@ class Event extends Base {
 
   static get relationMappings() {
     const User = require("$models/User");
-    const EventCat = require("$models/EventCategory");
+    const Category = require("$models/Category");
     return {
       category: {
         relation: Base.HasOneRelation,
-        modelClass: EventCat,
+        modelClass: Category,
         join: {
           from: "events.category_id",
-          to: "event_categories.id",
+          to: "categories.id",
         },
       },
       organizer: {

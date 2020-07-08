@@ -26,7 +26,9 @@ const login = async function (req, res, next) {
     const match = await bcrypt.compare(req.body.password, user.password);
 
     if (!match) {
-      return next(new createError.BadRequest("User credentials do not match."));
+      return res
+        .status(422)
+        .send({ message: "User credentials do not match." });
     }
 
     const data = {
@@ -36,17 +38,12 @@ const login = async function (req, res, next) {
       permissions: user.getScope(),
     };
 
-    console.log(data.permissions);
-
     const token = jwt.sign(data, process.env.JWT_SECRET, {
       expiresIn: "5h",
     });
 
     res.status(200).send({ token });
   } catch (err) {
-    // if (err.name === "NotFoundError") {
-    //   return next(new createError.NotFound("User account doesn't exist."));
-    // }
     next(err);
   }
 };
