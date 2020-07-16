@@ -22,7 +22,7 @@ const del = (model, trx, ids) =>
 const removeRole = async function (req, res, next) {
   try {
     const roles = await Roles.transaction(async (trx) => {
-      await del(UserRole, trx, req.body.ids);
+      // await del(UserRole, trx, req.body.ids);
       await del(Roles, trx, req.body.ids);
 
       const r = await buildQuery.call(

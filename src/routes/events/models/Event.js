@@ -9,13 +9,12 @@ class Event extends Base {
   static get jsonSchema() {
     return {
       type: "object",
-      required: ["name", "startDate", "startTime"],
+      required: ["name", "startDate", "startTime", "start", "end"],
       properties: {
         id: { type: "integer" },
         category_id: { type: "integer" },
         color: { type: "string" },
         name: { type: "string " },
-        day: { type: "integer" },
         month: { type: "integer" },
         year: { type: "integer" },
         description: { type: "string" },
@@ -23,6 +22,8 @@ class Event extends Base {
         startTime: { type: "string" },
         endDate: { type: "string" },
         endTime: { type: "string " },
+        start: { type: "string" },
+        end: { type: "string" },
         rvsp: { type: "boolean" },
         created_at: { type: "string" },
         updated_at: { type: "string" },
@@ -33,6 +34,7 @@ class Event extends Base {
   static get relationMappings() {
     const User = require("$models/User");
     const Category = require("$models/Category");
+    const EventRoles = require("$models/EventRoles");
     return {
       category: {
         relation: Base.HasOneRelation,
@@ -48,6 +50,18 @@ class Event extends Base {
         join: {
           from: "events.user_id",
           to: "users.id",
+        },
+      },
+      roles: {
+        relation: Base.ManyToManyRelation,
+        modelClass: EventRoles,
+        join: {
+          from: "event.id",
+          through: {
+            from: "event_roles.event_id",
+            to: "event_roles.role_id",
+          },
+          to: "roles.id",
         },
       },
       participants: {

@@ -18,7 +18,8 @@ exports.up = function (knex) {
       return knex.schema.createTable("roles", (t) => {
         t.increments("id").primary();
         t.string("name").unique();
-        t.enum("level", [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+        t.enum("level", [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]).defaultTo(10);
+        t.boolean("default").defaultTo(false);
         t.boolean("can_view_admin").defaultTo(false);
         t.boolean("can_edit_fp").defaultTo(false);
 
@@ -72,8 +73,14 @@ exports.up = function (knex) {
     knex.schema.hasTable("user_roles").then((exists) => {
       if (exists) return;
       return knex.schema.createTable("user_roles", (t) => {
-        t.integer("user_id").references("users.id");
-        t.integer("role_id").references("roles.id");
+        t.integer("user_id")
+          .references("users.id")
+          .onUpdate("CASCADE")
+          .onDelete("CASCADE");
+        t.integer("role_id")
+          .references("roles.id")
+          .onUpdate("CASCADE")
+          .onDelete("CASCADE");
       });
     }),
     knex.schema.hasTable("maps").then((exists) => {
@@ -92,12 +99,18 @@ exports.up = function (knex) {
       return knex.schema.createTable("events", (t) => {
         t.increments("id").primary();
         t.integer("category_id").references("categories.id").defaultTo(1);
-        t.integer("user_id").references("users.id");
+        t.integer("user_id")
+          .references("users.id")
+          .onUpdate("CASCADE")
+          .onDelete("CASCADE");
+        t.uuid("series_id");
+        t.boolean("event_series").defaultTo(false);
         t.string("name");
         t.string("color");
         t.integer("year");
         t.integer("month");
-        t.integer("day");
+        t.datetime("start");
+        t.datetime("end");
         t.string("startDate");
         t.string("startTime");
         t.string("endDate");
@@ -110,15 +123,27 @@ exports.up = function (knex) {
     knex.schema.hasTable("event_roles").then((exists) => {
       if (exists) return;
       return knex.schema.createTable("event_roles", (t) => {
-        t.integer("event_id").references("events.id");
-        t.integer("role_id").references("roles.id");
+        t.integer("event_id")
+          .references("events.id")
+          .onUpdate("CASCADE")
+          .onDelete("CASCADE");
+        t.integer("role_id")
+          .references("roles.id")
+          .onUpdate("CASCADE")
+          .onDelete("CASCADE");
       });
     }),
     knex.schema.hasTable("event_participants").then((exists) => {
       if (exists) return;
       return knex.schema.createTable("event_participants", (t) => {
-        t.integer("event_id").references("events.id");
-        t.integer("user_id").references("users.id");
+        t.integer("event_id")
+          .references("events.id")
+          .onUpdate("CASCADE")
+          .onDelete("CASCADE");
+        t.integer("user_id")
+          .references("users.id")
+          .onUpdate("CASCADE")
+          .onDelete("CASCADE");
       });
     }),
     knex.schema.hasTable("categories").then((exists) => {
@@ -212,6 +237,7 @@ exports.up = function (knex) {
 exports.down = function (knex) {
   return Promise.all([
     knex.schema.dropTableIfExists("event_participants"),
+    knex.schema.dropTableIfExists("event_roles"),
     knex.schema.dropTableIfExists("events"),
     knex.schema.dropTableIfExists("categories"),
 

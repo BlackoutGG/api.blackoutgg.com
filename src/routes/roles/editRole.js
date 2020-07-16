@@ -26,7 +26,7 @@ const middleware = [
 ];
 
 const editRole = async function (req, res, next) {
-  let patch = pick(["name", "is_disabled"], req.body),
+  let patch = pick(["name", "is_disabled", "default", "level"], req.body),
     returning = Object.keys(patch),
     perms = req.body.permissions || null,
     roleId = parseInt(req.params.id, 10);
@@ -44,7 +44,14 @@ const editRole = async function (req, res, next) {
       .first()
       .returning(["id", "created_at", "updated_at", ...returning]);
 
-    const role = pick(results, ["id", "name", "update_at", "is_disabled"]);
+    const role = pick(results, [
+      "id",
+      "name",
+      "level",
+      "default",
+      "update_at",
+      "is_disabled",
+    ]);
 
     if (perms) {
       const permissions = Object.entries(results)

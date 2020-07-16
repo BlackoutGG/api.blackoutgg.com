@@ -75,11 +75,13 @@ exports.seed = async function (knex) {
       {
         name: "member",
         level: 9,
+        default: true,
         can_view_maps: true,
         can_add_pins: true,
         can_remove_pins: true,
         created_at: date,
         updated_at: date,
+        is_removable: false,
       },
     ]);
 

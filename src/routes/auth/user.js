@@ -7,7 +7,7 @@ const userDetails = function (req, res) {
     id,
     username,
     avatar,
-    roles,
+    roles: roles.map(({ name }) => name),
     scope: permissions,
   };
   res.status(200).send({ user });

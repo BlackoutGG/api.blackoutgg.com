@@ -8,6 +8,8 @@ const validators = validate([
   query("category").optional().isArray(),
   query("month").isNumeric(),
   query("year").isNumeric(),
+  query("start").isString(),
+  query("end").isString(),
 ]);
 
 const columns = [
@@ -20,7 +22,6 @@ const columns = [
   "endDate",
   "description",
   "rvsp",
-  "day",
   "month",
   "year",
 ];
@@ -28,14 +29,19 @@ const columns = [
 const getAllEvents = async function (req, res, next) {
   let query = Event.query(),
     categories = req.query.categories || null,
-    where = req.query;
+    { month, year, start, end, ...where } = req.query;
 
   if (categories) {
     query = Array.isArray(categories)
       ? query.whereIn("category_id", categories).andWhere(where)
       : query.where({ ...where, category_id: category });
   } else {
-    query = query.where(where);
+    // query = query.where(where);
+    // query = query.where("endDate", ">=", start).andWhere("endDate", "<=", end);
+    query = query
+      .whereBetween("end", [start, end])
+      .whereBetween("start", [start, end]);
+    // query = query.where({ year, month }).orWhere("endDate", ">=", start);
   }
 
   try {
@@ -46,7 +52,6 @@ const getAllEvents = async function (req, res, next) {
       )
       .select(columns);
 
-    console.log(events);
     res.status(200).send({ events });
   } catch (err) {
     console.log(err);
