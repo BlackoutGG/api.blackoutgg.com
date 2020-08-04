@@ -3,33 +3,65 @@ const bcrypt = require("bcrypt");
 const SALT_ROUNDS = 12;
 
 const User = require("./models/User");
-const UserRole = require("./models/UserRole");
 
 const { body, header } = require("express-validator");
 const { validate } = require("$util");
 
-const register = async function (req, res) {
+const insertFn = (creds) => {
+  return {
+    "#id": "newUser",
+    username: req.body.username,
+    email: req.body.email,
+    password: hashed,
+    user_roles: [
+      {
+        user_id: `#{refnewUser.id}`,
+        role_id: 2,
+      },
+    ],
+  };
+};
+
+const register = async function (req, res, next) {
   try {
     const salt = await bcrypt.genSalt(SALT_ROUNDS);
     const hashed = await bcrypt.hash(req.body.password, salt);
 
-    const query = await User.transaction(async (trx) => {
-      const user = await User.query(trx)
-        .insert({
-          username: req.body.username,
-          password: hashed,
-        })
-        .returning(["id", "username"]);
+    // const user = await User.query()
+    //   .insertGraph(
+    //     [
+    //       {
+    //         "#id": "newUser",
+    //         username: req.body.username,
+    //         email: req.body.email,
+    //         password: hashed,
+    //         user_roles: [
+    //           {
+    //             user_id: `#{refnewUser.id}`,
+    //             role_id: 2,
+    //           },
+    //         ],
+    //       },
+    //     ],
+    //     { allowRefs: true }
+    //   )
+    //   .returning("*");
 
-      const role = await UserRole.query(trx)
-        .insert({ user_id: user.id, role_id: 2 })
-        .returning("user_id");
+    const creds = {
+      username: req.body.username,
+      email: req.body.email,
+      password: hashed,
+    };
 
-      return user;
-    });
+    const user = await User.query().insertGraph(
+      insertFn(creds, { allowRefs: true })
+    );
 
-    res.status(200).send({ success: true, user: query.username });
+    console.log(user);
+
+    res.status(200).send({ success: true, username: user.username });
   } catch (err) {
+    console.log(err);
     next(err);
   }
 };
@@ -38,6 +70,10 @@ module.exports = {
   path: "/register",
   method: "POST",
   middleware: [
+    (req, res, next) => {
+      console.log(req.body, req.headers);
+      next();
+    },
     validate([
       header("Authorization").isEmpty(),
       body("username")
@@ -46,6 +82,7 @@ module.exports = {
         .isLength({ min: 3, max: 30 })
         .trim()
         .escape(),
+      body("email").notEmpty().isEmail(),
       body("password").notEmpty().isLength({ min: 8, max: 50 }).trim().escape(),
     ]),
   ],

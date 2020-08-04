@@ -12,8 +12,8 @@ class Role extends Base {
     return Object.entries(results).map(([name, value]) => ({ name, value }));
   }
 
-  static async getPerms() {
-    const results = await this.query().where("id", 1).columns(columns).first();
+  static async getPermList() {
+    const results = await this.query().where("id", 1).first().columns(columns);
     return Object.keys(results);
   }
 

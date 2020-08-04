@@ -6,6 +6,11 @@ const cors = require("cors");
 const expressJwt = require("express-jwt");
 const aws = require("aws-sdk");
 const routes = require("./routes");
+const errorHandler = require("./middleware/errors");
+
+/** SETUP PG TO USE RANGE */
+const pg = require("pg");
+require("pg-range").install(pg);
 
 /*** SETUP REDIS  ***/
 const Redis = require("ioredis");
@@ -69,13 +74,10 @@ app.get("/", (req, res) => {
 /*** SETUP KNEX AND OBJECTION ***/
 require("./util/setupDB")();
 
-/*** SETUP ROUTES ***/
-Object.entries(routes).forEach(([ns, route]) => {
-  app.use(`${apiVersion}/${ns}`, route());
-});
+/** SETUP ROUTES */
+app.use(apiVersion, routes);
 
 /*** SETUP ERROR HANDLING ***/
-const errorHandler = require("./middleware/errors");
 app.use(errorHandler);
 
 module.exports = app;

@@ -102,7 +102,16 @@ class User extends Base {
 
   static get relationMappings() {
     const Roles = require("$models/Roles");
+    const UserRole = require("./UserRole");
     return {
+      user_roles: {
+        relation: Base.HasManyRelation,
+        modelClass: UserRole,
+        join: {
+          from: "users.id",
+          to: "user_roles.user_id",
+        },
+      },
       roles: {
         relation: Base.ManyToManyRelation,
         modelClass: Roles,

@@ -9,7 +9,7 @@ class Event extends Base {
   static get jsonSchema() {
     return {
       type: "object",
-      required: ["name", "startDate", "startTime", "start", "end"],
+      required: ["name", "startDate", "startTime"],
       properties: {
         id: { type: "integer" },
         category_id: { type: "integer" },
@@ -22,8 +22,6 @@ class Event extends Base {
         startTime: { type: "string" },
         endDate: { type: "string" },
         endTime: { type: "string " },
-        start: { type: "string" },
-        end: { type: "string" },
         rvsp: { type: "boolean" },
         created_at: { type: "string" },
         updated_at: { type: "string" },

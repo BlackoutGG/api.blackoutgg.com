@@ -3,11 +3,10 @@ const Event = require("./models/Event");
 const guard = require("express-jwt-permissions")();
 const { query } = require("express-validator");
 const { validate } = require("$util");
+const { raw } = require("objection");
 
 const validators = validate([
   query("category").optional().isArray(),
-  query("month").isNumeric(),
-  query("year").isNumeric(),
   query("start").isString(),
   query("end").isString(),
 ]);
@@ -22,27 +21,28 @@ const columns = [
   "endDate",
   "description",
   "rvsp",
-  "month",
-  "year",
 ];
 
 const getAllEvents = async function (req, res, next) {
   let query = Event.query(),
     categories = req.query.categories || null,
-    { month, year, start, end, ...where } = req.query;
+    { start, end, ...where } = req.query;
 
   if (categories) {
     query = Array.isArray(categories)
-      ? query.whereIn("category_id", categories).andWhere(where)
-      : query.where({ ...where, category_id: category });
-  } else {
-    // query = query.where(where);
-    // query = query.where("endDate", ">=", start).andWhere("endDate", "<=", end);
-    query = query
-      .whereBetween("end", [start, end])
-      .whereBetween("start", [start, end]);
-    // query = query.where({ year, month }).orWhere("endDate", ">=", start);
+      ? query.whereIn("category_id", categories)
+      : query.where({ category_id: category });
   }
+
+  query = query.where(raw("duration && '[??, ??)'", start, end));
+
+  // query = query.where(
+  //   raw(
+  //     "daterange('startDate'::date, 'endDate'::date, '[]') && '[??,??)'",
+  //     start,
+  //     end
+  //   )
+  // );
 
   try {
     const events = await query

@@ -31,6 +31,22 @@ const consoleLog = (req, res, next) => {
   next();
 };
 
+const insertFn = (credentials, roles) => {
+  const data = {
+    "#id": "user",
+    ...credentials,
+  };
+
+  if (roles && roles.length) {
+    const user_roles = roles.map((roleId) => ({
+      user_id: "#{refuser.id}",
+      role_id: roleId,
+    }));
+
+    Object.assign(data, { user_roles });
+  }
+};
+
 /**
  * Returns a collection of users with from the database.
  * @param {Object<promise>} trx The transaction for the database query
@@ -56,20 +72,24 @@ const createUser = async function (req, res, next) {
     const salt = await bcrypt.genSalt(SALT_ROUNDS);
     const password = await bcrypt.hash(req.body.password, salt);
 
-    const credentials = {
+    const creds = {
       username,
       email,
       password,
     };
 
     const users = await User.transaction(async (trx) => {
-      const result = await User.query(trx)
-        .insert(credentials)
-        .returning(["id", "username"]);
+      // const result = await User.query(trx)
+      //   .insert(credentials)
+      //   .returning(["id", "username"]);
 
-      roles = roles.map((roleId) => ({ user_id: result.id, role_id: roleId }));
+      const result = await User.query().insertGraph(insertFn(creds, roles), {
+        allowRefs: true,
+      });
 
-      await UserRoles.query(trx).insert(roles).returning("*");
+      // roles = roles.map((roleId) => ({ user_id: result.id, role_id: roleId }));
+
+      // await UserRoles.query(trx).insert(roles).returning("*");
 
       const users = await query(trx, req.body.page, req.body.limit);
 

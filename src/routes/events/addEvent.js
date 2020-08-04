@@ -1,10 +1,10 @@
 "use strict";
 const Event = require("./models/Event");
 const EventRoles = require("./models/EventRoles");
+const Range = require("pg-range").Range;
 const guard = require("express-jwt-permissions")();
 const { body } = require("express-validator");
 const { validate } = require("$util");
-const uuid = require("uuidv4");
 
 const validators = validate([
   // body("name").isAlphanumeric().escape().trim(),
@@ -27,8 +27,6 @@ const columns = [
   "color",
   "startTime",
   "startDate",
-  "start",
-  "end",
   "endTime",
   "endDate",
   "description",
@@ -43,48 +41,73 @@ const log = (req, res, next) => {
 };
 
 const addEvent = async function (req, res, next) {
-  const { roles, startDate, startTime, endDate, endTime, ...fields } = req.body,
+  const { roles, startDate, endDate, ...fields } = req.body,
     userId = req.user.id;
 
-  const start = startDate + " " + startTime;
-  const end = endDate + " " + endTime;
+  console.log("adding event....");
+
+  const data = {
+    "#id": "event",
+    duration: Range(startDate, endDate),
+    startDate,
+    endDate,
+    user_id: userId,
+    ...fields,
+  };
+
+  if (roles && roles.length) {
+    Object.assign(data, {
+      roles: roles.map((role) => ({
+        event_id: "#ref(event.id)",
+        role_id: role,
+      })),
+    });
+  }
+
+  let query = Event.query()
+    .insertGraph(data)
+    .first()
+    .returning("*")
+    .withGraphFetched(
+      roles && roles.length
+        ? `[category(defaultSelects), organizer(defaultSelects), roles]`
+        : `[category(defaultSelects), organizer(defaultSelects)]`
+    );
 
   try {
-    const results = await Event.transaction(async (trx) => {
-      const result = await Event.query(trx)
-        .insert({
-          startDate,
-          startTime,
-          endDate,
-          endTime,
-          start,
-          end,
-          ...fields,
-          user_id: userId,
-        })
-        .first()
-        .returning("id");
+    const event = await query;
+    // const results = await Event.transaction(async (trx) => {
+    //   const result = await Event.query(trx)
+    //     .insert({
+    //       duration: Range(startDate, endDate),
+    //       startDate,
+    //       endDate,
+    //       ...fields,
+    //       user_id: userId,
+    //     })
+    //     .first()
+    //     .returning("id");
 
-      if (roles && roles.length) {
-        await EventRoles.query(trx).insert(
-          roles.map((role) => ({ event_id: result.id, role_id: role }))
-        );
-      }
+    //   if (roles && roles.length) {
+    //     await EventRoles.query(trx).insert(
+    //       roles.map((role) => ({ event_id: result.id, role_id: role }))
+    //     );
+    //   }
 
-      const event = await Event.query(trx)
-        .where("id", result.id)
-        .withGraphFetched(
-          roles && roles.length
-            ? `[category(defaultSelects), organizer(defaultSelects), roles]`
-            : `[category(defaultSelects), organizer(defaultSelects)]`
-        )
-        .select(columns)
-        .first();
+    // const event = await Event.query(trx)
+    //   .where("id", result.id)
+    //   .withGraphFetched(
+    //     roles && roles.length
+    //       ? `[category(defaultSelects), organizer(defaultSelects), roles]`
+    //       : `[category(defaultSelects), organizer(defaultSelects)]`
+    //   )
+    //   .select(columns)
+    //   .first();
 
-      return event;
-    });
+    //   return event;
+    // });
 
-    res.status(200).send({ event: results });
+    res.status(200).send({ event });
   } catch (err) {
     console.log(err);
     next(err);

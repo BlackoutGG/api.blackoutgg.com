@@ -15,8 +15,14 @@ const getAllRoles = async function (req, res) {
   );
 
   try {
-    const roles = await buildQuery.call(query, req.query.page, req.query.limit);
-    res.status(200).send({ roles });
+    const [roles, perms] = await Promise.all([
+      buildQuery.call(query, req.query.page, req.query.limit),
+      Roles.getPermList(),
+    ]);
+
+    console.log(roles);
+    console.log(perms);
+    res.status(200).send({ roles, perms });
   } catch (err) {
     console.log(err);
     next(err);
