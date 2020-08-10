@@ -81,14 +81,6 @@ class Role extends Base {
           to: "users.id",
         },
       },
-      role: {
-        relation: Base.HasOneRelation,
-        modelClass: Roles,
-        join: {
-          from: "user_roles.role_id",
-          to: "roles.id",
-        },
-      },
     };
   }
 }

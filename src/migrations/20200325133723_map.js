@@ -19,7 +19,6 @@ exports.up = function (knex) {
         t.increments("id").primary();
         t.string("name").unique();
         t.enum("level", [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]).defaultTo(10);
-        t.boolean("default").defaultTo(false);
         t.boolean("can_view_admin").defaultTo(false);
         t.boolean("can_edit_fp").defaultTo(false);
 
@@ -174,6 +173,7 @@ exports.up = function (knex) {
           .references("categories.id")
           .onUpdate("CASCADE");
         t.string("name");
+        t.text("description");
         t.boolean("status").nullable();
         t.unique("status");
         t.timestamps();

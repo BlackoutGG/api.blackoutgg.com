@@ -8,7 +8,6 @@ const getAllRoles = async function (req, res) {
   const query = Roles.query().select(
     "id",
     "name",
-    "default",
     "is_disabled",
     "is_removable",
     "created_at"
@@ -20,11 +19,8 @@ const getAllRoles = async function (req, res) {
       Roles.getPermList(),
     ]);
 
-    console.log(roles);
-    console.log(perms);
     res.status(200).send({ roles, perms });
   } catch (err) {
-    console.log(err);
     next(err);
   }
 };

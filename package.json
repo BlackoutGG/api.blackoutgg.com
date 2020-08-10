@@ -14,7 +14,6 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@hapi/boom": "^9.1.0",
     "aws-sdk": "^2.724.0",
     "bcrypt": "^4.0.1",
     "cors": "^2.8.5",
@@ -39,7 +38,6 @@
     "pg": "^7.18.2",
     "pg-range": "^1.1.0",
     "phin": "^3.5.0",
-    "require-directory": "^2.1.1",
     "sanitize-html": "^1.27.2",
     "socket.io": "^2.3.0",
     "uuidv4": "^6.2.0"

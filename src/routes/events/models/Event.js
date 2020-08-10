@@ -63,7 +63,7 @@ class Event extends Base {
         },
       },
       participants: {
-        relation: Base.HasManyRelationThrough,
+        relation: Base.ManyToManyRelation,
         modelClass: User,
         join: {
           from: "events.id",

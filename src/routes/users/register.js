@@ -10,12 +10,9 @@ const { validate } = require("$util");
 const insertFn = (creds) => {
   return {
     "#id": "newUser",
-    username: req.body.username,
-    email: req.body.email,
-    password: hashed,
+    ...creds,
     user_roles: [
       {
-        user_id: `#{refnewUser.id}`,
         role_id: 2,
       },
     ],
@@ -27,39 +24,19 @@ const register = async function (req, res, next) {
     const salt = await bcrypt.genSalt(SALT_ROUNDS);
     const hashed = await bcrypt.hash(req.body.password, salt);
 
-    // const user = await User.query()
-    //   .insertGraph(
-    //     [
-    //       {
-    //         "#id": "newUser",
-    //         username: req.body.username,
-    //         email: req.body.email,
-    //         password: hashed,
-    //         user_roles: [
-    //           {
-    //             user_id: `#{refnewUser.id}`,
-    //             role_id: 2,
-    //           },
-    //         ],
-    //       },
-    //     ],
-    //     { allowRefs: true }
-    //   )
-    //   .returning("*");
-
     const creds = {
       username: req.body.username,
       email: req.body.email,
       password: hashed,
     };
 
-    const user = await User.query().insertGraph(
-      insertFn(creds, { allowRefs: true })
-    );
+    const user = await User.query()
+      .insertGraph(insertFn(creds, { relate: true }))
+      .returning("*");
 
     console.log(user);
 
-    res.status(200).send({ success: true, username: user.username });
+    res.status(200).send({ user: user.username });
   } catch (err) {
     console.log(err);
     next(err);

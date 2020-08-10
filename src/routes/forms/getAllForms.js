@@ -16,6 +16,8 @@ const getAllForms = async function (req, res, next) {
       Category.query(),
     ]);
 
+    console.log(forms);
+
     res.status(200).send({ forms, categories });
   } catch (err) {
     next(err);

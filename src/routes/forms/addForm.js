@@ -9,7 +9,6 @@ const insertFn = (form, fields) => {
   return {
     "#id": "form",
     ...form,
-    // name: "Test forum",
     fields: fields.map((field, idx) => {
       const { options, ..._field } = field;
       const parent = "input" + idx;

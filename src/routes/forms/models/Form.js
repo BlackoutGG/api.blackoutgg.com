@@ -37,7 +37,7 @@ class Form extends Base {
         modelClass: Category,
         join: {
           from: "forms.category_id",
-          to: "category.id",
+          to: "categories.id",
         },
       },
       fields: {
