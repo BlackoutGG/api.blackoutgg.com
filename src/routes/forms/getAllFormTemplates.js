@@ -9,7 +9,7 @@ const getAllForms = async function (req, res, next) {
   try {
     const [forms, categories] = await Promise.all([
       buildQuery.call(
-        Form.query().withGraphFetched("category"),
+        Form.query().withGraphFetched("category(selectBanner)"),
         req.query.page,
         req.query.limit
       ),

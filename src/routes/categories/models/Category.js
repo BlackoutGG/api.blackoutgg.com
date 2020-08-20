@@ -11,6 +11,9 @@ class Category extends Base {
       defaultSelects(builder) {
         builder.select("id", "name");
       },
+      selectBanner(builder) {
+        builder.select("name");
+      },
     };
   }
 

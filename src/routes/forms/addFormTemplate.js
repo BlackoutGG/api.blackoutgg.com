@@ -1,5 +1,7 @@
 "use strict";
 const Form = require("./models/Form");
+const Field = require("./models/Field");
+const FormFields = require("./models/FormFields");
 
 const guard = require("express-jwt-permissions")();
 const { body } = require("express-validator");
@@ -40,14 +42,30 @@ const addForm = async function (req, res, next) {
 
   try {
     const forms = await Form.transaction(async (trx) => {
-      await Form.query(trx)
-        .insertGraph(insertFn(form, fields), {
-          allowRefs: true,
-        })
+      // await Form.query(trx)
+      //   .insertGraph(insertFn(form, fields), {
+      //     allowRefs: true,
+      //   })
+      //   .returning("*");
+
+      const _form = await Form.query(trx).insert(form).returning("*");
+
+      const _fields = await Field.query(trx)
+        .insert(
+          fields.map((f) => {
+            f.options =
+              f.options && f.options.length ? JSON.stringify(f.options) : null;
+            return f;
+          })
+        )
+        .returning("*");
+
+      await FormFields.query(trx)
+        .insert(_fields.map((f) => ({ form_id: _form.id, field_id: f.id })))
         .returning("*");
 
       const result = await buildQuery.call(
-        Form.query(trx).returning("*"),
+        Form.query(trx).withGraphFetched("category"),
         req.body.page,
         req.body.limit
       );

@@ -1,6 +1,8 @@
 "use strict";
-
 const { fdir } = require("fdir");
+const express = require("express");
+const router = express.Router();
+const routeDir = "/routes";
 
 const routes = new fdir()
   .withFullPaths()
@@ -9,11 +11,6 @@ const routes = new fdir()
   .filter((path) => !path.endsWith("index.js"))
   .crawl(__dirname)
   .sync();
-
-const express = require("express");
-const router = express.Router();
-
-const routeDir = "/routes";
 
 routes.forEach((r) => {
   const split = r.split(routeDir);

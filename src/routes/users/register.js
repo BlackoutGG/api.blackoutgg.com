@@ -30,15 +30,16 @@ const register = async function (req, res, next) {
       password: hashed,
     };
 
-    const user = await User.query()
-      .insertGraph(insertFn(creds, { relate: true }))
-      .returning("*");
+    const user = await User.transaction(async (trx) => {
+      const result = await User.query(trx)
+        .insertGraph(insertFn(creds, { relate: true }))
+        .returning("username");
 
-    console.log(user);
+      return result.username;
+    });
 
-    res.status(200).send({ user: user.username });
+    res.status(200).send({ user });
   } catch (err) {
-    console.log(err);
     next(err);
   }
 };

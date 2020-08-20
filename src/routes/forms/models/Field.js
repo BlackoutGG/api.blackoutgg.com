@@ -8,9 +8,9 @@ class Field extends Model {
   static get jsonSchema() {
     return {
       type: "object",
+
       properties: {
         id: { type: "integer" },
-
         value: { type: "string" },
         type: { type: "string" },
         optional: { type: "boolean" },
@@ -21,7 +21,20 @@ class Field extends Model {
   static get relationMappings() {
     const FieldOptions = require("$models/FieldOptions");
     const FormFields = require("$models/FormFields");
+    const Form = require("$models/Form");
     return {
+      // form: {
+      //   relation: Model.ManyToManyRelation,
+      //   modelClass: Form,
+      //   join: {
+      //     from: "fields.id",
+      //     through: {
+      //       from: "form_fields.field_id",
+      //       to: "form_fields.form_id",
+      //     },
+      //     to: "forms.id",
+      //   },
+      // },
       form: {
         relation: Model.HasOneRelation,
         modelClass: FormFields,

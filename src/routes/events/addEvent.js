@@ -64,15 +64,19 @@ const addEvent = async function (req, res, next) {
     });
   }
 
-  let query = Event.query()
-    .insertGraph(data)
-    .first()
-    .returning("*")
-    .withGraphFetched(
-      roles && roles.length
-        ? `[category(defaultSelects), organizer(defaultSelects), roles]`
-        : `[category(defaultSelects), organizer(defaultSelects)]`
-    );
+  let query = Event.transaction(async (trx) => {
+    const e = await Event.query(trx)
+      .insertGraph(data)
+      .first()
+      .returning("*")
+      .withGraphFetched(
+        roles && roles.length
+          ? `[category(defaultSelects), organizer(defaultSelects), roles]`
+          : `[category(defaultSelects), organizer(defaultSelects)]`
+      );
+
+    return;
+  });
 
   try {
     const event = await query;

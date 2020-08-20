@@ -6,18 +6,26 @@ const { validate } = require("$util");
 
 const setFormStatus = async function (req, res, next) {
   try {
+    const check = await Form.query()
+      .where("id", req.params.id)
+      .select(["status", "id", "category_id"])
+      .first()
+      .throwIfNotFound();
+
     const form = await Form.transaction(async (trx) => {
       await Form.query(trx)
         .patch({ status: null })
-        .where({ status: true, category_id: req.body.category_id });
+        .where({ status: true, category_id: check.category_id });
       const result = await Form.query(trx)
-        .patch({ status: req.body.status })
-        .where("id", parseInt(req.params.id, 10))
+        .patch({ status: !check.status })
+        .where("id", check.id)
         .first()
         .returning(["id", "category_id", "status"]);
 
       return result;
     });
+
+    console.log(form);
 
     res.status(200).send({ form });
   } catch (err) {
@@ -26,10 +34,10 @@ const setFormStatus = async function (req, res, next) {
 };
 
 module.exports = {
-  path: "/status",
+  path: "/status/:id",
   method: "PUT",
   middleware: [
-    guard.check("users:view"),
+    // guard.check("users:view"),
     validate([
       body("category_id").isNumeric(),
       body("status").isBoolean(),
