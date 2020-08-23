@@ -29,6 +29,7 @@ const setFormStatus = async function (req, res, next) {
 
     res.status(200).send({ form });
   } catch (err) {
+    console.log(err);
     next(err);
   }
 };

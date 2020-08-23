@@ -28,8 +28,8 @@ exports.seed = async function (knex) {
     ]);
     await knex.into("roles").insert([
       {
-        name: "admin",
-        level: 0,
+        name: "Admin",
+
         can_view_admin: true,
         can_edit_fp: true,
         // can_view_maps: true,
@@ -66,15 +66,39 @@ exports.seed = async function (knex) {
         updated_at: date,
       },
       {
-        name: "guest",
-        level: 10,
-        // can_view_maps: true,
+        name: "Guest",
         created_at: date,
         updated_at: date,
       },
       {
-        name: "member",
-        level: 9,
+        name: "Role Master",
+        can_view_roles: true,
+        can_edit_roles: true,
+        can_add_roles: true,
+        can_remove_roles: true,
+        created_at: date,
+        updated_at: date,
+      },
+      {
+        name: "Curator",
+        can_view_posts: true,
+        can_add_posts: true,
+        can_view_posts: true,
+        can_edit_posts: true,
+        created_at: date,
+        updated_at: date,
+      },
+      {
+        name: "Scheduler",
+        can_view_events: true,
+        can_add_events: true,
+        can_edit_events: true,
+        can_remove_events: true,
+        created_at: date,
+        updated_at: date,
+      },
+      {
+        name: "Member",
         // can_view_maps: true,
         // can_add_pins: true,
         // can_remove_pins: true,

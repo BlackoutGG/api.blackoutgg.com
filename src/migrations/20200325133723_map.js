@@ -150,8 +150,7 @@ exports.up = function (knex) {
       if (exists) return;
       return knex.schema.createTable("categories", (t) => {
         t.increments("id").primary();
-        t.integer("event_banner").references("media.id");
-        t.integer("page_header").references("media.id");
+        t.integer("header_image").references("media.id");
         t.string("name");
         t.timestamps();
       });
@@ -174,8 +173,7 @@ exports.up = function (knex) {
           .onUpdate("CASCADE");
         t.string("name");
         t.text("description");
-        t.boolean("status").nullable();
-        t.unique("status");
+        t.boolean("status").defaultTo(false);
         t.timestamps();
       });
     }),
@@ -184,6 +182,7 @@ exports.up = function (knex) {
       return knex.schema.createTable("fields", (t) => {
         t.increments("id").primary();
         t.text("value");
+        t.integer("order");
         t.enum("type", [
           "textfield",
           "textarea",

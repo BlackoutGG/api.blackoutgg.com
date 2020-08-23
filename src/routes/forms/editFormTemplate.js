@@ -20,15 +20,17 @@ const upsert = (id, form, create, patch) => {
   }
 
   if (create && create.length) {
-    fields = fields.concat(
-      create.map((field) => {
-        field["#id"] = "formField";
-        field.form = {
-          form_id: id,
-        };
-        return field;
-      })
-    );
+    fields = form
+      ? fields.concat(create)
+      : fields.concat(
+          create.map((field) => {
+            field["#id"] = "formField";
+            field.form = {
+              form_id: id,
+            };
+            return field;
+          })
+        );
   }
 
   if (patch && patch.length) {
@@ -72,7 +74,6 @@ const editForm = async function (req, res, next) {
         f = await Form.query(trx)
           .upsertGraph(up, {
             noDelete: true,
-            relate: true,
           })
           .returning("*")
           .withGraphFetched("category(selectBanner)");
@@ -81,26 +82,6 @@ const editForm = async function (req, res, next) {
           .upsertGraph(up, { noDelete: true, relate: true })
           .returning("*");
       }
-
-      // if (form && Object.keys(form).length) {
-      //   f = await Form.query(trx)
-      //     .patch(form)
-      //     .where("id", req.parms.id)
-      //     .returning("*")
-      //     .first()
-      //     .withGraphFetched("category(defaultSelects)");
-      // }
-
-      // if (create && create.length) {
-      //   const field = await Field.query(trx).insert(create).returning("*");
-      //   await FormFields.query(trx).insert(
-      //     field.map(({ id }) => ({ form_id: req.params.id, field_id: id }))
-      //   );
-      // }
-
-      // if (patch && patch.length) {
-      //   await Fields.query(trx).upsertGraph();
-      // }
 
       if (remove && remove.length) {
         deleted = await Fields.query(trx)

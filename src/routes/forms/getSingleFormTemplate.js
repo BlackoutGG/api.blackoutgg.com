@@ -25,7 +25,7 @@ const getAllForms = async function (req, res, next) {
 
   try {
     const form = await Form.query()
-      .withGraphFetched("[category(selectBanner), fields]")
+      .withGraphFetched("[category(selectBanner), fields(order)]")
       .select("id", "name", "description", "category_id")
       .where(params)
       .first()

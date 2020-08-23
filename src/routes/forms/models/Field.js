@@ -5,6 +5,14 @@ class Field extends Model {
     return "fields";
   }
 
+  static get modifiers() {
+    return {
+      order(builder) {
+        builder.orderBy("order", "asc");
+      },
+    };
+  }
+
   static get jsonSchema() {
     return {
       type: "object",

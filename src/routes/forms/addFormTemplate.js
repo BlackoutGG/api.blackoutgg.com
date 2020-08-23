@@ -8,61 +8,37 @@ const { body } = require("express-validator");
 const { buildQuery } = require("$util");
 
 const insertFn = (form, fields) => {
-  return {
-    "#id": "form",
-    ...form,
-    fields: fields.map((field, idx) => {
-      const { options, ..._field } = field;
-      const parent = "input" + idx;
-      const result = {
-        "#id": parent,
-        ..._field,
-        form: {
-          form_id: "#ref{form.id}",
-          field_id: `#{ref${parent}.id}`,
-        },
-      };
+  const result = {};
 
-      if (options && options.length) {
-        // const opts = options.map((o) => ({
-        //   field_parent_id: `#{ref${parent}.id}`,
-        //   value: o.value,
-        // }));
+  if (form && Object.keys(form).length) {
+    Object.assign(result, { "#id": "form" }, form);
+  }
 
-        Object.assign(result, { options: JSON.stringify(options) });
-      }
+  if (fields && fields.length) {
+    Object.assign(result, {
+      fields: fields.map((field) => {
+        field.options =
+          field.options && field.options.length
+            ? JSON.stringify(field.options)
+            : null;
+        return field;
+      }),
+    });
+  }
 
-      return result;
-    }),
-  };
+  return result;
 };
 
 const addForm = async function (req, res, next) {
   const { form, fields } = req.body;
 
+  console.log(form, fields);
+
+  const insert = insertFn(form, fields);
+
   try {
     const forms = await Form.transaction(async (trx) => {
-      // await Form.query(trx)
-      //   .insertGraph(insertFn(form, fields), {
-      //     allowRefs: true,
-      //   })
-      //   .returning("*");
-
-      const _form = await Form.query(trx).insert(form).returning("*");
-
-      const _fields = await Field.query(trx)
-        .insert(
-          fields.map((f) => {
-            f.options =
-              f.options && f.options.length ? JSON.stringify(f.options) : null;
-            return f;
-          })
-        )
-        .returning("*");
-
-      await FormFields.query(trx)
-        .insert(_fields.map((f) => ({ form_id: _form.id, field_id: f.id })))
-        .returning("*");
+      await Form.query(trx).insertGraph(insert).returning("*");
 
       const result = await buildQuery.call(
         Form.query(trx).withGraphFetched("category"),
@@ -84,11 +60,5 @@ const addForm = async function (req, res, next) {
 module.exports = {
   path: "/template",
   method: "POST",
-  middleware: [
-    (req, res, next) => {
-      console.log(req.body);
-      next();
-    },
-  ],
   handler: addForm,
 };
