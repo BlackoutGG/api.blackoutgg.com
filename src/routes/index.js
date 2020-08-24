@@ -21,7 +21,7 @@ routes.forEach((r) => {
 
   if (route) {
     const method = route.method.toLowerCase();
-    if (route.middleware && route.middleware.legnth) {
+    if (route.middleware && route.middleware.length) {
       router[method](path.concat(route.path), route.middleware, route.handler);
     } else {
       router[method](path.concat(route.path), route.handler);

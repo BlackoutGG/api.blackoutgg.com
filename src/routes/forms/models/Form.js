@@ -24,14 +24,14 @@ class Form extends Base {
     const FormField = require("$models/FormFields");
     const Category = require("$models/Category");
     return {
-      form_fields: {
-        relation: Base.HasManyRelation,
-        modelClass: FormField,
-        join: {
-          from: "forms.id",
-          to: "form_fields.form_id",
-        },
-      },
+      // form_fields: {
+      //   relation: Base.HasManyRelation,
+      //   modelClass: FormField,
+      //   join: {
+      //     from: "forms.id",
+      //     to: "form_fields.form_id",
+      //   },
+      // },
       category: {
         relation: Base.HasOneRelation,
         modelClass: Category,

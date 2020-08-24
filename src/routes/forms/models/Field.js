@@ -43,20 +43,12 @@ class Field extends Model {
       //     to: "forms.id",
       //   },
       // },
-      form: {
-        relation: Model.HasOneRelation,
-        modelClass: FormFields,
-        join: {
-          from: "fields.id",
-          to: "form_fields.field_id",
-        },
-      },
-      // options: {
-      //   relation: Model.HasManyRelation,
-      //   modelClass: FieldOptions,
+      // form: {
+      //   relation: Model.HasOneRelation,
+      //   modelClass: FormFields,
       //   join: {
       //     from: "fields.id",
-      //     to: "form_field_children.field_parent_id",
+      //     to: "form_fields.field_id",
       //   },
       // },
     };

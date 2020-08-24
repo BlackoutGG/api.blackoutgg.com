@@ -16,21 +16,12 @@ const upsert = (id, form, create, patch) => {
   let fields = [];
 
   if (form && Object.keys(form).length) {
-    Object.assign(result, { "#id": "form", id }, form);
+    Object.assign(result, form);
   }
 
   if (create && create.length) {
-    fields = form
-      ? fields.concat(create)
-      : fields.concat(
-          create.map((field) => {
-            field["#id"] = "formField";
-            field.form = {
-              form_id: id,
-            };
-            return field;
-          })
-        );
+    if (!result.id) Object.assign(result, { id });
+    fields = fields.concat(create);
   }
 
   if (patch && patch.length) {
@@ -50,11 +41,7 @@ const upsert = (id, form, create, patch) => {
       return field;
     });
 
-    if (result.form) {
-      Object.assign(result, { fields });
-    } else {
-      result = fields;
-    }
+    Object.assign(result, { fields });
   }
   return result;
 };
@@ -68,29 +55,20 @@ const editForm = async function (req, res, next) {
 
   try {
     const forms = await Form.transaction(async (trx) => {
-      let f;
-
-      if (form && Object.keys(form).length) {
-        f = await Form.query(trx)
-          .upsertGraph(up, {
-            noDelete: true,
-          })
-          .returning("*")
-          .withGraphFetched("category(selectBanner)");
-      } else {
-        await Field.query(trx)
-          .upsertGraph(up, { noDelete: true, relate: true })
-          .returning("*");
-      }
+      const result = await Form.query(trx)
+        .upsertGraph(up, {
+          noDelete: true,
+        })
+        .returning("*")
+        .withGraphFetched("category(selectBanner)");
 
       if (remove && remove.length) {
-        deleted = await Fields.query(trx)
-          .whereIn("id", remove)
-          .del()
-          .returning("*");
+        await Field.query(trx).whereIn("id", remove).del().returning("*");
       }
 
-      return f ? { name: f.name, category: f.category } : { success: true };
+      return result
+        ? { name: result.name, category: result.category }
+        : { success: true };
     });
 
     console.log(forms);
