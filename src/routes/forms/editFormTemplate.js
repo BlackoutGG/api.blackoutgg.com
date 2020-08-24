@@ -11,56 +11,37 @@ const consoleRequest = (req, res, next) => {
   next();
 };
 
-const upsert = (id, form, create, patch) => {
-  let result = {};
-  let fields = [];
-
-  if (form && Object.keys(form).length) {
-    Object.assign(result, form);
-  }
-
-  if (create && create.length) {
-    if (!result.id) Object.assign(result, { id });
-    fields = fields.concat(create);
-  }
-
-  if (patch && patch.length) {
-    fields = fields.concat(patch);
-  }
-
-  if (fields && fields.length) {
-    fields = fields.map((field) => {
-      if (field.options) {
-        if (field.options.length) {
-          field.options = JSON.stringify(field.options);
-        } else {
-          field.options = null;
-        }
-      }
-
-      return field;
-    });
-
-    Object.assign(result, { fields });
-  }
-  return result;
-};
-
 const editForm = async function (req, res, next) {
   const { form, create, patch, remove } = req.body;
 
-  const up = upsert(parseInt(req.params.id, 10), form, create, patch);
-
-  console.log(up);
-
   try {
     const forms = await Form.transaction(async (trx) => {
-      const result = await Form.query(trx)
-        .upsertGraph(up, {
-          noDelete: true,
-        })
-        .returning("*")
-        .withGraphFetched("category(selectBanner)");
+      let result;
+
+      if (form && Object.keys(form).length) {
+        result = await Form.query(trx).patch(form).where("id", req.params.id);
+      }
+
+      if (create && create.length) {
+        const fields = await Field.query(trx).insert(create).returning("*");
+        await FormFields.query(trx).insert(
+          fields
+            .map((field) => ({
+              form_id: req.params.id,
+              field_id: field.id,
+            }))
+            .returning("*")
+        );
+      }
+
+      if (patch && patch.length) {
+        const queries = patch.map((p) => {
+          const { id, ...field } = p;
+          return Field.query(trx).patch(field).where("id", id).returning("*");
+        });
+
+        await Promise.all(queries);
+      }
 
       if (remove && remove.length) {
         await Field.query(trx).whereIn("id", remove).del().returning("*");
