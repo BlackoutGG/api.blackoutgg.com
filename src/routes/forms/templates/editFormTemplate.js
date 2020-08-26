@@ -1,10 +1,31 @@
 "use strict";
-const Form = require("./models/Form");
-const Field = require("./models/Field");
-const FormFields = require("./models/FormFields");
+const Form = require("../models/Form");
+const Field = require("../models/Field");
 
 const guard = require("express-jwt-permissions")();
 const { body } = require("express-validator");
+const { validate } = require("$util");
+const pick = require("lodash/pick");
+
+const validators = validate([
+  body("form.*.name").optional().isAlphanumeric().trim().escape(),
+  body("form.*.category_id").optional().isNumeric(),
+  body("form.*.description").optional().isString().trim().escape(),
+  body("create.*.optional").optional().isBoolean(),
+  body("create.*.order").optional().isNumeric(),
+  body("create.*.value").optional().isAlphanumeric().trim().escape(),
+  body("create.*.type")
+    .optional()
+    .isIn(["textfield", "textarea", "multiple", "select", "checkbox"]),
+  body("patch.*.id").optional().isNumeric(),
+  body("patch.*.value").optional().isAlphanumeric().trim().escape(),
+  body("patch.*.optional").optional().isBoolean(),
+  body("patch.*.order").optional().isNumeric(),
+  body("patch.*.type")
+    .optional()
+    .isIn(["textfield", "textarea", "multiple", "select", "checkbox"]),
+  body("remove.*").optional().isNumeric(),
+]);
 
 const consoleRequest = (req, res, next) => {
   console.log(req.body);
@@ -12,15 +33,15 @@ const consoleRequest = (req, res, next) => {
 };
 
 const upsert = (id, form, create, patch) => {
-  let result = {};
+  let result = { id };
   let fields = [];
 
   if (form && Object.keys(form).length) {
+    if (form.category_id) form.status = false;
     Object.assign(result, form);
   }
 
   if (create && create.length) {
-    if (!result.id) Object.assign(result, { id });
     fields = fields.concat(create);
   }
 
@@ -59,6 +80,7 @@ const editForm = async function (req, res, next) {
         .upsertGraph(up, {
           noDelete: true,
         })
+        .first()
         .returning("*")
         .withGraphFetched("category(selectBanner)");
 
@@ -66,9 +88,7 @@ const editForm = async function (req, res, next) {
         await Field.query(trx).whereIn("id", remove).del().returning("*");
       }
 
-      return result
-        ? { name: result.name, category: result.category }
-        : { success: true };
+      return pick(result, ["name", "description", "category", "updated_at"]);
     });
 
     console.log(forms);
@@ -80,7 +100,7 @@ const editForm = async function (req, res, next) {
 };
 
 module.exports = {
-  path: "/edit/:id",
+  path: "/:id/edit",
   method: "PUT",
   middleware: [consoleRequest],
   handler: editForm,

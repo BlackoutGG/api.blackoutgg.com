@@ -1,5 +1,5 @@
 "use strict";
-const Form = require("./models/Form");
+const Form = require("../models/Form");
 
 const isObject = require("isobject");
 
@@ -66,7 +66,7 @@ const addForm = async function (req, res, next) {
 };
 
 module.exports = {
-  path: "/template",
+  path: "/",
   method: "POST",
   middleware: [validators],
   handler: addForm,

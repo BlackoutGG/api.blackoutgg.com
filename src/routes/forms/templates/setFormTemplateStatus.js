@@ -1,5 +1,5 @@
 "use strict";
-const Form = require("./models/Form");
+const Form = require("../models/Form");
 const guard = require("express-jwt-permissions")();
 const { body, param } = require("express-validator");
 const { validate } = require("$util");
@@ -14,7 +14,7 @@ const setFormStatus = async function (req, res, next) {
 
     const form = await Form.transaction(async (trx) => {
       await Form.query(trx)
-        .patch({ status: null })
+        .patch({ status: false })
         .where({ status: true, category_id: check.category_id });
       const result = await Form.query(trx)
         .patch({ status: !check.status })
@@ -35,15 +35,11 @@ const setFormStatus = async function (req, res, next) {
 };
 
 module.exports = {
-  path: "/status/:id",
+  path: "/:id/status",
   method: "PUT",
   middleware: [
     // guard.check("users:view"),
-    validate([
-      body("category_id").isNumeric(),
-      body("status").isBoolean(),
-      param("id").isNumeric(),
-    ]),
+    validate([body("category_id").isNumeric(), param("id").isNumeric()]),
   ],
   handler: setFormStatus,
 };

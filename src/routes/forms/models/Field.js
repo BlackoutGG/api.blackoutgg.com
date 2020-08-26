@@ -27,7 +27,6 @@ class Field extends Model {
   }
 
   static get relationMappings() {
-    const FieldOptions = require("$models/FieldOptions");
     const FormFields = require("$models/FormFields");
     const Form = require("$models/Form");
     return {

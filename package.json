@@ -4,6 +4,8 @@
   "description": "",
   "main": "src/server.js",
   "scripts": {
+    "seed": "node run seed:forms",
+    "seed:forms": "node ./seeds/seedForms",
     "test": "NODE_ENV=test knex seed:run && npm run jest",
     "jest": "jest --forceExit --detectOpenHandles --runInBand",
     "dev": "nodemon -r dotenv/config src/server.js",
@@ -67,6 +69,7 @@
     "$services": "./src/services"
   },
   "devDependencies": {
+    "faker": "^5.0.0",
     "jest": "^25.5.4",
     "supertest": "^4.0.2"
   }

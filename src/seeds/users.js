@@ -1,4 +1,5 @@
 const bcrypt = require("bcrypt");
+const faker = require("faker");
 
 async function hashPassword(password) {
   const SALT_ROUNDS = 12;
@@ -19,7 +20,7 @@ exports.seed = async function (knex) {
   const date = new Date().toISOString();
   try {
     await knex.raw(
-      "TRUNCATE users, roles, posts, forms, fields, events RESTART IDENTITY CASCADE"
+      "TRUNCATE users, roles, posts, events RESTART IDENTITY CASCADE"
     );
     await knex.into("categories").insert([
       { name: "General", created_at: date, updated_at: date },

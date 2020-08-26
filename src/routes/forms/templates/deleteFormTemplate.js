@@ -1,5 +1,5 @@
 "use strict";
-const Form = require("./models/Form");
+const Form = require("../models/Form");
 
 const guard = require("express-jwt-permissions")();
 const { body } = require("express-validator");
@@ -7,16 +7,23 @@ const { buildQuery } = require("$util");
 
 const deleteForm = async function (req, res, next) {
   try {
-    const [form, forms] = await Promise.all([
-      Form.query().where("id", req.params.id).del().first().returning(),
-      buildQuery(
-        Form.query().withGraphFetched("category"),
+    const results = await Form.transaction(async (trx) => {
+      const deleted = await Form.query(trx)
+        .where("id", req.params.id)
+        .del()
+        .first()
+        .returning("id");
+
+      const forms = await buildQuery(
+        Form.query(trx).withGraphFetched("category(selectBanner)"),
         req.query.page,
         req.query.limit
-      ),
-    ]);
+      );
 
-    res.status(200).send({ forms });
+      return { forms, deleted };
+    });
+
+    res.status(200).send(results);
   } catch (err) {
     console.log(err);
     next(err);
@@ -24,7 +31,7 @@ const deleteForm = async function (req, res, next) {
 };
 
 module.exports = {
-  path: "/template/:id/delete",
+  path: "/:id/delete",
   method: "DELETE",
   middleware: [
     (req, res, next) => {
