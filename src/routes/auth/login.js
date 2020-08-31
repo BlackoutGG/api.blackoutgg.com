@@ -5,9 +5,8 @@ const User = require("$models/User");
 const verifyRecaptcha = require("$services/recaptcha")(
   process.env.RECAPTCHA_SECRET
 );
-const { validate, generateScope } = require("$util");
+const { validate } = require("$util");
 const { body, header } = require("express-validator");
-const createError = require("http-errors");
 
 const consoleLogout = (req, res, next) => {
   console.log(req.body);

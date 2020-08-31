@@ -72,8 +72,6 @@ const editForm = async function (req, res, next) {
 
   const up = upsert(parseInt(req.params.id, 10), form, create, patch);
 
-  console.log(up);
-
   try {
     const forms = await Form.transaction(async (trx) => {
       const result = await Form.query(trx)

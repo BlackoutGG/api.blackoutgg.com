@@ -2,7 +2,7 @@
 const User = require("./models/User");
 const guard = require("express-jwt-permissions")();
 const { body, param } = require("express-validator");
-const { validateRequest } = require("$util");
+const { validate } = require("$util");
 
 const changeUserStatus = async function (req, res, next) {
   try {
@@ -25,9 +25,7 @@ module.exports = {
   method: "PUT",
   middleware: [
     guard.check("users:disable"),
-    param("id").isNumeric(),
-    body("disable").isBoolean(),
-    validateRequest,
+    validate([param("id").isNumeric(), body("disable").isBoolean()]),
   ],
   handler: changeUserStatus,
 };

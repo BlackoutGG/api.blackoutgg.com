@@ -1,59 +1,29 @@
 "use strict";
 const { validationResult } = require("express-validator");
 
-const generateScope = function (perms) {
-  const permissions = perms.reduce((result, perm) => {
-    for (let key in perm) {
-      if (perm[key] && typeof perm[key] === "boolean") result[key] = perm[key];
-    }
-    return result;
-  }, {});
+const buildQuery = async function (_page, _limit, _sortBy, _orderBy, _filters) {
+  let query = this;
 
-  console.log(permissions);
+  const page = typeof _page !== undefined ? parseInt(_page, 10) : 1,
+    limit = typeof _limit !== undefined ? parseInt(_limit, 10) : 25;
 
-  const scope = Object.entries(permissions).reduce((arr, [key, val]) => {
-    if (typeof val !== "boolean") return;
-
-    if (/^can_/.test(key)) {
-      let args = key.split("_"),
-        perms,
-        type;
-
-      if (val) {
-        if (args.length > 2) {
-          perms = args[1];
-          type = args[2];
-        } else {
-          perms = args[0];
-          type = args[1];
-        }
-
-        arr.push(`${type}:${perms}`);
-      }
-    }
-
-    return arr;
-  }, []);
-
-  console.log(scope);
-
-  return scope;
-};
-
-const buildQuery = async function (_page, _limit) {
-  let page = typeof _page !== undefined ? parseInt(_page, 10) : 1,
-    limit = typeof _limit !== undefined ? parseInt(_limit, 10) : 20;
-
-  let start = (page - 1) * limit,
+  const start = (page - 1) * limit,
     end = page * limit - 1;
 
-  return this.range(start, end);
-};
+  if (_filters && Object.keys(_filters).length) {
+    Object.entries(_filters).forEach(([key, val]) => {
+      query =
+        val && Array.isArray(val)
+          ? query.whereIn(key, val)
+          : query.andWhere(key, val);
+    });
+  }
 
-const validateRequest = async function (req, res, next) {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) return res.boom.badRequest(errors.array());
-  next();
+  if (_sortBy && _orderBy) {
+    query = query.orderBy(_sortBy, _orderBy);
+  }
+
+  return query.range(start, end);
 };
 
 const validate = (validations) => {
@@ -69,7 +39,5 @@ const validate = (validations) => {
 
 module.exports = {
   buildQuery,
-  generateScope,
-  validateRequest,
   validate,
 };

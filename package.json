@@ -6,6 +6,7 @@
   "scripts": {
     "seed": "node run seed:forms",
     "seed:forms": "node ./seeds/seedForms",
+    "seed:users": "node ./seeds/seedUsersAndRoles",
     "test": "NODE_ENV=test knex seed:run && npm run jest",
     "jest": "jest --forceExit --detectOpenHandles --runInBand",
     "dev": "nodemon -r dotenv/config src/server.js",

@@ -3,13 +3,13 @@ const Form = require("../models/Form");
 
 const guard = require("express-jwt-permissions")();
 const { body } = require("express-validator");
-const { buildQuery } = require("$util");
+const { buildQuery, validate } = require("$util");
 
 const deleteForm = async function (req, res, next) {
   try {
     const results = await Form.transaction(async (trx) => {
       const deleted = await Form.query(trx)
-        .where("id", req.params.id)
+        .whereIn("id", req.body.ids)
         .del()
         .first()
         .returning("id");
@@ -38,6 +38,7 @@ module.exports = {
       console.log(req.body);
       next();
     },
+    validate([body("ids.*").isNumeric()]),
   ],
   handler: deleteForm,
 };
