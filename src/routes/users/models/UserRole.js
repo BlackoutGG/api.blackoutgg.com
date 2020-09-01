@@ -17,28 +17,28 @@ class UserRole extends Model {
     };
   }
 
-  // static get relationMappings() {
-  //   const Role = require("$models/Roles");
-  //   const User = require("$models/User");
-  //   return {
-  //     role: {
-  //       relation: Model.HasOneRelation,
-  //       modelClass: Role,
-  //       join: {
-  //         from: "user_roles.role_id",
-  //         to: "roles.id",
-  //       },
-  //     },
-  //     user: {
-  //       relation: Model.HasOneRelation,
-  //       modelClass: User,
-  //       join: {
-  //         from: "user_roles.user_id",
-  //         to: "users.id",
-  //       },
-  //     },
-  //   };
-  // }
+  static get relationMappings() {
+    const Role = require("$models/Roles");
+    const User = require("$models/User");
+    return {
+      roles: {
+        relation: Model.HasManyRelation,
+        modelClass: Role,
+        join: {
+          from: "user_roles.role_id",
+          to: "roles.id",
+        },
+      },
+      user: {
+        relation: Model.HasOneRelation,
+        modelClass: User,
+        join: {
+          from: "user_roles.user_id",
+          to: "users.id",
+        },
+      },
+    };
+  }
 }
 
 module.exports = UserRole;

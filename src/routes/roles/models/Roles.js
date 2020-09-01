@@ -7,6 +7,14 @@ class Role extends Base {
     return "roles";
   }
 
+  static get modifiers() {
+    return {
+      nameAndId(builder) {
+        builder.select("id", "name").distinct();
+      },
+    };
+  }
+
   static async getAndFormatPerms(id) {
     const results = await this.query().where("id", id).columns(columns).first();
     return Object.entries(results).map(([name, value]) => ({ name, value }));
