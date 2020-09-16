@@ -1,37 +1,30 @@
 "use strict";
 const Roles = require("./models/Roles");
-const UserRole = require("$models/UserRole");
 const guard = require("express-jwt-permissions")();
-const { body } = require("express-validator");
+const { query } = require("express-validator");
 const { validate, buildQuery } = require("$util");
 
 const middleware = [
-  guard.check("roles:remove"),
+  guard.check("remove:roles"),
   validate([
-    body("ids").isNumeric(),
-    body("page").optional().isNumeric(),
-    body("limit").optional().isNumeric(),
+    query("ids").isNumeric(),
+    query("page").optional().isNumeric(),
+    query("limit").optional().isNumeric(),
   ]),
 ];
-
-const del = (model, trx, ids) =>
-  ids && Array.isArray(ids)
-    ? model.query(trx).whereIn("id", ids).delete()
-    : model.query(trx).where("id", ids).delete();
 
 const removeRole = async function (req, res, next) {
   try {
     const roles = await Roles.transaction(async (trx) => {
-      // await del(UserRole, trx, req.body.ids);
-      await del(Roles, trx, req.body.ids);
+      await Roles.query(trx).whereIn("id", ids).delete();
 
-      const r = await buildQuery.call(
+      const results = await buildQuery(
         Roles.query(trx),
         req.body.page,
         req.body.limit
       );
 
-      return r;
+      return results;
     });
 
     res.status(200).send({ roles });

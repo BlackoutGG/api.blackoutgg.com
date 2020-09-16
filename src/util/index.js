@@ -1,11 +1,28 @@
 "use strict";
 const { validationResult } = require("express-validator");
 
-const buildQuery = async function (_page, _limit, _sortBy, _orderBy, _filters) {
-  let query = this;
+/**
+ * Returns a fetch all query.
+ * @param {promise} query The model query.
+ * @param {number} _page The current page.
+ * @param {number} _limit The offset to retrieve the db records.
+ * @param {string} _sortBy The value containing what to sort by.
+ * @param {string} _orderBy The order in (Asc|Desc) in which the records should be returned.
+ * @param {object} _filters The object containing additional filters.
+ * @returns {promise} Returns the query.
+ */
+const buildQuery = async function (
+  _query,
+  _page,
+  _limit,
+  _sortBy,
+  _orderBy,
+  _filters
+) {
+  const page = _page ? parseInt(_page, 10) : 1,
+    limit = _limit ? parseInt(_limit, 10) : 25;
 
-  const page = typeof _page !== undefined ? parseInt(_page, 10) : 1,
-    limit = typeof _limit !== undefined ? parseInt(_limit, 10) : 25;
+  let query = _query;
 
   const start = (page - 1) * limit,
     end = page * limit - 1;

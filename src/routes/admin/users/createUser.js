@@ -79,30 +79,15 @@ const createUser = async function (req, res, next) {
     };
 
     const users = await User.transaction(async (trx) => {
-      // const result = await User.query(trx)
-      //   .insert(credentials)
-      //   .returning(["id", "username"]);
-
-      const result = await User.query().insertGraph(insertFn(creds, roles), {
+      const result = await User.query(trx).insertGraph(insertFn(creds, roles), {
         allowRefs: true,
       });
 
-      // roles = roles.map((roleId) => ({ user_id: result.id, role_id: roleId }));
+      const query = User.query(trx)
+        .select("id", "avatar", "username", "email", "created_at")
+        .withGraphFetched("roles");
 
-      // await UserRoles.query(trx).insert(roles).returning("*");
-
-      const users = await query(trx, req.body.page, req.body.limit);
-
-      users.results = users.results.map((user) => {
-        return {
-          id: user.id,
-          avatar: user.avatar,
-          username: user.username,
-          email: user.email,
-          roles: user.getRoles(),
-          joined_on: user.created_at,
-        };
-      });
+      const list = await buildQuery(query, req.query.page, req.query.limit);
 
       return { user: result.username, users };
     });

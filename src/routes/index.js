@@ -4,6 +4,14 @@ const express = require("express");
 const router = express.Router();
 const routeDir = "/routes";
 
+const resolve = (route) => (req, res, next) =>
+  Promise.resolve(
+    route(req, res).catch((err) => {
+      console.log(err);
+      next(err);
+    })
+  );
+
 const routes = new fdir()
   .withFullPaths()
   .withMaxDepth(2)

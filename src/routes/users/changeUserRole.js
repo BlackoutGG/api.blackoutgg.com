@@ -34,7 +34,7 @@ module.exports = {
   path: "/:id/group",
   method: "PUT",
   middleware: [
-    guard.check("user:edit"),
+    guard.check("edit:users"),
     validate([param("id").isNumeric(), body("groupId").isNumeric()]),
   ],
   handler: changeUserRole,

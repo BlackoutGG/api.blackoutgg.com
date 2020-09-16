@@ -7,18 +7,11 @@ const { buildQuery, validate } = require("$util");
 
 const getAllForms = async function (req, res, next) {
   const filters = req.query.filters ? JSON.parse(req.query.filters) : null;
-
+  const query = Form.query().withGraphFetched("category(selectBanner)");
   try {
     const [forms, categories] = await Promise.all([
-      buildQuery.call(
-        Form.query().withGraphFetched("category(selectBanner)"),
-        req.query.page,
-        req.query.limit,
-        null,
-        null,
-        filters
-      ),
-      req.query.getCategories ? Category.query() : Promise.resolve(null),
+      buildQuery(query, req.query.page, req.query.limit, null, null, filters),
+      Category.query().select("id", "name"),
     ]);
 
     res.status(200).send({ forms, categories });
@@ -32,7 +25,7 @@ module.exports = {
   path: "/",
   method: "GET",
   middleware: [
-    guard.check("users:view"),
+    guard.check("view:forms"),
     validate([
       query("page").optional().isNumeric(),
       query("limit").optional().isNumeric(),

@@ -14,50 +14,54 @@ const consoleLog = (req, res, next) => {
 };
 
 const middleware = [
-  guard.check("roles:add"),
+  guard.check("add:roles"),
   consoleLog,
   validate([
-    body("name").isAlphanumeric().escape().trim(),
+    // body("details.*.name").isAlphanumeric().escape().trim(),
     body("page").optional().isNumeric(),
     body("limit").optional().isNumeric(),
-    body("permissions")
-      .optional()
-      .custom((value) => {
-        if (!isObject(value)) return false;
-        return Object.keys(value).every(
-          (key) => typeof value[key] === "boolean"
-        );
-      }),
+    // body("details.*.level")
+    //   .isNumeric()
+    //   .custom((v, { req }) => v >= req.user.level),
+    body("permissions.*").optional().isNumeric(),
   ]),
 ];
 
-const addRole = async function (req, res, next) {
-  let insert = pick(["name", "is_disabled"], req.body),
-    perms = req.body.permissions || null;
+const graphFn = (role) => {
+  const { permissions, ...r } = role;
+  const data = {
+    name: r.details.name,
+    level: r.details.level,
+  };
 
-  if (perms && Object.keys(perms).length) {
-    insert = Object.assign(insert, { ...perms });
+  if (permissions && permissions.length) {
+    Object.assign(data, {
+      role_perms: permissions.map((perm) => ({ perm_id: perm })),
+    });
   }
 
-  try {
-    const results = await Roles.transaction(async (trx) => {
-      await Roles.query(trx).insert(insert);
+  return data;
+};
 
-      const q = Roles.query(trx).select(
-        "id",
-        "name",
-        "is_disabled",
-        "is_removable",
-        "created_at"
+const addRole = async function (req, res, next) {
+  const insert = graphFn(req.body);
+
+  try {
+    const roles = await Roles.transaction(async (trx) => {
+      await Roles.query(trx)
+        .insertGraph(insert, { relate: true })
+        .returning("*");
+
+      const results = await buildQuery(
+        Roles.query(trx).select("id", "name", "created_at", "updated_at"),
+        req.body.page,
+        req.body.limit
       );
 
-      const roles = await buildQuery.call(q, req.body.page, req.body.limit);
-
-      /** RETURN ROLE WHICH IS THE NEW INSERTED ROLE, AND ROLES WHICH IS A NEW COLLECTION */
-      return roles;
+      return results;
     });
 
-    res.status(200).send({ roles: results });
+    res.status(200).send({ roles });
   } catch (err) {
     console.log(err);
     next(err);

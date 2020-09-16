@@ -8,9 +8,9 @@ const { validate } = require("$util");
 const pick = require("lodash/pick");
 
 const validators = validate([
-  body("form.*.name").optional().isAlphanumeric().trim().escape(),
-  body("form.*.category_id").optional().isNumeric(),
-  body("form.*.description").optional().isString().trim().escape(),
+  body("form.name").optional().isAlphanumeric().trim().escape(),
+  body("form.category_id").optional().isNumeric(),
+  body("form.description").optional().isString().trim().escape(),
   body("create.*.optional").optional().isBoolean(),
   body("create.*.order").optional().isNumeric(),
   body("create.*.value").optional().isAlphanumeric().trim().escape(),
@@ -100,6 +100,6 @@ const editForm = async function (req, res, next) {
 module.exports = {
   path: "/:id/edit",
   method: "PUT",
-  middleware: [consoleRequest],
+  middleware: [consoleRequest, guard.check("edit:forms")],
   handler: editForm,
 };

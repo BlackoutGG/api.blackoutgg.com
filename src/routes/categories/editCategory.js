@@ -1,0 +1,31 @@
+"use strict";
+const Category = require("./models/Category");
+const guard = require("express-jwt-permissions")();
+const { body, param } = require("express-validator");
+const { validate } = require("$util");
+
+const validators = validate([
+  body("name").isAlphanumeric().escape().trim(),
+  param("id").isNumeric().toInt(10),
+]);
+
+const editCategory = async function (req, res, next) {
+  try {
+    const category = await Category.query()
+      .patch({ name: req.body.name })
+      .where("id", req.params.id)
+      .first()
+      .returning("id", "name");
+    res.status(200).send({ category });
+  } catch (err) {
+    console.log(err);
+    next(err);
+  }
+};
+
+module.exports = {
+  path: "/:id",
+  method: "PUT",
+  middleware: [guard.check("view:admin"), validators],
+  handler: editCategory,
+};

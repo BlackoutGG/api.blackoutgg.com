@@ -1,9 +1,9 @@
 "use strict";
 const Media = require("./models/Media");
 const guard = require("express-jwt-permissions")();
-const uploadService = require("$util/upload");
+const { uploadFiles } = require("$services/upload");
 
-const upload = uploadService({
+const upload = uploadFiles({
   fields: [{ name: "gallery", maxCount: 10 }],
   bucket: process.env.AWS_BUCKET_NAME,
 });

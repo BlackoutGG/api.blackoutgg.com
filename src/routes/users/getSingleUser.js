@@ -29,6 +29,6 @@ const getSingleUser = async function (req, res, next) {
 module.exports = {
   path: "/:id",
   method: "GET",
-  middleware: [guard.check("users:view"), validate([param("id").isNumeric()])],
+  middleware: [guard.check("view:users"), validate([param("id").isNumeric()])],
   handler: getSingleUser,
 };

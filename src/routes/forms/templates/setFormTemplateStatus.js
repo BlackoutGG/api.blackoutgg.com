@@ -37,9 +37,9 @@ const setFormStatus = async function (req, res, next) {
 module.exports = {
   path: "/:id/status",
   method: "PUT",
-  // middleware: [
-  //   // guard.check("users:view"),
-  //   validate([body("category_id").isNumeric(), param("id").isNumeric()]),
-  // ],
+  middleware: [
+    guard.check("edit:forms"),
+    validate([body("category_id").isNumeric(), param("id").isNumeric()]),
+  ],
   handler: setFormStatus,
 };

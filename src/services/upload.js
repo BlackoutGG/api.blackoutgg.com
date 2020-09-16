@@ -18,7 +18,7 @@ const fileFilter = function (req, file, cb) {
 /**
  *
  */
-module.exports = function (opts) {
+const uploadFiles = function (opts) {
   opts.dest = typeof opts.dest === undefined ? "maps/" : opts.dest;
 
   const storage = multerS3({
@@ -63,3 +63,27 @@ module.exports = function (opts) {
     });
   };
 };
+
+const deleteFiles = async (bucket, keys) => {
+  if (!bucket) throw new Error("Missing bucket name.");
+  if (!Array.isArray(keys)) {
+    throw new Error(
+      "the keys argument must be an array containing s3 keys for deletion."
+    );
+  }
+
+  const params = {
+    bucket,
+    Delete: {
+      Objects: keys.map((key) => ({ Key: key })),
+    },
+  };
+
+  try {
+    await s3.deleteObjects(params).promise();
+  } catch (err) {
+    return Promise.reject(err);
+  }
+};
+
+module.exports = { uploadFiles, deleteFiles };

@@ -43,6 +43,6 @@ const getAllForms = async function (req, res, next) {
 module.exports = {
   path: "/single",
   method: "GET",
-  middleware: [guard.check("users:view"), validators],
+  middleware: [guard.check("view:forms"), validators],
   handler: getAllForms,
 };

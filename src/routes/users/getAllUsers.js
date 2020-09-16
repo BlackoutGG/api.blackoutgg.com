@@ -33,7 +33,7 @@ const getAllUsers = async function (req, res, next) {
     Object.entries(filters).forEach(([key, val]) => {
       query = Array.isArray(val)
         ? (query = query
-            .joinRelated("roles")
+            // .joinRelated("roles")
             .select(
               "users.id",
               "users.username",
@@ -41,14 +41,14 @@ const getAllUsers = async function (req, res, next) {
               "users.email",
               "users.created_at"
             )
-            .withGraphFetched("roles(nameAndId)")
+            .withGraphJoined("roles(nameAndId)")
             .distinctOn("id")
             .whereIn(key, val))
         : query.where(key, val);
     });
   } else {
     query = query
-      .withGraphFetched("roles")
+      .withGraphFetched("roles(nameAndId)")
       .select("id", "avatar", "username", "email", "created_at");
   }
 
@@ -57,7 +57,7 @@ const getAllUsers = async function (req, res, next) {
   //   .withGraphFetched("roles");
 
   try {
-    const users = await buildQuery.call(query, req.query.page, req.query.limit);
+    const users = await buildQuery(query, req.query.page, req.query.limit);
 
     // users.results = users.results.map((user) => {
     //   return {
@@ -80,7 +80,7 @@ module.exports = {
   path: "/",
   method: "GET",
   middleware: [
-    guard.check("users:view"),
+    guard.check("view:users"),
     validate([query("page").isNumeric(), query("limit").isNumeric()]),
   ],
   handler: getAllUsers,

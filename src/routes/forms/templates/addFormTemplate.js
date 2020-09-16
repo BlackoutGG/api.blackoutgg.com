@@ -1,14 +1,12 @@
 "use strict";
 const Form = require("../models/Form");
 
-const isObject = require("isobject");
-
 const guard = require("express-jwt-permissions")();
 const { body } = require("express-validator");
 const { buildQuery, validate } = require("$util");
 
 const validators = validate([
-  body("form.*.category_id").isNumeric(),
+  body("form.category_id").isNumeric(),
   body("form.*").isString().trim().escape(),
   body("fields.*.order").isNumeric(),
   body("fields.*.optional").isBoolean(),
@@ -48,7 +46,7 @@ const addForm = async function (req, res, next) {
     const forms = await Form.transaction(async (trx) => {
       await Form.query(trx).insertGraph(insert).returning("*");
 
-      const result = await buildQuery.call(
+      const result = await buildQuery(
         Form.query(trx).withGraphFetched("category"),
         req.body.page,
         req.body.limit
@@ -68,6 +66,6 @@ const addForm = async function (req, res, next) {
 module.exports = {
   path: "/",
   method: "POST",
-  middleware: [validators],
+  middleware: [guard.check("add:forms"), validators],
   handler: addForm,
 };

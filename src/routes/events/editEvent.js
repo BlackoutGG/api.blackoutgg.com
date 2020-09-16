@@ -24,7 +24,7 @@ const log = (req, res, next) => {
   next();
 };
 
-const middleware = [guard.check("events:edit"), log, validators];
+const middleware = [guard.check("update:events"), log, validators];
 
 const editEvent = async function (req, res, next) {
   const patch = req.body,

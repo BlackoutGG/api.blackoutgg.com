@@ -1,34 +1,24 @@
 "use strict";
-const Base = require("$base");
-const columns = require("$util/permissions");
+const { Model } = require("objection");
 
-class Role extends Base {
+class Role extends Model {
   static get tableName() {
     return "roles";
+  }
+
+  $beforeInsert(context) {
+    super.$beforeInsert(context);
+    const date = new Date().toISOString();
+    this.created_at = date;
+    this.updated_at = date;
   }
 
   static get modifiers() {
     return {
       nameAndId(builder) {
-        builder.select("id", "name").distinct();
+        builder.select("id", "name");
       },
     };
-  }
-
-  static async getAndFormatPerms(id) {
-    const results = await this.query().where("id", id).columns(columns).first();
-    return Object.entries(results).map(([name, value]) => ({ name, value }));
-  }
-
-  static async getPermList() {
-    const results = await this.query().where("id", 1).first().columns(columns);
-    return Object.keys(results);
-  }
-
-  get permissions() {
-    return Object.entries(this)
-      .filter(([key, value]) => /^can_/.test(key))
-      .map(([name, value]) => ({ name, value }));
   }
 
   static get jsonSchema() {
@@ -37,48 +27,20 @@ class Role extends Base {
       properties: {
         id: { type: "integer" },
         name: { type: "string" },
-        can_view_admin: { type: "boolean" },
-        can_edit_fp: { type: "boolean" },
-        can_view_maps: { type: "boolean" },
-        can_view_events: { type: "boolean" },
-        can_view_pins: { type: "boolean" },
-        can_view_users: { type: "boolean" },
-        can_view_groups: { type: "boolean" },
-        can_edit_maps: { type: "boolean" },
-        can_edit_events: { type: "boolean" },
-        can_edit_pins: { type: "boolean" },
-        can_edit_users: { type: "boolean" },
-        can_edit_groups: { type: "boolean" },
-        can_add_maps: { type: "boolean" },
-        can_add_events: { type: "boolean" },
-        can_add_pins: { type: "boolean" },
-        can_add_users: { type: "boolean" },
-        can_add_groups: { type: "boolean" },
-        can_remove_maps: { type: "boolean" },
-        can_remove_events: { type: "boolean" },
-        can_remove_pins: { type: "boolean" },
-        can_remove_users: { type: "boolean" },
-        can_remove_groups: { type: "boolean" },
-        can_disable_maps: { type: "boolean" },
-        can_disable_events: { type: "boolean" },
-        can_disable_pins: { type: "boolean" },
-        can_disable_users: { type: "boolean" },
-        can_disable_groups: { type: "boolean" },
-        can_upload_maps: { type: "boolean" },
-        can_upload_pins: { type: "boolean" },
-        is_disabled: { type: "boolean" },
-        is_removable: { type: "boolean" },
+        level: { type: "integer" },
+        created_at: { type: "string" },
+        updated_at: { type: "string" },
       },
     };
   }
 
   static get relationMappings() {
     const Users = require("$models/User");
-    const Roles = require("$models/Roles");
-
+    const Permissions = require("$models/Permissions");
+    const RolePermissions = require("./RolePermissions");
     return {
       users: {
-        relation: Base.ManyToManyRelation,
+        relation: Model.ManyToManyRelation,
         modelClass: Users,
         join: {
           from: "roles.id",
@@ -87,6 +49,26 @@ class Role extends Base {
             to: "user_roles.user_id",
           },
           to: "users.id",
+        },
+      },
+      role_perms: {
+        relation: Model.HasManyRelation,
+        modelClass: RolePermissions,
+        join: {
+          from: "roles.id",
+          to: "role_permissions.role_id",
+        },
+      },
+      permissions: {
+        relation: Model.ManyToManyRelation,
+        modelClass: Permissions,
+        join: {
+          from: "roles.id",
+          through: {
+            from: "role_permissions.role_id",
+            to: "role_permissions.perm_id",
+          },
+          to: "permissions.id",
         },
       },
     };

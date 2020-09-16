@@ -14,11 +14,9 @@ const deleteForm = async function (req, res, next) {
         .first()
         .returning("id");
 
-      const forms = await buildQuery(
-        Form.query(trx).withGraphFetched("category(selectBanner)"),
-        req.query.page,
-        req.query.limit
-      );
+      const query = Form.query(trx).withGraphFetched("category(selectBanner)");
+
+      const forms = await buildQuery(query, req.query.page, req.query.limit);
 
       return { forms, deleted };
     });
@@ -38,6 +36,7 @@ module.exports = {
       console.log(req.body);
       next();
     },
+    guard.check("remove:forms"),
     validate([body("ids.*").isNumeric()]),
   ],
   handler: deleteForm,

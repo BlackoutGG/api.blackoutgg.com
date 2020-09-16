@@ -8,7 +8,7 @@ const { body, param } = require("express-validator");
 const { validate } = require("$util");
 
 const middleware = [
-  guard.check("users:edit"),
+  guard.check("edit:users"),
   validate([
     param("id").isNumeric(),
     // body("type").notEmpty().isIn(["username", "email", "all"]),

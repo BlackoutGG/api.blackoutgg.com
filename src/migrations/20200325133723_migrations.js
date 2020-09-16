@@ -9,7 +9,8 @@ exports.up = function (knex) {
         t.string("username").unique();
         t.string("password");
         t.string("avatar");
-        t.boolean("is_disabled").defaultTo(false);
+        t.jsonb("role_ids");
+        t.index("discord_id");
         t.timestamps();
       });
     }),
@@ -18,62 +19,43 @@ exports.up = function (knex) {
       return knex.schema.createTable("roles", (t) => {
         t.increments("id").primary();
         t.string("name").unique();
-        t.enum("level", [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]).defaultTo(10);
-        t.boolean("can_view_admin").defaultTo(false);
-        t.boolean("can_edit_fp").defaultTo(false);
-
-        t.boolean("can_view_posts").defaultTo(false);
-        // t.boolean("can_view_maps").defaultTo(false);
-        t.boolean("can_view_forms").defaultTo(false);
-        t.boolean("can_view_events").defaultTo(false);
-        t.boolean("can_view_pins").defaultTo(false);
-        t.boolean("can_view_users").defaultTo(false);
-        t.boolean("can_view_roles").defaultTo(false);
-
-        t.boolean("can_edit_posts").defaultTo(false);
-        // t.boolean("can_edit_maps").defaultTo(false);
-        t.boolean("can_edit_forms").defaultTo(false);
-        t.boolean("can_edit_events").defaultTo(false);
-        t.boolean("can_edit_pins").defaultTo(false);
-        t.boolean("can_edit_users").defaultTo(false);
-        t.boolean("can_edit_roles").defaultTo(false);
-
-        t.boolean("can_add_posts").defaultTo(false);
-        // t.boolean("can_add_maps").defaultTo(false);
-
-        t.boolean("can_add_events").defaultTo(false);
-        t.boolean("can_add_pins").defaultTo(false);
-        t.boolean("can_add_users").defaultTo(false);
-        t.boolean("can_add_roles").defaultTo(false);
-        t.boolean("can_add_form").defaultTo(false);
-
-        t.boolean("can_remove_posts").defaultTo(false);
-        // t.boolean("can_remove_maps").defaultTo(false);
-        t.boolean("can_add_forms").defaultTo(false);
-
-        t.boolean("can_remove_events").defaultTo(false);
-        t.boolean("can_remove_pins").defaultTo(false);
-        t.boolean("can_remove_users").defaultTo(false);
-        t.boolean("can_remove_roles").defaultTo(false);
-        t.boolean("can_remove_form").defaultTo(false);
-
-        t.boolean("can_disable_posts").defaultTo(false);
-        // t.boolean("can_disable_maps").defaultTo(false);
-        t.boolean("can_disable_events").defaultTo(false);
-        t.boolean("can_disable_pins").defaultTo(false);
-        t.boolean("can_disable_users").defaultTo(false);
-        t.boolean("can_disable_roles").defaultTo(false);
-
-        // t.boolean("can_upload_maps").defaultTo(false);
-        // t.boolean("can_upload_pins").defaultTo(false);
-
-        t.boolean("can_upload_media").defaultTo(false);
-        t.boolean("can_view_media").defaultTo(false);
-        t.boolean("can_remove_media").defaultTo(false);
-
-        t.boolean("is_disabled").defaultTo(false);
-        t.boolean("is_removable").defaultTo(true);
+        t.integer("level").defaultTo(5);
+        t.index("level");
         t.timestamps();
+      });
+    }),
+    knex.schema.hasTable("role_permissions").then((exists) => {
+      if (exists) return;
+      return knex.schema.createTable("role_permissions", (t) => {
+        t.integer("role_id")
+          .references("id")
+          .inTable("roles")
+          .onDelete("CASCADE");
+        t.integer("perm_id")
+          .references("id")
+          .inTable("permissions")
+          .onDelete("CASCADE");
+      });
+    }),
+    knex.schema.hasTable("permissions").then((exists) => {
+      if (exists) return;
+      return knex.schema.createTable("permissions", (t) => {
+        t.increments("id").primary();
+        // t.enum("action", ["view", "add", "update", "delete"]);
+        // t.enum("resource", [
+        //   "admin",
+        //   "posts",
+        //   "forms",
+        //   "events",
+        //   "users",
+        //   "roles",
+        //   "media",
+        // ]);
+        // t.enum("level", [0, 1, 2, 3, 4, 5]);
+        t.string("action");
+        t.string("target");
+        t.string("resource");
+        t.integer("level");
       });
     }),
     knex.schema.hasTable("user_roles").then((exists) => {
@@ -89,24 +71,17 @@ exports.up = function (knex) {
           .onDelete("CASCADE");
       });
     }),
-    // knex.schema.hasTable("maps").then((exists) => {
-    //   if (exists) return;
-    //   return knex.schema.createTable("maps", (t) => {
-    //     t.increments("id").primary();
-    //     t.integer("template_id").references("map_templates.id");
-    //     t.string("slug").unique();
-    //     t.string("name");
-    //     t.boolean("is_disabled").defaultTo(false);
-    //     t.timestamps();
-    //   });
-    // }),
     knex.schema.hasTable("events").then((exists) => {
       if (exists) return;
       return knex.schema.createTable("events", (t) => {
         t.increments("id").primary();
-        t.integer("category_id").references("categories.id").defaultTo(1);
+        t.integer("category_id")
+          .references("id")
+          .inTable("categories")
+          .defaultTo(1);
         t.integer("user_id")
-          .references("users.id")
+          .references("id")
+          .inTable("users")
           .onUpdate("CASCADE")
           .onDelete("CASCADE");
         t.string("name");
@@ -117,6 +92,8 @@ exports.up = function (knex) {
         t.string("endTime");
         t.text("description");
         t.boolean("rvsp").defaultTo(false);
+        t.index("category_id");
+        t.index("user_id");
         t.timestamps();
       });
     }),
@@ -150,8 +127,8 @@ exports.up = function (knex) {
       if (exists) return;
       return knex.schema.createTable("categories", (t) => {
         t.increments("id").primary();
-        t.integer("header_image").references("media.id");
         t.string("name");
+        t.unique("name");
         t.timestamps();
       });
     }),
@@ -207,18 +184,6 @@ exports.up = function (knex) {
           .onDelete("CASCADE");
       });
     }),
-    // knex.schema.hasTable("form_field_children").then((exists) => {
-    //   if (exists) return;
-    //   return knex.schema.createTable("form_field_children", (t) => {
-    //     t.increments("id").primary();
-    //     t.integer("field_parent_id")
-    //       .references("fields.id")
-    //       .onUpdate("CASCADE")
-    //       .onDelete("CASCADE");
-    //     t.string("value");
-    //   });
-    // }),
-
     knex.schema.hasTable("menu").then((exists) => {
       if (exists) return;
       return knex.schema.createTable("menu", (t) => {
@@ -253,34 +218,6 @@ exports.up = function (knex) {
         t.timestamps();
       });
     }),
-    // knex.schema.hasTable("map_templates").then((exists) => {
-    //   if (exists) return;
-    //   return knex.schema.createTable("map_templates", (t) => {
-    //     t.increments("id").primary();
-    //     t.string("url");
-    //     t.string("s3_key");
-    //     t.integer("user_id").references("users.id");
-    //     t.boolean("is_disabled").defaultTo(false);
-    //     t.timestamps();
-    //   });
-    // }),
-    // knex.schema.hasTable("pins").then((exists) => {
-    //   if (exists) return;
-    //   return knex.schema.createTable("pins", (t) => {
-    //     t.increments("id").primary();
-    //     t.string("name");
-    //     t.string("icon");
-    //     t.string("s3_key");
-    //     t.enum("type", [
-    //       "friendly",
-    //       "enemy",
-    //       "friendlyBase",
-    //       "enemyBase",
-    //     ]).defaultTo("enemy");
-    //     t.boolean("is_disabled").defaultTo(false);
-    //     t.timestamps();
-    //   });
-    // }),
     knex.schema.hasTable("media").then((exists) => {
       if (exists) return;
       return knex.schema.createTable("media", (t) => {
@@ -292,24 +229,11 @@ exports.up = function (knex) {
         t.timestamps();
       });
     }),
-    // knex.schema.hasTable("map_pins").then((exists) => {
-    //   if (exists) return;
-    //   return knex.schema.createTable("map_pins", (t) => {
-    //     t.increments("id").primary();
-    //     t.integer("map_id").references("maps.id");
-    //     t.integer("pin_id").references("pins.id");
-    //     t.integer("x").defaultTo(0);
-    //     t.integer("y").defaultTo(0);
-    //     t.boolean("is_disabled").defaultTo(false);
-    //     t.timestamps();
-    //   });
-    // }),
   ]);
 };
 
 exports.down = function (knex) {
   return Promise.all([
-    // knex.schema.dropTableIfExists("form_field_children"),
     knex.schema.dropTableIfExists("form_fields"),
     knex.schema.dropTableIfExists("fields"),
     knex.schema.dropTableIfExists("forms"),
@@ -323,14 +247,13 @@ exports.down = function (knex) {
     knex.schema.dropTableIfExists("categories"),
 
     knex.schema.dropTableIfExists("user_roles"),
+    knex.schema.dropTableIfExists("role_permissions"),
+    knex.schema.dropTableIfExists("permissions"),
     knex.schema.dropTableIfExists("roles"),
 
     knex.schema.dropTableIfExists("posts"),
     knex.schema.dropTableIfExists("post_types"),
 
-    // knex.schema.dropTableIfExists("map_pins"),
-    // knex.schema.dropTableIfExists("maps"),
-    // knex.schema.dropTableIfExists("map_templates"),
     knex.schema.dropTableIfExists("media"),
     knex.schema.dropTableIfExists("pins"),
     knex.schema.dropTableIfExists("users"),

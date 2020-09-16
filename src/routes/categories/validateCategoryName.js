@@ -1,15 +1,12 @@
 "use strict";
-const Roles = require("./models/Roles");
+const Category = require("./models/Category");
 const guard = require("express-jwt-permissions")();
 const { query } = require("express-validator");
 const { validate } = require("$util");
 
-const validateRoleName = async function (req, res, next) {
+const validateCategoryName = async function (req, res, next) {
   try {
-    const role = await Roles.query()
-      .where("name", req.query.value)
-      .select("id")
-      .first();
+    const role = await Category.query().where("name", req.query.value).first();
     if (role) return res.status(422).send("name already exists.");
     res.status(200).send();
   } catch (err) {
@@ -21,7 +18,7 @@ module.exports = {
   path: "/validate/name",
   method: "GET",
   middleware: [
-    guard.check("edit:roles"),
+    guard.check("view:admin"),
     validate([
       query("value")
         .notEmpty()
@@ -33,5 +30,5 @@ module.exports = {
         .trim(),
     ]),
   ],
-  handler: validateRoleName,
+  handler: validateCategoryName,
 };

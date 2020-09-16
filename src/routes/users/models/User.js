@@ -1,5 +1,7 @@
 "use strict";
 const Base = require("$base");
+const { Role } = require("discord.js");
+const { ref } = require("./UserRole");
 
 class User extends Base {
   static get tableName() {
@@ -12,10 +14,6 @@ class User extends Base {
         builder.select("id", "username", "avatar");
       },
     };
-  }
-
-  getRoles() {
-    return this.roles.map((role) => ({ id: role.id, name: role.name }));
   }
 
   getScope() {
@@ -54,34 +52,6 @@ class User extends Base {
     }, []);
 
     return scope;
-    // return this.roles.reduce((result, perm) => {
-    //   result = Object.entries(perm)
-    //     .filter(
-    //       ([key, value]) =>
-    //         typeof value === "boolean" && value && /^can_/.test(key)
-    //     )
-    //     .map(([key, val]) => {
-    //       if (/^can_/.test(key)) {
-    //         let scope = key.split("_"),
-    //           prefix,
-    //           priv;
-
-    //         if (val) {
-    //           if (scope.length > 2) {
-    //             prefix = scope[2];
-    //             priv = scope[1];
-    //           } else {
-    //             prefix = scope[1];
-    //             priv = scope[0];
-    //           }
-    //         }
-
-    //         return `${prefix}:${priv}`;
-    //       }
-    //     });
-
-    //   return result;
-    // }, []);
   }
 
   static get jsonSchema() {

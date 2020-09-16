@@ -1,6 +1,5 @@
 "use strict";
 const Event = require("./models/Event");
-const EventRoles = require("./models/EventRoles");
 const Range = require("pg-range").Range;
 const guard = require("express-jwt-permissions")();
 const { body } = require("express-validator");
@@ -40,17 +39,12 @@ const log = (req, res, next) => {
   next();
 };
 
-const addEvent = async function (req, res, next) {
-  const { roles, startDate, endDate, ...fields } = req.body,
-    userId = req.user.id;
-
-  console.log("adding event....");
-
+const graphFn = (userId, start, end, fields, roles) => {
   const data = {
     "#id": "event",
-    duration: Range(startDate, endDate),
-    startDate,
-    endDate,
+    duration: Range(start, end),
+    start_date: start,
+    end_date: end,
     user_id: userId,
     ...fields,
   };
@@ -58,58 +52,32 @@ const addEvent = async function (req, res, next) {
   if (roles && roles.length) {
     Object.assign(data, {
       roles: roles.map((role) => ({
-        event_id: "#ref(event.id)",
         role_id: role,
       })),
     });
   }
+};
 
-  let query = Event.transaction(async (trx) => {
-    const e = await Event.query(trx)
-      .insertGraph(data)
-      .first()
-      .returning("*")
-      .withGraphFetched(
-        roles && roles.length
-          ? `[category(defaultSelects), organizer(defaultSelects), roles]`
-          : `[category(defaultSelects), organizer(defaultSelects)]`
-      );
+const addEvent = async function (req, res, next) {
+  const { roles, startDate, endDate, ...fields } = req.body,
+    userId = req.user.id;
 
-    return;
-  });
+  const insert = graphFn(userId, startDate, endDate, roles, fields);
 
   try {
-    const event = await query;
-    // const results = await Event.transaction(async (trx) => {
-    //   const result = await Event.query(trx)
-    //     .insert({
-    //       duration: Range(startDate, endDate),
-    //       startDate,
-    //       endDate,
-    //       ...fields,
-    //       user_id: userId,
-    //     })
-    //     .first()
-    //     .returning("id");
+    const event = await Event.transaction(async (trx) => {
+      const query = await Event.query(trx)
+        .insertGraph(insert)
+        .first()
+        .returning("*")
+        .withGraphFetched(
+          roles && roles.length
+            ? `[category(defaultSelects), organizer(defaultSelects), roles]`
+            : `[category(defaultSelects), organizer(defaultSelects)]`
+        );
 
-    //   if (roles && roles.length) {
-    //     await EventRoles.query(trx).insert(
-    //       roles.map((role) => ({ event_id: result.id, role_id: role }))
-    //     );
-    //   }
-
-    // const event = await Event.query(trx)
-    //   .where("id", result.id)
-    //   .withGraphFetched(
-    //     roles && roles.length
-    //       ? `[category(defaultSelects), organizer(defaultSelects), roles]`
-    //       : `[category(defaultSelects), organizer(defaultSelects)]`
-    //   )
-    //   .select(columns)
-    //   .first();
-
-    //   return event;
-    // });
+      return query;
+    });
 
     res.status(200).send({ event });
   } catch (err) {
@@ -121,6 +89,6 @@ const addEvent = async function (req, res, next) {
 module.exports = {
   path: "/",
   method: "POST",
-  middleware: [guard.check("events:add"), log],
+  middleware: [guard.check("add:events"), log],
   handler: addEvent,
 };

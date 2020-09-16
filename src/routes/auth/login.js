@@ -16,9 +16,9 @@ const consoleLogout = (req, res, next) => {
 const login = async function (req, res, next) {
   try {
     const user = await User.query()
-      .where({ email: req.body.email, is_disabled: false })
+      .where({ email: req.body.email })
       .select("id", "username", "password")
-      .withGraphFetched("roles")
+      .withGraphFetched("[roles.permissions]")
       .first()
       .throwIfNotFound();
 
@@ -30,11 +30,22 @@ const login = async function (req, res, next) {
         .send({ message: "User credentials do not match." });
     }
 
+    const { roles, ...userInfo } = user;
+
+    const permissions = roles.flatMap(({ permissions }) =>
+      permissions.map(({ action, resource }) => {
+        return `${action}:${resource}`;
+      })
+    );
+
+    const level = Math.min(roles.map(({ level }) => level));
+
     const data = {
-      id: user.id,
-      username: user.username,
-      roles: user.getRoles(),
-      permissions: user.getScope(),
+      id: userInfo.id,
+      username: userInfo.username,
+      roles: roles.map(({ name }) => name),
+      level,
+      permissions,
     };
 
     const token = jwt.sign(data, process.env.JWT_SECRET, {

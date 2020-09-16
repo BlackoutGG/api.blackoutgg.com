@@ -62,6 +62,6 @@ const getAllEvents = async function (req, res, next) {
 module.exports = {
   path: "/",
   method: "GET",
-  middleware: [guard.check("events:view"), validators],
+  middleware: [guard.check("view:events"), validators],
   handler: getAllEvents,
 };

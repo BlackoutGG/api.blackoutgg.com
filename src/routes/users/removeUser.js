@@ -6,32 +6,26 @@ const { body } = require("express-validator");
 const { validate, buildQuery } = require("$util");
 
 const middleware = [
-  guard.check("users:remove"),
+  guard.check("delete:users"),
   validate([
-    body("ids").isNumeric(),
+    // body("ids").isNumeric(),
     body("page").optional().isNumeric(),
     body("limit").optional().isNumeric(),
   ]),
 ];
 
-const del = (model, trx, ids) =>
-  ids && Array.isArray(ids)
-    ? model.query(trx).whereIn("id", ids).delete()
-    : model.query(trx).where("id", ids).delete();
-
 const removeUser = async function (req, res, next) {
   try {
-    const users = await Roles.transaction(async (trx) => {
-      await del(User, trx, req.body.ids);
-      await del(UserRole, trx, req.body.ids);
+    const users = await User.transaction(async (trx) => {
+      await User.query(trx).whereIn("id", req.query.ids).delete();
 
-      const u = await buildQuery.call(
-        User.query(trx),
+      const results = await buildQuery(
+        User.query(trx).withGraphFetched("roles(nameAndId)"),
         req.body.page,
         req.body.limit
       );
 
-      return u;
+      return results;
     });
 
     res.status(200).send({ users });
@@ -42,7 +36,7 @@ const removeUser = async function (req, res, next) {
 };
 
 module.exports = {
-  path: "/",
+  path: "/delete",
   method: "DELETE",
   middleware,
   handler: removeUser,

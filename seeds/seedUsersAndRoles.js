@@ -63,6 +63,7 @@ class User extends Model {
 const generateUsers = async (num) => {
   const users = [];
   const salted = await bcrypt.genSalt(SALT);
+  const hashed = await bcrypt.hash("superadminbko", salted);
 
   for (let i = 0; i < num; i++) {
     const roles = [];
@@ -91,7 +92,7 @@ const generateUsers = async (num) => {
   users.push({
     username: "Helix",
     email: "mmccauleyjr@rogers.com",
-    password: await bcrypt.hash("superadminbko", salted),
+    password: hashed,
     avatar: faker.internet.avatar(),
     user_roles: [{ role_id: 1 }],
     created_at: date,
