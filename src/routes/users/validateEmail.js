@@ -21,14 +21,17 @@ module.exports = {
   path: "/validate/email",
   method: "GET",
   middleware: [
-    validate([
-      query("value")
-        .notEmpty()
-        .isEmail()
-        .escape()
-        .trim()
-        .withMessage("Email is not valid."),
-    ]),
+    validate(
+      [
+        query("value")
+          .notEmpty()
+          .isEmail()
+          .escape()
+          .trim()
+          .withMessage("Email is not valid."),
+      ],
+      422
+    ),
   ],
   handler: validateEmail,
 };

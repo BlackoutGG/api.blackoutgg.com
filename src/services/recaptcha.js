@@ -33,27 +33,30 @@ const verifyRecaptcha = function (secret) {
 
       if (body.success) return next();
       if (body["error-codes"].length) {
-        const error = errors(resp.body["error-codes"]);
-        if (error("missing-input-secret")) {
-          res.boom.badRequest("recaptcha:missing-input-secret");
-        } else if (error("invalid-input-secret")) {
-          res.boom.badData("recaptcha:invalid-input-secret");
-        } else if (error("missing-input-response")) {
-          res.boom.badRequest("recaptcha:missing-input-response");
-        } else if (error("bad-request")) {
-          res.boom.badRequest("recaptcha:bad-request");
-        } else if (error("timeout-or-duplicate")) {
-          res.boom.clientTimeout("recaptcha:timeout-or-duplicate");
-        } else {
-          res.boom.teapot("Encountered an error verifying recaptcha response");
-        }
+        const error = errors(body["error-codes"]);
+        const newError = new Error(error);
+        next(newError);
+        // if (error("missing-input-secret")) {
+        //   res.boom.badRequest("recaptcha:missing-input-secret");
+        // } else if (error("invalid-input-secret")) {
+        //   res.boom.badData("recaptcha:invalid-input-secret");
+        // } else if (error("missing-input-response")) {
+        //   res.boom.badRequest("recaptcha:missing-input-response");
+        // } else if (error("bad-request")) {
+        //   res.boom.badRequest("recaptcha:bad-request");
+        // } else if (error("timeout-or-duplicate")) {
+        //   res.boom.clientTimeout("recaptcha:timeout-or-duplicate");
+        // } else {
+        //   res.boom.teapot("Encountered an error verifying recaptcha response");
+        // }
       }
     } catch (err) {
       console.log(err);
-      res.boom.boomify(err, {
-        statusCode: err.statusCode,
-        message: err.message,
-      });
+      // res.boom.boomify(err, {
+      //   statusCode: err.statusCode,
+      //   message: err.message,
+      // });
+      next(err);
     }
   };
 };

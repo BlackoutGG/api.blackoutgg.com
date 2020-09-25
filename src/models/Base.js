@@ -9,6 +9,7 @@ class Base extends Model {
   }
 
   $beforeUpdate(context) {
+    if (this.updated_at) return;
     const date = new Date();
     this.updated_at = date.toISOString();
   }

@@ -21,16 +21,19 @@ module.exports = {
   path: "/validate/username",
   method: "GET",
   middleware: [
-    validate([
-      query("value")
-        .notEmpty()
-        .isAlphanumeric()
-        .withMessage("Username must be alphanumeric.")
-        .isLength({ min: 3, max: 30 })
-        .withMessage("Username must be 3 to 30 in length.")
-        .escape()
-        .trim(),
-    ]),
+    validate(
+      [
+        query("value")
+          .notEmpty()
+          .isAlphanumeric()
+          .withMessage("Username must be alphanumeric.")
+          .isLength({ min: 3, max: 30 })
+          .withMessage("Username must be 3 to 30 in length.")
+          .escape()
+          .trim(),
+      ],
+      422
+    ),
   ],
   handler: validateUsername,
 };

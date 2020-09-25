@@ -5,7 +5,7 @@ const { fdir } = require("fdir");
 
 const models = new fdir()
   .withFullPaths()
-  .withMaxDepth(2)
+  .withMaxDepth(3)
   .filter((path) => /models/.test(path))
   .crawl("./src/routes")
   .sync();

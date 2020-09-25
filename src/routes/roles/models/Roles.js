@@ -1,16 +1,9 @@
 "use strict";
-const { Model } = require("objection");
+const Base = require("$base");
 
-class Role extends Model {
+class Role extends Base {
   static get tableName() {
     return "roles";
-  }
-
-  $beforeInsert(context) {
-    super.$beforeInsert(context);
-    const date = new Date().toISOString();
-    this.created_at = date;
-    this.updated_at = date;
   }
 
   static get modifiers() {
@@ -40,7 +33,7 @@ class Role extends Model {
     const RolePermissions = require("./RolePermissions");
     return {
       users: {
-        relation: Model.ManyToManyRelation,
+        relation: Base.ManyToManyRelation,
         modelClass: Users,
         join: {
           from: "roles.id",
@@ -52,7 +45,7 @@ class Role extends Model {
         },
       },
       role_perms: {
-        relation: Model.HasManyRelation,
+        relation: Base.HasManyRelation,
         modelClass: RolePermissions,
         join: {
           from: "roles.id",
@@ -60,7 +53,7 @@ class Role extends Model {
         },
       },
       permissions: {
-        relation: Model.ManyToManyRelation,
+        relation: Base.ManyToManyRelation,
         modelClass: Permissions,
         join: {
           from: "roles.id",

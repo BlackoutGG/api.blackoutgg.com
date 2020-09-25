@@ -8,10 +8,9 @@ const { body, param } = require("express-validator");
 const { validate } = require("$util");
 
 const middleware = [
-  guard.check("edit:users"),
+  guard.check("update:users"),
   validate([
     param("id").isNumeric(),
-    // body("type").notEmpty().isIn(["username", "email", "all"]),
     body("username").optional().notEmpty().isAlphanumeric().escape().trim(),
     body("email")
       .optional()
@@ -24,18 +23,8 @@ const middleware = [
 ];
 
 const editUserInfo = async function (req, res, next) {
-  // const type = req.body.type,
-  //   value = req.body[type],
-  //   id = req.params.id;
-
-  const patch = pick(req.body, ["username", "email", "avatar", "password"]),
+  const patch = pick(req.body, ["username", "email", "avatar"]),
     id = req.params.id;
-
-  if (patch.password) {
-    const salt = await bcrypt.genSalt(SALT_ROUNDS);
-    const hashed = await bcrypt.hash(obj.password, salt);
-    patch.password = hashed;
-  }
 
   try {
     const user = await User.query()

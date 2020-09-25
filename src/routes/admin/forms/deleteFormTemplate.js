@@ -1,5 +1,5 @@
 "use strict";
-const Form = require("../models/Form");
+const Form = require("./models/Form");
 
 const guard = require("express-jwt-permissions")();
 const { body } = require("express-validator");
@@ -36,7 +36,7 @@ module.exports = {
       console.log(req.body);
       next();
     },
-    guard.check("remove:forms"),
+    guard.check(["view:admin", "delete:forms"]),
     validate([body("ids.*").isNumeric()]),
   ],
   handler: deleteForm,

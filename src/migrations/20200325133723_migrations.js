@@ -71,25 +71,55 @@ exports.up = function (knex) {
           .onDelete("CASCADE");
       });
     }),
+    knex.schema.hasTable("user_forms").then((exists) => {
+      if (exists) return;
+      return knex.schema.createTable("user_forms", (t) => {
+        t.increments("id").primary();
+        t.integer("form_id")
+          .references("id")
+          .inTable("forms")
+          .onDelete("CASCADE");
+        t.integer("user_id")
+          .references("id")
+          .inTable("users")
+          .onDelete("CASCADE");
+        t.enum("status", ["pending", "accepted", "rejected"]).defaultTo(
+          "pending"
+        );
+        t.timestamps();
+      });
+    }),
+    knex.schema.hasTable("user_form_fields").then((exists) => {
+      if (exists) return;
+      return knex.schema.createTable("user_form_fields", (t) => {
+        t.increments("id").primary();
+        t.integer("form_id")
+          .references("user_forms.id")
+          .onDelete("CASCADE")
+          .onUpdate("CASCADE");
+        t.integer("field_id")
+          .references("fields.id")
+          .onDelete("CASCADE")
+          .onUpdate("CASCADE");
+        t.jsonb("answer").nullable();
+        t.timestamps();
+      });
+    }),
     knex.schema.hasTable("events").then((exists) => {
       if (exists) return;
       return knex.schema.createTable("events", (t) => {
         t.increments("id").primary();
-        t.integer("category_id")
-          .references("id")
-          .inTable("categories")
-          .defaultTo(1);
+        t.integer("category_id").references("categories.id").defaultTo(1);
         t.integer("user_id")
-          .references("id")
-          .inTable("users")
+          .references("users.id")
           .onUpdate("CASCADE")
           .onDelete("CASCADE");
         t.string("name");
         t.string("color");
-        t.string("startDate");
-        t.string("startTime");
-        t.string("endDate");
-        t.string("endTime");
+        t.string("start_date");
+        t.string("start_time");
+        t.string("end_date");
+        t.string("end_time");
         t.text("description");
         t.boolean("rvsp").defaultTo(false);
         t.index("category_id");
@@ -128,6 +158,7 @@ exports.up = function (knex) {
       return knex.schema.createTable("categories", (t) => {
         t.increments("id").primary();
         t.string("name");
+        t.boolean("recruitment").defaultTo(false);
         t.unique("name");
         t.timestamps();
       });
@@ -154,6 +185,7 @@ exports.up = function (knex) {
         t.timestamps();
       });
     }),
+
     knex.schema.hasTable("fields").then((exists) => {
       if (exists) return;
       return knex.schema.createTable("fields", (t) => {
@@ -192,7 +224,6 @@ exports.up = function (knex) {
         t.string("title");
         t.string("icon");
         t.string("to");
-        t.boolean("disable").defaultTo(false);
         t.timestamps();
       });
     }),
@@ -211,7 +242,7 @@ exports.up = function (knex) {
         t.integer("post_type").references("post_types.id");
         t.string("slug");
         t.string("title");
-        t.string("image");
+        t.string("featured_image");
         t.text("body");
         t.text("excerpt");
         t.boolean("has_excerpt").defaultTo(false);
@@ -234,6 +265,8 @@ exports.up = function (knex) {
 
 exports.down = function (knex) {
   return Promise.all([
+    knex.schema.dropTableIfExists("user_form_fields"),
+    knex.schema.dropTableIfExists("user_forms"),
     knex.schema.dropTableIfExists("form_fields"),
     knex.schema.dropTableIfExists("fields"),
     knex.schema.dropTableIfExists("forms"),
@@ -255,7 +288,6 @@ exports.down = function (knex) {
     knex.schema.dropTableIfExists("post_types"),
 
     knex.schema.dropTableIfExists("media"),
-    knex.schema.dropTableIfExists("pins"),
     knex.schema.dropTableIfExists("users"),
   ]);
 };

@@ -34,13 +34,16 @@ const getAllUsersForAdmin = async function (req, res, next) {
 
   query = query
     .withGraphFetched("roles(nameAndId)")
+    .orderBy("id")
     .select("id", "avatar", "username", "email", "created_at");
 
   try {
     const [users, roles] = await Promise.all([
       buildQuery(query, req.query.page, req.query.limit),
       req.query.roles
-        ? Roles.query().select("id", "name")
+        ? Roles.query()
+            .select("id", "name")
+            .where("level", ">=", req.user.level)
         : Promise.resolve(null),
     ]);
 

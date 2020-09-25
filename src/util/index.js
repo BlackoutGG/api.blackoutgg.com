@@ -43,14 +43,14 @@ const buildQuery = async function (
   return query.range(start, end);
 };
 
-const validate = (validations) => {
+const validate = (validations, statusCode) => {
   return async (req, res, next) => {
     await Promise.all(validations.map((validation) => validation.run(req)));
 
     const errors = validationResult(req);
     if (errors.isEmpty()) return next();
 
-    return res.status(400).send(errors.array());
+    return res.status(statusCode ? statusCode : 400).send(errors.array());
   };
 };
 

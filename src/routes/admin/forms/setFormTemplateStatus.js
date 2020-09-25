@@ -1,5 +1,5 @@
 "use strict";
-const Form = require("../models/Form");
+const Form = require("./models/Form");
 const guard = require("express-jwt-permissions")();
 const { body, param } = require("express-validator");
 const { validate } = require("$util");
@@ -25,8 +25,6 @@ const setFormStatus = async function (req, res, next) {
       return result;
     });
 
-    console.log(form);
-
     res.status(200).send({ form });
   } catch (err) {
     console.log(err);
@@ -38,7 +36,7 @@ module.exports = {
   path: "/:id/status",
   method: "PUT",
   middleware: [
-    guard.check("edit:forms"),
+    guard.check(["view:admin", "update:forms"]),
     validate([body("category_id").isNumeric(), param("id").isNumeric()]),
   ],
   handler: setFormStatus,

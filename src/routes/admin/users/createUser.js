@@ -1,29 +1,19 @@
 "use strict";
 const User = require("$models/User");
-const UserRoles = require("$models/UserRole");
-
-const guard = require("express-jwt-permissions")();
-const { body } = require("express-validator");
-const { validate } = require("$util");
 const bcrypt = require("bcrypt");
 const SALT_ROUNDS = 12;
 
-const isObject = (val) => {
-  return (
-    val &&
-    typeof val === "object" &&
-    !Array.isArray(val) &&
-    val.constructor === "Object"
-  );
-};
+const guard = require("express-jwt-permissions")();
+const { body } = require("express-validator");
+const { validate, buildQuery } = require("$util");
 
 const validators = validate([
   body("username").notEmpty().isAlphanumeric().escape().trim(),
   body("email").notEmpty().isEmail().escape().normalizeEmail().trim(),
   body("password").notEmpty().escape().trim(),
-  body("roles").custom((v) => Array.isArray(v)),
-  body("page").isNumeric(),
-  body("limit").isNumeric(),
+  body("roles.*").optional().isNumeric(),
+  body("page").optional().isNumeric(),
+  body("limit").optional().isNumeric(),
 ]);
 
 const consoleLog = (req, res, next) => {
@@ -39,33 +29,19 @@ const insertFn = (credentials, roles) => {
 
   if (roles && roles.length) {
     const user_roles = roles.map((roleId) => ({
-      user_id: "#{refuser.id}",
       role_id: roleId,
     }));
 
     Object.assign(data, { user_roles });
   }
+
+  return data;
 };
 
-/**
- * Returns a collection of users with from the database.
- * @param {Object<promise>} trx The transaction for the database query
- * @param {Number} page the offset for the range
- * @param {Number} limit the end for the range
- * @returns {Array}
- */
-const query = async (trx, page, limit) =>
-  buildQuery.call(
-    User.query(trx)
-      .select("id", "avatar", "username", "email", "created_at")
-      .withGraphFetched("roles"),
-    page,
-    limit
-  );
-
 const createUser = async function (req, res, next) {
-  let username = req.body.username,
-    email = req.body.email,
+  const email = req.body.email,
+    page = req.body.page,
+    limit = req.body.limit,
     roles = req.body.roles;
 
   try {
@@ -73,35 +49,41 @@ const createUser = async function (req, res, next) {
     const password = await bcrypt.hash(req.body.password, salt);
 
     const creds = {
-      username,
+      username: req.body.username,
       email,
       password,
     };
 
-    const users = await User.transaction(async (trx) => {
-      const result = await User.query(trx).insertGraph(insertFn(creds, roles), {
-        allowRefs: true,
-      });
+    const insert = insertFn(creds, roles);
+    const options = { relate: true };
+
+    const { username, users } = await User.transaction(async (trx) => {
+      const user = await User.query(trx)
+        .insertGraph(insert, options)
+        .returning("*");
+
+      const results = Object.assign({}, { username: user.username });
 
       const query = User.query(trx)
         .select("id", "avatar", "username", "email", "created_at")
         .withGraphFetched("roles");
 
-      const list = await buildQuery(query, req.query.page, req.query.limit);
+      const _users = await buildQuery(query, page, limit);
 
-      return { user: result.username, users };
+      Object.assign(results, { users: _users });
+
+      return results;
     });
 
-    res.status(200).send(users);
+    res.status(200).send({ username, users });
   } catch (err) {
-    console.log(err);
-    next(new Error(err));
+    next(err);
   }
 };
 
 module.exports = {
-  path: "/users/create",
+  path: "/",
   method: "POST",
-  middleware: [guard.check("users:add"), validators],
+  middleware: [guard.check(["view:admin", "add:users"]), validators],
   handler: createUser,
 };

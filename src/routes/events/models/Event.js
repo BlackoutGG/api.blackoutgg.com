@@ -6,6 +6,18 @@ class Event extends Base {
     return "events";
   }
 
+  static get virtualAttributes() {
+    return ["start_date", "start_time", "end_date", "end_time"];
+  }
+
+  get start() {
+    return `${this.start_date} ${this.start_time}`;
+  }
+
+  get end() {
+    return `${this.end_date} ${this.end_time}`;
+  }
+
   static get jsonSchema() {
     return {
       type: "object",

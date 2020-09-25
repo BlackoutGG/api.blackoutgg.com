@@ -1,77 +1,69 @@
 "use strict";
 const User = require("$models/User");
 const UserRole = require("$models/UserRole");
-const Role = require("$models/Roles");
 const guard = require("express-jwt-permissions")();
 const { body, param } = require("express-validator");
 const { validate } = require("$util");
 
-const combineInputs = (req, res, next) => {
-  const inputs = {};
+const columns = [
+  "id",
+  "username",
+  "email",
+  "avatar",
+  "created_at",
+  "updated_at",
+];
 
-  if (req.body.username) {
-    Object.assign(inputs, { username: req.body.username });
+const upsert = (id, details, add) => {
+  const data = { id, updated_at: new Date().toISOString() };
+
+  if (details && Object.keys(details).length) {
+    Object.assign(data, details);
   }
 
-  if (req.body.email) {
-    Object.assign(inputs, { email: req.body.email });
+  if (add && add.length) {
+    Object.assign(data, {
+      user_roles: add.map((role) => ({ role_id: role })),
+    });
   }
 
-  req.body.inputs = inputs;
-
-  next();
+  return data;
 };
 
-const editUser = async function (req, res, next) {
-  const toBeDeleted = req.body.delete || null,
-    toBeSaved = req.body.roles || null,
-    userId = parseInt(req.params.id, 10),
-    userFields = Object.keys(req.body.inputs);
+const updateUser = async function (req, res, next) {
+  const remove = req.body.remove || null,
+    added = req.body.added || null,
+    details = req.body.details || null;
 
   try {
     const user = await User.transaction(async (trx) => {
-      let deleted, saved, inputs;
-
-      if (userFields.length) {
-        inputs = await User.query(trx)
-          .where({ id: userId })
-          .patch(req.body.inputs)
-          .first()
-          .returning([...userFields]);
+      if (details && Object.keys(details).length) {
+        await User.query(trx).where("id", req.params.id).patch(details).first();
       }
 
-      if (toBeDeleted && toBeDeleted.length) {
-        deleted = await UserRole.query(trx)
+      if (remove && remove.length) {
+        await UserRole.query(trx)
           .delete()
-          .where({ user_id: userId })
-          .whereIn("role_id", toBeDeleted)
-          .returning("role_id");
+          .where("user_id", req.params.id)
+          .whereIn("role_id", remove);
       }
 
-      if (toBeSaved && toBeSaved.length) {
-        const roles = toBeSaved.map((role) => ({
-          user_id: userId,
+      if (added && added.length) {
+        const roles = added.map((role) => ({
+          user_id: req.params.id,
           role_id: role,
         }));
 
-        const role = await UserRole.query(trx)
-          .insert(roles)
-          .returning(["role_id"]);
-
-        saved = await Role.query(trx)
-          .select("id", "name")
-          .whereIn(
-            "id",
-            role.map((r) => r.role_id)
-          );
+        await UserRole.query(trx).insert(roles).returning("*");
       }
 
-      return {
-        id: userId,
-        inputs: inputs ? inputs : null,
-        saved: saved && saved.length ? saved : null,
-        deleted: deleted && deleted.length ? deleted : null,
-      };
+      const results = await User.query(trx)
+        .where("id", req.params.id)
+        .withGraphFetched("roles(nameAndId)")
+        .first()
+        .columns(columns);
+
+      return results;
     });
 
     res.status(200).send({ user });
@@ -82,18 +74,17 @@ const editUser = async function (req, res, next) {
 };
 
 module.exports = {
-  path: "/users/:id/edit",
+  path: "/:id",
   method: "PUT",
   middleware: [
-    guard.check("users:edit"),
+    guard.check(["view:admin", "update:users"]),
     validate([
-      param("id").isNumeric(),
-      body("username").optional().isAlphanumeric().escape().trim(),
-      body("email").optional().isEmail().normalizeEmail().escape(),
-      body("roles").optional(),
-      body("delete").optional(),
+      param("id").isNumeric().toInt(10),
+      body("details.username").optional().isAlphanumeric().escape().trim(),
+      body("details.email").optional().isEmail().normalizeEmail().escape(),
+      body("added.*").optional().isNumeric(),
+      body("remove.*").optional().isNumeric(),
     ]),
-    combineInputs,
   ],
-  handler: editUser,
+  handler: updateUser,
 };

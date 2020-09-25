@@ -6,7 +6,7 @@ const { validate, buildQuery } = require("$util");
 
 const getAllRoles = async function (req, res, next) {
   const query = Roles.query()
-    .select("id", "name", "level", "created_at")
+    .select("id", "name", "level", "created_at", "updated_at")
     .where("level", ">=", req.user.level);
 
   try {

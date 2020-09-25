@@ -1,5 +1,5 @@
 "use strict";
-const Form = require("../models/Form");
+const Form = require("./models/Form");
 
 const guard = require("express-jwt-permissions")();
 const { body } = require("express-validator");
@@ -7,10 +7,16 @@ const { buildQuery, validate } = require("$util");
 
 const validators = validate([
   body("form.category_id").isNumeric(),
-  body("form.*").isString().trim().escape(),
-  body("fields.*.order").isNumeric(),
-  body("fields.*.optional").isBoolean(),
-  body("fields.*").isString().trim().escape(),
+  body("form.name").isString().trim().escape(),
+  body("form.description").isString().trim().escape(),
+  // body("fields.*.order").isNumeric(),
+  // body("fields.*.type").isAlphanumeric().trim().escape(),
+  // body("fields.*.optional").isBoolean(),
+  // body("fields.*.value").isAlphanumeric().trim().escape(),
+  body("page").optional().isNumeric(),
+  body("limit").optional().isNumeric(),
+  body("orderBy").optional().isString().trim().escape(),
+  body("sortBy").optional().isString().trim().escape(),
 ]);
 
 const insertFn = (form, fields) => {
@@ -66,6 +72,13 @@ const addForm = async function (req, res, next) {
 module.exports = {
   path: "/",
   method: "POST",
-  middleware: [guard.check("add:forms"), validators],
+  middleware: [
+    guard.check(["view:admin", "add:forms"]),
+    (req, res, next) => {
+      console.log(req.body);
+      next();
+    },
+    validators,
+  ],
   handler: addForm,
 };

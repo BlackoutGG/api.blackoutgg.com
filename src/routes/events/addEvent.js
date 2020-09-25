@@ -9,14 +9,12 @@ const validators = validate([
   // body("name").isAlphanumeric().escape().trim(),
   // body("color").optional().isString().escape().trim(),
   // body("category").optional().isNumeric(),
-  body("month").isNumeric(),
-  body("year").isNumeric(),
   body("startDate").isString().escape().trim(),
   body("endDate").optional().isString().escape().trim(),
   body("startTime").isString().escape().trim(),
   body("endTime").optional().isString().escape().trim(),
   body("description").optional().isString().escape().trim(),
-  body("roles").isArray(),
+  body("roles.*").optional().isNumeric(),
   // body("rvsp").optional().isBoolean(),
 ]);
 

@@ -17,12 +17,12 @@ const middleware = [
   guard.check("add:roles"),
   consoleLog,
   validate([
-    // body("details.*.name").isAlphanumeric().escape().trim(),
+    body("details.name").isAlphanumeric().escape().trim(),
     body("page").optional().isNumeric(),
     body("limit").optional().isNumeric(),
-    // body("details.*.level")
-    //   .isNumeric()
-    //   .custom((v, { req }) => v >= req.user.level),
+    body("details.level")
+      .isNumeric()
+      .custom((v, { req }) => v >= req.user.level),
     body("permissions.*").optional().isNumeric(),
   ]),
 ];
@@ -53,7 +53,13 @@ const addRole = async function (req, res, next) {
         .returning("*");
 
       const results = await buildQuery(
-        Roles.query(trx).select("id", "name", "created_at", "updated_at"),
+        Roles.query(trx).select(
+          "id",
+          "name",
+          "level",
+          "created_at",
+          "updated_at"
+        ),
         req.body.page,
         req.body.limit
       );

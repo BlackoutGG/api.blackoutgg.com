@@ -50,7 +50,7 @@ const updateRole = async (req, res, next) => {
           .patch(details)
           .where("id", req.params.id)
           .first()
-          .returning("id", "name");
+          .returning("id", "name", "level", "created_at", "updated_at");
       }
 
       return result;

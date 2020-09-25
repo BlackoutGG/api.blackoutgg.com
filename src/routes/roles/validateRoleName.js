@@ -13,6 +13,7 @@ const validateRoleName = async function (req, res, next) {
     if (role) return res.status(422).send("name already exists.");
     res.status(200).send();
   } catch (err) {
+    console.log(err);
     next(err);
   }
 };
@@ -21,17 +22,20 @@ module.exports = {
   path: "/validate/name",
   method: "GET",
   middleware: [
-    guard.check("edit:roles"),
-    validate([
-      query("value")
-        .notEmpty()
-        .isAlphanumeric()
-        .withMessage("Name must be alphanumeric.")
-        .isLength({ min: 3, max: 30 })
-        .withMessage("Name must be 3 to 30 in length.")
-        .escape()
-        .trim(),
-    ]),
+    guard.check(["view:roles", "update:roles"]),
+    validate(
+      [
+        query("value")
+          .notEmpty()
+          .isAlphanumeric()
+          .withMessage("Name must be alphanumeric.")
+          .isLength({ min: 3, max: 30 })
+          .withMessage("Name must be 3 to 30 in length.")
+          .escape()
+          .trim(),
+      ],
+      422
+    ),
   ],
   handler: validateRoleName,
 };
