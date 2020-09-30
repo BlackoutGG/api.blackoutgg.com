@@ -7,35 +7,17 @@ const { buildQuery, validate } = require("$util");
 
 const getAllUsersForAdmin = async function (req, res, next) {
   const filters = req.query.filters ? JSON.parse(req.query.filters) : null;
-  let query = User.query();
 
-  // if (filters) {
-  //   Object.entries(filters).forEach(([key, val]) => {
-  //     query = Array.isArray(val)
-  //       ? (query = query
-  //           // .joinRelated("roles")
-  //           .select(
-  //             "users.id",
-  //             "users.username",
-  //             "users.avatar",
-  //             "users.email",
-  //             "users.created_at"
-  //           )
-  //           .withGraphJoined("roles(nameAndId)")
-  //           .distinctOn("id")
-  //           .whereIn(key, val))
-  //       : query.where(key, val);
-  //   });
-  // } else {
-  //   query = query
-  //     .withGraphFetched("roles(nameAndId)")
-  //     .select("id", "avatar", "username", "email", "created_at");
-  // }
-
-  query = query
+  let query = User.query()
     .withGraphFetched("roles(nameAndId)")
     .orderBy("id")
     .select("id", "avatar", "username", "email", "created_at");
+
+  if (filters) {
+    query = query.whereExists(
+      User.relatedQuery("roles").whereIn("id", filters.id)
+    );
+  }
 
   try {
     const [users, roles] = await Promise.all([

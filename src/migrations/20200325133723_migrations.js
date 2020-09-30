@@ -53,7 +53,7 @@ exports.up = function (knex) {
         // ]);
         // t.enum("level", [0, 1, 2, 3, 4, 5]);
         t.string("action");
-        t.string("target");
+        t.enum("target", ["own", "others"]);
         t.string("resource");
         t.integer("level");
       });
@@ -109,7 +109,7 @@ exports.up = function (knex) {
       if (exists) return;
       return knex.schema.createTable("events", (t) => {
         t.increments("id").primary();
-        t.integer("category_id").references("categories.id").defaultTo(1);
+        // t.integer("category_id").references("categories.id").defaultTo(1);
         t.integer("user_id")
           .references("users.id")
           .onUpdate("CASCADE")
@@ -122,7 +122,6 @@ exports.up = function (knex) {
         t.string("end_time");
         t.text("description");
         t.boolean("rvsp").defaultTo(false);
-        t.index("category_id");
         t.index("user_id");
         t.timestamps();
       });
@@ -176,16 +175,24 @@ exports.up = function (knex) {
       if (exists) return;
       return knex.schema.createTable("forms", (t) => {
         t.increments("id").primary();
-        t.integer("category_id")
-          .references("categories.id")
-          .onUpdate("CASCADE");
+        // t.integer("category_id")
+        //   .references("categories.id")
+        //   .onUpdate("CASCADE");
         t.string("name");
         t.text("description");
         t.boolean("status").defaultTo(false);
         t.timestamps();
       });
     }),
-
+    knex.schema.hasTable("form_category").then((exists) => {
+      if (exists) return;
+      return knex.schema.createTable("form_category", (t) => {
+        t.increments("id").primary();
+        t.integer("form_id").references("forms.id");
+        t.integer("category_id").references("categories.id");
+        t.timestamps();
+      });
+    }),
     knex.schema.hasTable("fields").then((exists) => {
       if (exists) return;
       return knex.schema.createTable("fields", (t) => {
@@ -265,6 +272,7 @@ exports.up = function (knex) {
 
 exports.down = function (knex) {
   return Promise.all([
+    knex.schema.dropTableIfExists("form_category"),
     knex.schema.dropTableIfExists("user_form_fields"),
     knex.schema.dropTableIfExists("user_forms"),
     knex.schema.dropTableIfExists("form_fields"),
@@ -274,6 +282,7 @@ exports.down = function (knex) {
     knex.schema.dropTableIfExists("menu_tree"),
     knex.schema.dropTableIfExists("menu"),
 
+    knex.schema.dropTableIfExists("event_category"),
     knex.schema.dropTableIfExists("event_participants"),
     knex.schema.dropTableIfExists("event_roles"),
     knex.schema.dropTableIfExists("events"),

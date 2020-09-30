@@ -76,6 +76,7 @@ const editForm = async function (req, res, next) {
   try {
     const form = await Form.transaction(async (trx) => {
       let result = await Form.query(trx)
+        .joinRelated("form_category")
         .upsertGraph(up, {
           noDelete: true,
         })
@@ -113,7 +114,7 @@ const editForm = async function (req, res, next) {
 
 module.exports = {
   path: "/:id",
-  method: "PUT",
+  method: "PATCH",
   middleware: [
     consoleRequest,
     guard.check(["view:admin", "update:forms"]),

@@ -11,6 +11,9 @@ class User extends Base {
       defaultSelects(builder) {
         builder.select("id", "username", "avatar");
       },
+      idNameEmail(builder) {
+        builder.select("id", "username", "email");
+      },
     };
   }
 

@@ -6,11 +6,11 @@ class UserFormField extends Base {
     return "user_form_fields";
   }
 
-  static get modifiers() {
-    return {
-      fields: (qb) => qb.joinRelated("field"),
-    };
-  }
+  // static get modifiers() {
+  //   return {
+  //     fields: (qb) => qb.joinRelated("field"),
+  //   };
+  // }
 
   static get jsonSchema() {
     return {
@@ -27,8 +27,8 @@ class UserFormField extends Base {
     };
   }
 
-  static get relationMapping() {
-    const UserForm = require("./models/UserForm");
+  static get relationMappings() {
+    const UserForm = require("./UserForm");
     const Field = require("$models/Field");
     return {
       form: {

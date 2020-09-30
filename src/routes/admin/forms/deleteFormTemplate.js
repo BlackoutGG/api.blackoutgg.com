@@ -2,19 +2,21 @@
 const Form = require("./models/Form");
 
 const guard = require("express-jwt-permissions")();
-const { body } = require("express-validator");
+const { query } = require("express-validator");
 const { buildQuery, validate } = require("$util");
 
 const deleteForm = async function (req, res, next) {
   try {
     const results = await Form.transaction(async (trx) => {
       const deleted = await Form.query(trx)
-        .whereIn("id", req.body.ids)
+        .whereIn("id", req.query.ids)
         .del()
         .first()
         .returning("id");
 
-      const query = Form.query(trx).withGraphFetched("category(selectBanner)");
+      const query = Form.query(trx).withGraphFetched(
+        "category(defaultSelects)"
+      );
 
       const forms = await buildQuery(query, req.query.page, req.query.limit);
 
@@ -29,7 +31,7 @@ const deleteForm = async function (req, res, next) {
 };
 
 module.exports = {
-  path: "/:id/delete",
+  path: "/",
   method: "DELETE",
   middleware: [
     (req, res, next) => {
@@ -37,7 +39,7 @@ module.exports = {
       next();
     },
     guard.check(["view:admin", "delete:forms"]),
-    validate([body("ids.*").isNumeric()]),
+    validate([query("ids.*").isNumeric()]),
   ],
   handler: deleteForm,
 };

@@ -19,11 +19,17 @@ const validators = validate([
   body("sortBy").optional().isString().trim().escape(),
 ]);
 
-const insertFn = (form, fields) => {
+const insertFn = (f, fields) => {
+  const { category_id, ...form } = f;
   const result = {};
 
   if (form && Object.keys(form).length) {
     Object.assign(result, { "#id": "form" }, form);
+  }
+
+  if (category_id) {
+    const form_category = { category_id };
+    Object.assign(result, { form_category });
   }
 
   if (fields && fields.length) {

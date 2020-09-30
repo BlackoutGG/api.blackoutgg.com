@@ -13,7 +13,7 @@ const insertFn = (creds) => {
     ...creds,
     user_roles: [
       {
-        role_id: 2,
+        role_id: 3,
       },
     ],
   };
@@ -33,7 +33,7 @@ const register = async function (req, res, next) {
     const user = await User.transaction(async (trx) => {
       const result = await User.query(trx)
         .insertGraph(insertFn(creds, { relate: true }))
-        .returning("username");
+        .returning("*");
 
       return result.username;
     });

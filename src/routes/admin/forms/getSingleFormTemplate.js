@@ -8,12 +8,27 @@ const validators = validate([param("id").isNumeric().toInt(10)]);
 
 const getSingleForm = async function (req, res, next) {
   try {
+    // const form = await Form.query()
+    //   .withGraphFetched("[category(defaultSelects), fields(order)]")
+    //   .select("id", "name", "description", "category_id")
+    //   .where("id", req.params.id)
+    //   .first()
+    //   .throwIfNotFound();
+
     const form = await Form.query()
-      .withGraphFetched("[category(defaultSelects), fields(order)]")
-      .select("id", "name", "description", "category_id")
-      .where("id", req.params.id)
+      .joinRelated("category")
+      .withGraphFetched("fields(order)")
+      .select(
+        "forms.id",
+        "forms.name",
+        "forms.description",
+        "category.id as category_id"
+      )
+      .where("forms.id", req.params.id)
       .first()
       .throwIfNotFound();
+
+    console.log(form);
 
     res.status(200).send({ form });
   } catch (err) {

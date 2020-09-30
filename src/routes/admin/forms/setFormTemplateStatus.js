@@ -6,21 +6,43 @@ const { validate } = require("$util");
 
 const setFormStatus = async function (req, res, next) {
   try {
-    const check = await Form.query()
-      .where("id", req.params.id)
-      .select(["status", "id", "category_id"])
-      .first()
-      .throwIfNotFound();
+    // const check = await Form.query()
+    //   .joinRelated("category")
+    //   .select("forms.status", "forms.id", "category.id as category_id")
+    //   .where("forms.id", req.params.id)
+    //   .first()
+    //   .throwIfNotFound();
 
     const form = await Form.transaction(async (trx) => {
+      // await Form.query(trx)
+      //   .joinRelated("category")
+      //   .patch({ status: false })
+      //   .where("status", true)
+      //   .where("forms:category.id", req.body.category_id)
+      //   .debug();
+
       await Form.query(trx)
         .patch({ status: false })
-        .where({ status: true, category_id: check.category_id });
-      const result = await Form.query(trx)
-        .patch({ status: !check.status })
-        .where("id", check.id)
+        .where("status", true)
+        .whereExists(
+          Form.relatedQuery("category").where(
+            "category.id",
+            req.body.category_id
+          )
+        );
+
+      const query = await Form.query(trx)
+        .withGraphFetched("category")
+        .patch({ status: !req.body.status })
+        .where("forms.id", req.params.id)
         .first()
-        .returning(["id", "category_id", "status"]);
+        .returning(["forms.id", "forms.status"]);
+
+      const result = {
+        id: query.id,
+        status: query.status,
+        category_id: query.category.id,
+      };
 
       return result;
     });
@@ -34,10 +56,14 @@ const setFormStatus = async function (req, res, next) {
 
 module.exports = {
   path: "/:id/status",
-  method: "PUT",
+  method: "PATCH",
   middleware: [
     guard.check(["view:admin", "update:forms"]),
-    validate([body("category_id").isNumeric(), param("id").isNumeric()]),
+    validate([
+      param("id").isNumeric().toInt(10),
+      body("category_id").isNumeric().toInt(10),
+      body("status").isBoolean(),
+    ]),
   ],
   handler: setFormStatus,
 };

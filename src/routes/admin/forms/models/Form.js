@@ -21,22 +21,34 @@ class Form extends Base {
 
   static get relationMappings() {
     const Field = require("$models/Field");
-    const FormField = require("$models/FormFields");
+    const FormCategory = require("$models/FormCategory");
     const Category = require("$models/Category");
     return {
-      // form_fields: {
-      //   relation: Base.HasManyRelation,
-      //   modelClass: FormField,
+      // category: {
+      //   relation: Base.HasOneRelation,
+      //   modelClass: Category,
       //   join: {
-      //     from: "forms.id",
-      //     to: "form_fields.form_id",
+      //     from: "forms.category_id",
+      //     to: "categories.id",
       //   },
       // },
-      category: {
+      form_category: {
         relation: Base.HasOneRelation,
+        modelClass: FormCategory,
+        join: {
+          from: "forms.id",
+          to: "form_category.form_id",
+        },
+      },
+      category: {
+        relation: Base.HasOneThroughRelation,
         modelClass: Category,
         join: {
-          from: "forms.category_id",
+          from: "forms.id",
+          through: {
+            from: "form_category.form_id",
+            to: "form_category.category_id",
+          },
           to: "categories.id",
         },
       },
