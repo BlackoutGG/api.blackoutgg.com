@@ -9,12 +9,12 @@ const pick = require("lodash/pick");
 
 const validators = validate([
   param("id").isNumeric().toInt(10),
-  body("form.name").optional().isAlphanumeric().trim().escape(),
-  body("form.category_id").optional().isNumeric(),
-  body("form.description").optional().isString().trim().escape(),
+  body("details.name").optional().isAlphanumeric().trim().escape(),
+  body("details.category_id").optional().isNumeric(),
+  body("details.description").optional().isString().trim().escape(),
   body("added.*.optional").optional().isBoolean(),
   body("added.*.order").optional().isNumeric(),
-  body("added.*.value").optional().isAlphanumeric().trim().escape(),
+  body("added.*.value").optional().isString().trim().escape(),
   body("added.*.type")
     .optional()
     .isIn(["textfield", "textarea", "multiple", "select", "checkbox"]),
@@ -76,13 +76,11 @@ const editForm = async function (req, res, next) {
   try {
     const form = await Form.transaction(async (trx) => {
       let result = await Form.query(trx)
-        .joinRelated("form_category")
         .upsertGraph(up, {
           noDelete: true,
         })
         .first()
-        .returning("*")
-        .withGraphFetched("category(selectBanner)");
+        .returning("*");
 
       if (remove && remove.length) {
         await Field.query(trx).whereIn("id", remove).del().returning("*");
@@ -91,18 +89,19 @@ const editForm = async function (req, res, next) {
             .patch({
               updated_at: new Date().toISOString(),
             })
-            .withGraphFetched("category(selectBanner)")
             .returning("*");
         }
       }
 
-      return pick(result, [
-        "name",
-        "status",
-        "category",
-        "created_at",
-        "updated_at",
-      ]);
+      // return pick(result, [
+      //   "name",
+      //   "status",
+      //   "category",
+      //   "created_at",
+      //   "updated_at",
+      // ]);
+
+      return result;
     });
 
     res.status(200).send({ form });

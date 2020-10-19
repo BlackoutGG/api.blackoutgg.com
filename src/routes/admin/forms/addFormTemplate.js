@@ -19,17 +19,11 @@ const validators = validate([
   body("sortBy").optional().isString().trim().escape(),
 ]);
 
-const insertFn = (f, fields) => {
-  const { category_id, ...form } = f;
+const insertFn = (form, fields) => {
   const result = {};
 
   if (form && Object.keys(form).length) {
     Object.assign(result, { "#id": "form" }, form);
-  }
-
-  if (category_id) {
-    const form_category = { category_id };
-    Object.assign(result, { form_category });
   }
 
   if (fields && fields.length) {
@@ -48,9 +42,7 @@ const insertFn = (f, fields) => {
 };
 
 const addForm = async function (req, res, next) {
-  const { form, fields } = req.body;
-
-  console.log(form, fields);
+  const { form, fields, filters } = req.body;
 
   const insert = insertFn(form, fields);
 
@@ -61,7 +53,10 @@ const addForm = async function (req, res, next) {
       const result = await buildQuery(
         Form.query(trx).withGraphFetched("category"),
         req.body.page,
-        req.body.limit
+        req.body.limit,
+        null,
+        null,
+        filters
       );
 
       return result;

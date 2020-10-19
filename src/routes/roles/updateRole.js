@@ -18,6 +18,27 @@ const validators = validate([
 
 const middleware = [guard.check("update:roles"), validators];
 
+const graphFn = (id, details, added) => {
+  const data = { id, created_at: new Date().toISOString() };
+
+  if (details && Object.keys(details)) {
+    Object.assign(data, { details });
+  }
+
+  if (added && added.length) {
+    Object.assign(data, {
+      role_perms: added.map((perm) => ({
+        role_id: id,
+        perm_id: perm,
+      })),
+    });
+  }
+
+  return data;
+};
+
+const options = { noDelete: true, relate: true };
+
 const updateRole = async (req, res, next) => {
   const details = req.body.details || null,
     remove = req.body.remove || null,
@@ -27,7 +48,7 @@ const updateRole = async (req, res, next) => {
 
   try {
     const role = await Roles.transaction(async (trx) => {
-      let result;
+      const toUpdate = {};
 
       if (remove && remove.length) {
         await RolePermissions.query(trx)
@@ -35,6 +56,10 @@ const updateRole = async (req, res, next) => {
           .andWhere("role_id", req.params.id)
           .delete();
       }
+
+      // const result = await Roles.query(trx)
+      //   .upsertGraph(graphFn(req.params.id, details, added), options)
+      //   .returning("*");
 
       if (added && added.length) {
         const insert = added.map((perm_id) => ({
@@ -46,12 +71,17 @@ const updateRole = async (req, res, next) => {
       }
 
       if (details && Object.keys(details).length) {
-        result = await Roles.query(trx)
-          .patch(details)
-          .where("id", req.params.id)
-          .first()
-          .returning("id", "name", "level", "created_at", "updated_at");
+        Object.assign(toUpdate, details);
+        console.log(toUpdate);
       }
+
+      const result = await Roles.query(trx)
+        .patch({ updated_at: new Date().toISOString(), ...toUpdate })
+        .where("id", req.params.id)
+        .first()
+        .returning(["id", "name", "level", "created_at", "updated_at"]);
+
+      console.log(result);
 
       return result;
     });

@@ -10,6 +10,7 @@ const verifyRecaptcha = require("$services/recaptcha")(
 
 const validators = validate([
   body("form_id").isNumeric(),
+  body("category_id").isNumeric(),
   body("fields.*.id").isNumeric(),
   // body("fields.*.value").isString().trim().escape(),
   body("gresponse").isString().escape().trim(),
@@ -43,6 +44,20 @@ const addForm = async function (req, res, next) {
   const options = { relate: true };
 
   try {
+    const userAlreadySubmitted = await UserForm.query()
+      .joinRelated("[applicant, form]")
+      .where("applicant.id", req.user.id)
+      .andWhere("form.category_id", req.body.category_id)
+      .andWhere("user_forms.status", "pending")
+      .first();
+
+    if (userAlreadySubmitted) {
+      return res.status(422).send({
+        message:
+          "You've already submitted an application for this category. Please way for a response.",
+      });
+    }
+
     await UserForm.transaction(async (trx) => {
       await UserForm.query(trx).insertGraph(insert, options).returning("*");
     });

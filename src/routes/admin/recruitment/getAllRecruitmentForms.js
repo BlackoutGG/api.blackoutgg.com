@@ -15,6 +15,8 @@ const select = [
 ];
 
 const getAllRecruitmentForm = async (req, res, next) => {
+  const filters = req.query.filters || null;
+
   const formQuery = UserForm.query()
     .joinRelated("form.[category]")
     .withGraphFetched("applicant(defaultSelects)")
@@ -24,7 +26,14 @@ const getAllRecruitmentForm = async (req, res, next) => {
 
   try {
     const [forms, categories] = await Promise.all([
-      buildQuery(formQuery, req.query.page, req.query.limit),
+      buildQuery(
+        formQuery,
+        req.query.page,
+        req.query.limit,
+        null,
+        null,
+        filters
+      ),
       categoryQuery,
     ]);
 

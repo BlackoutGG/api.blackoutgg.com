@@ -3,23 +3,31 @@ const multer = require("multer");
 const multerS3 = require("multer-s3");
 const aws = require("aws-sdk");
 const path = require("path");
+const { nanoid } = require("nanoid");
+
+/*** SETUP S3 CONFIG ***/
+aws.config.update({
+  secretAccessKey: process.env.AWS_SECRET,
+  accessKeyId: process.env.AWS_ACCESS_ID,
+  region: process.env.AWS_REGION,
+});
 
 const s3 = new aws.S3();
 
 /*** FUNCTION CHECK FILE TYPE***/
 const fileFilter = function (req, file, cb) {
-  const types = /png|webp/;
+  const types = /jpe?g|png|webp|svg|gif/;
   const ext = types.test(path.extname(file.originalname).toLowerCase());
   const mimetype = types.test(file.mimetype);
   if (mimetype && ext) cb(null, true);
-  else cb(new Error("Images with types: 'png' or 'webp' only."));
+  else cb(new Error("Images with types: jpg/jpeg, png, svg or webp only."));
 };
 
 /**
  *
  */
 const uploadFiles = function (opts) {
-  opts.dest = typeof opts.dest === undefined ? "maps/" : opts.dest;
+  const dest = opts && opts.dest ? opts.dest : "upload/";
 
   const storage = multerS3({
     s3: s3,
@@ -29,9 +37,8 @@ const uploadFiles = function (opts) {
       cb(null, { fileName: file.fieldname });
     },
     key(req, file, cb) {
-      console.log(file);
       const ext = path.extname(file.originalname).toLowerCase();
-      const name = opts.dest + Date.now() + ext;
+      const name = dest + nanoid() + ext;
       cb(null, name);
     },
   });
@@ -48,14 +55,14 @@ const uploadFiles = function (opts) {
 
   return function (req, res, next) {
     upload(req, res, async (err) => {
-      console.log("file", req.file || req.files);
+      // console.log("file", req.file || req.files);
       if (err) {
         console.log(err);
-        res.boom.badImplementation();
+        res.status(422).send();
       } else {
         if (req.files === undefined) {
           console.log("Error: no file selected.");
-          res.boom.badImplementation("No file selected.");
+          res.status(422).send("No file selected.");
         } else {
           next();
         }
@@ -73,14 +80,16 @@ const deleteFiles = async (bucket, keys) => {
   }
 
   const params = {
-    bucket,
+    Bucket: bucket,
     Delete: {
       Objects: keys.map((key) => ({ Key: key })),
     },
   };
 
   try {
-    await s3.deleteObjects(params).promise();
+    const results = await s3.deleteObjects(params).promise();
+    if (results.Errors.length) return Promise.reject(results.Errors);
+    else return results;
   } catch (err) {
     return Promise.reject(err);
   }

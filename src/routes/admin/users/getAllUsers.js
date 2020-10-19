@@ -5,15 +5,19 @@ const guard = require("express-jwt-permissions")();
 const { query } = require("express-validator");
 const { buildQuery, validate } = require("$util");
 
+const columns = ["id", "avatar", "username", "email", "created_at"];
+
 const getAllUsersForAdmin = async function (req, res, next) {
-  const filters = req.query.filters ? JSON.parse(req.query.filters) : null;
+  console.log(req.query);
+
+  const filters = req.query.filters || null;
 
   let query = User.query()
     .withGraphFetched("roles(nameAndId)")
     .orderBy("id")
-    .select("id", "avatar", "username", "email", "created_at");
+    .select(columns);
 
-  if (filters) {
+  if (filters && Object.keys(filters).length) {
     query = query.whereExists(
       User.relatedQuery("roles").whereIn("id", filters.id)
     );

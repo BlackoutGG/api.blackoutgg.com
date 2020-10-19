@@ -6,32 +6,35 @@ const { validate } = require("$util");
 const { raw } = require("objection");
 
 const validators = validate([
-  query("category").optional().isArray(),
+  // query("category_id").optional().isArray(),
   query("start").isString(),
   query("end").isString(),
 ]);
 
 const columns = [
-  "id",
-  "name",
+  "events.id",
+  "events.name",
+  "category_id",
   "color",
-  "startTime",
-  "startDate",
-  "endTime",
-  "endDate",
+  "start_date",
+  "start_time",
+  "end_date",
+  "end_time",
   "description",
   "rvsp",
+  "category.name as category",
 ];
 
 const getAllEvents = async function (req, res, next) {
-  let query = Event.query(),
-    categories = req.query.categories || null,
+  console.log(req.query);
+
+  const filters = req.query.filters || null,
     { start, end, ...where } = req.query;
 
-  if (categories) {
-    query = Array.isArray(categories)
-      ? query.whereIn("category_id", categories)
-      : query.where({ category_id: category });
+  let query = Event.query();
+
+  if (filters && Object.keys(filters).length) {
+    query = query.whereIn("category_id", filters.category_id);
   }
 
   query = query.where(raw("duration && '[??, ??)'", start, end));
@@ -46,10 +49,8 @@ const getAllEvents = async function (req, res, next) {
 
   try {
     const events = await query
-      .withGraphFetched(
-        `[organizer(defaultSelects), 
-          category(defaultSelects)]`
-      )
+      .joinRelated("category")
+      .withGraphFetched("organizer(defaultSelects)")
       .select(columns);
 
     res.status(200).send({ events });

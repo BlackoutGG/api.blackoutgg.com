@@ -5,19 +5,19 @@ const { query } = require("express-validator");
 const { buildQuery } = require("$util");
 
 const middleware = [
-  guard.check("media:view"),
-  query("page").optional().isNumeric(),
+  guard.check("view:media"),
+  query("start").optional().isNumeric(),
   query("limit").optional().isNumeric(),
 ];
 
 const getAllMedia = async function (req, res, next) {
   try {
-    const media = await buildQuery.call(
+    const media = await buildQuery(
       Media.query(),
-      req.query.page,
+      req.query.start,
       req.query.limit
     );
-    res.status(200).send({ media });
+    res.status(200).send({ media: media.results });
   } catch (err) {
     next(err);
   }

@@ -6,6 +6,8 @@ const { query } = require("express-validator");
 const { buildQuery, validate } = require("$util");
 
 const deleteForm = async function (req, res, next) {
+  const filters = req.query.filters || null;
+
   try {
     const results = await Form.transaction(async (trx) => {
       const deleted = await Form.query(trx)
@@ -18,7 +20,14 @@ const deleteForm = async function (req, res, next) {
         "category(defaultSelects)"
       );
 
-      const forms = await buildQuery(query, req.query.page, req.query.limit);
+      const forms = await buildQuery(
+        query,
+        req.query.page,
+        req.query.limit,
+        null,
+        null,
+        filters
+      );
 
       return { forms, deleted };
     });

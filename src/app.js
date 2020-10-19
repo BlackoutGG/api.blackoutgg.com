@@ -51,7 +51,7 @@ app.use(
 
 /*** SETUP BODY PARSER ***/
 app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+app.use(express.urlencoded({ extended: true }));
 
 /*** INJECT REDIS INTO RESPONSE ***/
 app.use(function (req, res, next) {
@@ -59,11 +59,12 @@ app.use(function (req, res, next) {
   next();
 });
 
-/*** SETUP S3 CONFIG ***/
-aws.config.update({
-  secretAccessKey: process.env.AWS_SECRET,
-  accessKeyId: process.env.AWS_ACCESS_ID,
-  region: process.env.AWS_REGION,
+/*** PARSE NESTED FILTERS */
+app.use(function (req, res, next) {
+  if (req.query.filters && Object.keys(req.query.filters)) {
+    req.query.filters = JSON.parse(req.query.filters);
+  }
+  next();
 });
 
 /*** SETUP INDEX ROUTE ***/

@@ -24,14 +24,14 @@ class Form extends Base {
     const FormCategory = require("$models/FormCategory");
     const Category = require("$models/Category");
     return {
-      // category: {
-      //   relation: Base.HasOneRelation,
-      //   modelClass: Category,
-      //   join: {
-      //     from: "forms.category_id",
-      //     to: "categories.id",
-      //   },
-      // },
+      category: {
+        relation: Base.BelongsToOneRelation,
+        modelClass: Category,
+        join: {
+          from: "forms.category_id",
+          to: "categories.id",
+        },
+      },
       form_category: {
         relation: Base.HasOneRelation,
         modelClass: FormCategory,
@@ -40,18 +40,18 @@ class Form extends Base {
           to: "form_category.form_id",
         },
       },
-      category: {
-        relation: Base.HasOneThroughRelation,
-        modelClass: Category,
-        join: {
-          from: "forms.id",
-          through: {
-            from: "form_category.form_id",
-            to: "form_category.category_id",
-          },
-          to: "categories.id",
-        },
-      },
+      // category: {
+      //   relation: Base.HasOneThroughRelation,
+      //   modelClass: Category,
+      //   join: {
+      //     from: "forms.id",
+      //     through: {
+      //       from: "form_category.form_id",
+      //       to: "form_category.category_id",
+      //     },
+      //     to: "categories.id",
+      //   },
+      // },
       fields: {
         relation: Base.ManyToManyRelation,
         modelClass: Field,

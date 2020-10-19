@@ -15,14 +15,14 @@ const consoleLogout = (req, res, next) => {
 
 const login = async function (req, res, next) {
   try {
-    const user = await User.query()
+    const result = await User.query()
       .where({ email: req.body.email })
-      .select("id", "username", "password")
+      .select("id", "username", "avatar", "password")
       .withGraphFetched("[roles.permissions]")
       .first()
       .throwIfNotFound();
 
-    const match = await bcrypt.compare(req.body.password, user.password);
+    const match = await bcrypt.compare(req.body.password, result.password);
 
     if (!match) {
       return res
@@ -30,7 +30,7 @@ const login = async function (req, res, next) {
         .send({ message: "User credentials do not match." });
     }
 
-    const { roles, ...userInfo } = user;
+    const { roles, ...user } = result;
 
     const permissions = roles.flatMap(({ permissions }) =>
       permissions.map(({ action, resource }) => {
@@ -41,8 +41,9 @@ const login = async function (req, res, next) {
     const level = Math.min(roles.map(({ level }) => level));
 
     const data = {
-      id: userInfo.id,
-      username: userInfo.username,
+      id: user.id,
+      username: user.username,
+      avatar: user.avatar,
       roles: roles.map(({ name }) => name),
       level,
       permissions,

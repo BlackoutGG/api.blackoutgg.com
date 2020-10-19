@@ -19,6 +19,20 @@ class Media extends Base {
       },
     };
   }
+
+  static get relationMappings() {
+    const User = require("$models/User");
+    return {
+      uploader: {
+        relation: Base.BelongsToOneRelation,
+        modelClass: User,
+        join: {
+          from: "media.user_id",
+          to: "users.id",
+        },
+      },
+    };
+  }
 }
 
 module.exports = Media;

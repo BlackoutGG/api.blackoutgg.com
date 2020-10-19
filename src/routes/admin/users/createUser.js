@@ -39,6 +39,8 @@ const insertFn = (credentials, roles) => {
 };
 
 const createUser = async function (req, res, next) {
+  const filters = req.body.filters;
+
   const email = req.body.email,
     page = req.body.page,
     limit = req.body.limit,
@@ -62,17 +64,22 @@ const createUser = async function (req, res, next) {
         .insertGraph(insert, options)
         .returning("*");
 
-      const results = Object.assign({}, { username: user.username });
+      let query = User.query(trx)
+        .withGraphFetched("roles(nameAndId)")
+        .orderBy("id")
+        .select("id", "avatar", "username", "email", "created_at");
 
-      const query = User.query(trx)
-        .select("id", "avatar", "username", "email", "created_at")
-        .withGraphFetched("roles");
+      if (filters && Object.keys(filters).length) {
+        console.log(filters);
 
-      const _users = await buildQuery(query, page, limit);
+        query = query.whereExists(
+          User.relatedQuery("roles").whereIn("id", filters.id)
+        );
+      }
 
-      Object.assign(results, { users: _users });
+      const users = await buildQuery(query, page, limit);
 
-      return results;
+      return { username: user.username, users };
     });
 
     res.status(200).send({ username, users });

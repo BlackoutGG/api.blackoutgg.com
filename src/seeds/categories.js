@@ -7,6 +7,7 @@ exports.seed = async function (knex) {
     const results = await knex
       .into("categories")
       .insert([
+        { name: "Uncategorized", created_at: date, updated_at: date },
         { name: "General", created_at: date, updated_at: date },
         { name: "Last Oasis", created_at: date, updated_at: date },
         { name: "New World", created_at: date, updated_at: date },

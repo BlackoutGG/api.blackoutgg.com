@@ -35,17 +35,26 @@ class Category extends Base {
   static get relationMappings() {
     const Form = require("$models/Form");
     return {
+      // forms: {
+      //   relation: Base.ManyToManyRelation,
+      //   modelClass: Form,
+      //   join: {
+      //     from: "categories.id",
+      //     through: {
+      //       from: "form_category.category_id",
+      //       to: "form_category.form_id",
+      //     },
+
+      //     to: "forms.id",
+      //   },
+      // },
+
       forms: {
-        relation: Base.ManyToManyRelation,
+        relation: Base.HasOneRelation,
         modelClass: Form,
         join: {
           from: "categories.id",
-          through: {
-            from: "form_category.category_id",
-            to: "form_category.form_id",
-          },
-          // filter: (qb) => qb.where("status", true),
-          to: "forms.id",
+          to: "forms.category_id",
         },
       },
     };

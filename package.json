@@ -37,13 +37,14 @@
     "module-alias": "^2.2.2",
     "multer": "^1.4.2",
     "multer-s3": "^2.9.0",
+    "nanoid": "^3.1.12",
     "objection": "^2.2.3",
+    "objection-cursor": "^1.2.4",
     "pg": "^7.18.2",
     "pg-range": "^1.1.0",
     "phin": "^3.5.0",
     "sanitize-html": "^1.27.4",
-    "socket.io": "^2.3.0",
-    "uuidv4": "^6.2.3"
+    "socket.io": "^2.3.0"
   },
   "jest": {
     "testEnvironment": "node",
@@ -52,8 +53,6 @@
     ],
     "moduleNameMapper": {
       "^@root(.*)$": "<rootDir>$1",
-      "^@Roles$": "<rootDir>/src/routes/groups/models/Roles.js",
-      "^@Users$": "<rootDir>/src/routes/users/models/User.js",
       "^@base$": "<rootDir>/src/models/Base.js",
       "^@util(.*)$": "<rootDir>/src/util$1",
       "^@services(.*)$": "<rootDir>/src/services$1"

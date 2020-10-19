@@ -14,23 +14,9 @@ const columns = [
   "updated_at",
 ];
 
-const upsert = (id, details, add) => {
-  const data = { id, updated_at: new Date().toISOString() };
-
-  if (details && Object.keys(details).length) {
-    Object.assign(data, details);
-  }
-
-  if (add && add.length) {
-    Object.assign(data, {
-      user_roles: add.map((role) => ({ role_id: role })),
-    });
-  }
-
-  return data;
-};
-
 const updateUser = async function (req, res, next) {
+  console.log(req.body);
+
   const remove = req.body.remove || null,
     added = req.body.added || null,
     details = req.body.details || null;
@@ -75,13 +61,14 @@ const updateUser = async function (req, res, next) {
 
 module.exports = {
   path: "/:id",
-  method: "PUT",
+  method: "PATCH",
   middleware: [
     guard.check(["view:admin", "update:users"]),
     validate([
       param("id").isNumeric().toInt(10),
       body("details.username").optional().isAlphanumeric().escape().trim(),
       body("details.email").optional().isEmail().normalizeEmail().escape(),
+      body("details.avatar").optional().isString().trim(),
       body("added.*").optional().isNumeric(),
       body("remove.*").optional().isNumeric(),
     ]),

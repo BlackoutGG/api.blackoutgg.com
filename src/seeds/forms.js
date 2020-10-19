@@ -101,14 +101,14 @@ const generateForms = async (num) => {
 
 exports.seed = async function (knex) {
   // Deletes ALL existing entries
-  // try {
-  //   const forms = await generateForms(50);
-  //   await knex.raw(
-  //     "TRUNCATE forms, fields, form_fields RESTART IDENTITY CASCADE"
-  //   );
-  //   const results = await Form.query(knex).insertGraph(forms);
-  // } catch (err) {
-  //   console.log(err);
-  //   return Promise.reject(err);
-  // }
+  try {
+    // const forms = await generateForms(50);
+    await knex.raw(
+      "TRUNCATE forms, fields, form_fields RESTART IDENTITY CASCADE"
+    );
+    // const results = await Form.query(knex).insertGraph(forms);
+  } catch (err) {
+    console.log(err);
+    return Promise.reject(err);
+  }
 };

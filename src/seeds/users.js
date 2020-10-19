@@ -73,7 +73,6 @@ const generateUsers = async (num) => {
     }
 
     const userRoles = uniqBy(roles, "role_id");
-    const roleIds = userRoles.map(({ role_id }) => role_id);
 
     users.push({
       username: faker.internet.userName(),
@@ -81,7 +80,6 @@ const generateUsers = async (num) => {
       email: faker.internet.email(),
       avatar: faker.internet.avatar(),
       user_roles: userRoles,
-      role_ids: JSON.stringify(roleIds),
       created_at: date,
       updated_at: date,
     });
@@ -93,7 +91,6 @@ const generateUsers = async (num) => {
     password: hashed,
     avatar: faker.internet.avatar(),
     user_roles: [{ role_id: 1 }],
-    role_ids: JSON.stringify([1]),
     created_at: date,
     updated_at: date,
   });
@@ -104,8 +101,8 @@ const generateUsers = async (num) => {
 exports.seed = async function (knex) {
   // Deletes ALL existing entries
   try {
-    const users = await generateUsers(50);
-    await knex.raw("TRUNCATE users RESTART IDENTITY CASCADE");
+    const users = await generateUsers(75);
+    await knex.raw("TRUNCATE users, media RESTART IDENTITY CASCADE");
 
     const results = await User.query(knex)
       .insertGraph(users, { relate: true })

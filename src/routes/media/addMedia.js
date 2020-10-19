@@ -4,31 +4,32 @@ const guard = require("express-jwt-permissions")();
 const { uploadFiles } = require("$services/upload");
 
 const upload = uploadFiles({
-  fields: [{ name: "gallery", maxCount: 10 }],
+  fields: [{ name: "media", maxCount: 10 }],
   bucket: process.env.AWS_BUCKET_NAME,
 });
 
-const middleware = [guard.check("media:upload"), upload];
+const middleware = [guard.check("add:media"), upload];
 
 const uploadMedia = async function (req, res, next) {
-  const files = req.files.gallery;
+  const files = req.files.media;
   if (!files.length) return res.status(400).send("Invalid Files");
 
-  files.map((file) => ({
+  const data = files.map((file) => ({
     mimetype: file.contentType,
     url: file.location,
     storage_key: file.key,
     user_id: req.user.id,
   }));
 
+  console.log(data);
+
   try {
-    await Media.query().insert(files);
+    await Media.query().insert(data);
     res.status(200).send();
   } catch (err) {
+    console.log(err);
     next(err);
   }
-
-  res.status(200).send("OK");
 };
 
 module.exports = {

@@ -21,7 +21,7 @@ class Event extends Base {
   static get jsonSchema() {
     return {
       type: "object",
-      required: ["name", "startDate", "startTime"],
+      required: ["name", "start_date", "start_time"],
       properties: {
         id: { type: "integer" },
         category_id: { type: "integer" },
@@ -30,10 +30,10 @@ class Event extends Base {
         month: { type: "integer" },
         year: { type: "integer" },
         description: { type: "string" },
-        startDate: { type: "string" },
-        startTime: { type: "string" },
-        endDate: { type: "string" },
-        endTime: { type: "string " },
+        start_date: { type: "string" },
+        start_time: { type: "string" },
+        end_date: { type: "string" },
+        end_time: { type: "string " },
         rvsp: { type: "boolean" },
         created_at: { type: "string" },
         updated_at: { type: "string" },

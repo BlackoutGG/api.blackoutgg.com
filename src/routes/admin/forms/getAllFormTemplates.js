@@ -5,29 +5,9 @@ const guard = require("express-jwt-permissions")();
 const { query } = require("express-validator");
 const { buildQuery, validate } = require("$util");
 
-const select = [
-  "forms.id",
-  "forms.name",
-  "forms.status",
-  "forms.created_at",
-  "forms.updated_at",
-  "category.id as category_id",
-];
-
 const getAllFormTemplates = async function (req, res, next) {
-  const filters = req.query.filters ? JSON.parse(req.query.filters) : null;
-  let query = Form.query().joinRelated("category").select(select);
-
-  if (filters && Object.keys(filters).length) {
-    if (filters.category_id) {
-      query = query.whereIn("category.id", filters.category_id);
-    }
-
-    if (filters.status) {
-      query = query.where("status", filters.status);
-    }
-  }
-
+  const filters = req.query.filters || null;
+  const query = Form.query();
   try {
     const [forms, categories] = await Promise.all([
       buildQuery(query, req.query.page, req.query.limit, null, null, filters),
@@ -36,11 +16,8 @@ const getAllFormTemplates = async function (req, res, next) {
         : Promise.resolve(null),
     ]);
 
-    console.log(forms);
-
     res.status(200).send({ forms, categories });
   } catch (err) {
-    console.log(err);
     next(err);
   }
 };

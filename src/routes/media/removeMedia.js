@@ -9,26 +9,22 @@ const validators = validate([query("keys.*").isString()]);
 
 const removeMedia = async (req, res, next) => {
   try {
-    const deleted = await deleteFiles(
-      proces.env.AWS_BUCKET_NAME,
-      req.query.keys
-    );
-    const media = await Media.transaction(async (trx) => {
-      await Media.query(trx).whereIn(
-        "s3_key",
-        deleted.map((item) => item.Key)
-      );
-      const results = await buildQuery(
-        Media.query(trx),
-        req.query.page,
-        req.query.limit
-      );
+    const s3 = await deleteFiles(process.env.AWS_BUCKET_NAME, req.query.keys);
+    if (!s3.Errors.length && s3.Deleted.length) {
+      const ids = await Media.transaction(async (trx) => {
+        const results = await Media.query(trx)
+          .delete()
+          .whereIn("storage_key", req.query.keys)
+          .returning(["id"]);
 
-      return results;
-    });
+        return results.map(({ id }) => id);
+      });
+      return res.status(200).send({ ids });
+    }
 
-    res.status(200).send({ media });
+    throw new Error("Encountered an internal problem.");
   } catch (err) {
+    console.log(err);
     next(err);
   }
 };

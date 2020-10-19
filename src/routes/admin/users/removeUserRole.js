@@ -1,5 +1,5 @@
 "use strict";
-const UserRole = require("./models/UserRole");
+const UserRole = require("$models/UserRole");
 const guard = require("express-jwt-permissions")();
 const { param, query } = require("express-validator");
 const { validate } = require("$util");
@@ -25,7 +25,7 @@ module.exports = {
   path: "/:id/role",
   method: "DELETE",
   middleware: [
-    guard.check("update:users"),
+    guard.check(["view:admin", "update:users"]),
     validate([param("id").isNumeric().toInt(10), query("roleId").isNumeric()]),
   ],
   handler: removeUserRole,

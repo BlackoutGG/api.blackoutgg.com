@@ -39,6 +39,8 @@ const adminGetSingleUserForm = async (req, res, next) => {
 
     form.fields = fields;
 
+    console.log(form);
+
     res.status(200).send({ form });
   } catch (err) {
     console.log(err);
