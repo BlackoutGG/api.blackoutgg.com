@@ -1,12 +1,13 @@
 "use strict";
 const Events = require("./models/Event");
 const guard = require("express-jwt-permissions")();
+const returning = require("./helpers/columns");
 const { body, param } = require("express-validator");
 const { validate } = require("$util");
 
 const validators = validate([
   param("id").isNumeric().toInt(10),
-  body("name").optional().isString().escape().trim(),
+  body("title").optional().isString().escape().trim(),
   body("category_id").optional().isNumeric(),
   body("color").optional().isString().escape().trim(),
   body("start_date").optional().isString().escape().trim(),
@@ -22,18 +23,19 @@ const log = (req, res, next) => {
   next();
 };
 
-const returning = [
-  "id",
-  "name",
-  "color",
-  "description",
-  "start_time",
-  "start_date",
-  "end_time",
-  "end_date",
-  "category_id",
-  "rvsp",
-];
+// const returning = [
+//   "id",
+//   "title",
+//   "color",
+//   "all_day",
+//   "description",
+//   "start_time",
+//   "start_date",
+//   "end_time",
+//   "end_date",
+//   "category_id",
+//   "rvsp",
+// ];
 
 const middleware = [guard.check("update:events"), log, validators];
 

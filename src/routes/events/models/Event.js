@@ -21,17 +21,19 @@ class Event extends Base {
   static get jsonSchema() {
     return {
       type: "object",
-      required: ["name", "start_date", "start_time"],
+      required: ["title", "start_date", "start_time"],
       properties: {
         id: { type: "integer" },
         category_id: { type: "integer" },
         color: { type: "string" },
-        name: { type: "string " },
+        title: { type: "string " },
         month: { type: "integer" },
         year: { type: "integer" },
         description: { type: "string" },
         start_date: { type: "string" },
         start_time: { type: "string" },
+        start_recur: { type: "string" },
+        end_recur: { type: "string" },
         end_date: { type: "string" },
         end_time: { type: "string " },
         rvsp: { type: "boolean" },
@@ -74,16 +76,24 @@ class Event extends Base {
           to: "roles.id",
         },
       },
-      participants: {
-        relation: Base.ManyToManyRelation,
-        modelClass: User,
+      // participants: {
+      //   relation: Base.ManyToManyRelation,
+      //   modelClass: User,
+      //   join: {
+      //     from: "events.id",
+      //     through: {
+      //       from: "event_participants.event_id",
+      //       to: "event_participants.user_id",
+      //     },
+      //     to: "users.id",
+      //   },
+      // },
+      occurances: {
+        relation: Base.HasManyRelation,
+        modelClass: EventMeta,
         join: {
           from: "events.id",
-          through: {
-            from: "event_participants.event_id",
-            to: "event_participants.user_id",
-          },
-          to: "users.id",
+          to: "event_meta.event_id",
         },
       },
     };

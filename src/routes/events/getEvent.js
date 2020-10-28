@@ -1,23 +1,25 @@
 "use strict";
 const Event = require("./models/Event");
 const guard = require("express-jwt-permissions")();
+const columns = require("./helpers/columns.js");
 const { param } = require("express-validator");
 const { validate } = require("$util");
 
 const validators = validate([param("id").isNumeric().toInt(10)]);
 
-const columns = [
-  "id",
-  "name",
-  "color",
-  "category_id",
-  "start_date",
-  "start_time",
-  "end_date",
-  "end_time",
-  "description",
-  "rvsp",
-];
+// const columns = [
+//   "id",
+//   "title",
+//   "color",
+//   "all_day",
+//   "category_id",
+//   "start_date",
+//   "start_time",
+//   "end_date",
+//   "end_time",
+//   "description",
+//   "rvsp",
+// ];
 
 const getAllEvents = async function (req, res, next) {
   try {

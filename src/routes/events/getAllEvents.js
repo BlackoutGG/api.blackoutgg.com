@@ -13,11 +13,12 @@ const validators = validate([
 
 const columns = [
   "events.id",
-  "events.name",
+  "title",
   "category_id",
   "color",
   "start_date",
   "start_time",
+  "interval",
   "end_date",
   "end_time",
   "description",

@@ -113,18 +113,38 @@ exports.up = function (knex) {
           .references("users.id")
           .onUpdate("CASCADE")
           .onDelete("CASCADE");
-        t.string("name");
+        t.string("title");
         t.string("color");
         t.string("start_date");
         t.string("start_time");
         t.string("end_date");
         t.string("end_time");
+        t.enum("interval", ["once", "daily", "weekly", "monthly"]).defaultTo(
+          "once"
+        );
         t.text("description");
         t.boolean("rvsp").defaultTo(false);
+        t.boolean("all_day").defaultTo(false);
         t.index("user_id");
         t.timestamps();
       });
     }),
+    knex.schema.hasTable("event_meta").then((exists) => {
+      if (exists) return;
+      return knex.schema.createTable("event_meta", (t) => {
+        t.increments("id").primary();
+        t.string("group_id").nullable();
+        t.integer("event_id")
+          .references("events.id")
+          .onDelete("CASCADE")
+          .onUpdate("CASCADE");
+        t.string("start_date");
+        t.string("start_time");
+        t.string("end_date");
+        t.string("end_time");
+      });
+    }),
+    // knex.schema.raw("ALTER TABLE events_meta ADD duration daterange"),
     knex.schema.hasTable("event_roles").then((exists) => {
       if (exists) return;
       return knex.schema.createTable("event_roles", (t) => {
@@ -142,7 +162,7 @@ exports.up = function (knex) {
       if (exists) return;
       return knex.schema.createTable("event_participants", (t) => {
         t.integer("event_id")
-          .references("events.id")
+          .references("event_meta.id")
           .onUpdate("CASCADE")
           .onDelete("CASCADE");
         t.integer("user_id")
@@ -282,7 +302,7 @@ exports.down = function (knex) {
     knex.schema.dropTableIfExists("menu_tree"),
     knex.schema.dropTableIfExists("menu"),
 
-    knex.schema.dropTableIfExists("event_category"),
+    knex.schema.dropTableIfExists("event_meta"),
     knex.schema.dropTableIfExists("event_participants"),
     knex.schema.dropTableIfExists("event_roles"),
     knex.schema.dropTableIfExists("events"),

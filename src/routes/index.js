@@ -12,10 +12,15 @@ const resolve = (route) => (req, res, next) =>
     })
   );
 
+const toExclude = ["models", "helpers"];
+
+const exclude = (dir) => toExclude.some((item) => dir.startsWith(item));
+
 const routes = new fdir()
   .withFullPaths()
   .withMaxDepth(2)
-  .exclude((dir) => dir.startsWith("models"))
+  .exclude(exclude)
+  // .exclude((dir) => dir.startsWith("models") || dir.startsWith("helpers"))
   .filter((path) => !path.endsWith("index.js"))
   .crawl(__dirname)
   .sync();
