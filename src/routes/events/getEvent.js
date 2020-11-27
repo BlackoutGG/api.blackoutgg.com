@@ -2,32 +2,25 @@
 const Event = require("./models/Event");
 const guard = require("express-jwt-permissions")();
 const columns = require("./helpers/columns.js");
-const { param } = require("express-validator");
+const { param, query } = require("express-validator");
 const { validate } = require("$util");
 
-const validators = validate([param("id").isNumeric().toInt(10)]);
+const validators = validate([
+  param("id").isNumeric().toInt(10),
+  query("id").isNumeric().toInt(10),
+]);
 
-// const columns = [
-//   "id",
-//   "title",
-//   "color",
-//   "all_day",
-//   "category_id",
-//   "start_date",
-//   "start_time",
-//   "end_date",
-//   "end_time",
-//   "description",
-//   "rvsp",
-// ];
-
-const getAllEvents = async function (req, res, next) {
+const getEvent = async function (req, res, next) {
   try {
     const event = await Event.query()
-      .withGraphFetched(`[organizer(defaultSelects), category(defaultSelects)]`)
+      .joinRelated("[occurrences, category]")
+      .select(columns)
+      .withGraphFetched(`[organizer(defaultSelects)]`)
       .first()
-      .where("id", req.params.id)
-      .select(columns);
+      .where("events.id", req.params.id)
+      .where("occurrences.id", req.query.id);
+
+    console.log(event);
 
     res.status(200).send({ event });
   } catch (err) {
@@ -40,5 +33,5 @@ module.exports = {
   path: "/:id",
   method: "GET",
   middleware: [guard.check("view:events"), validators],
-  handler: getAllEvents,
+  handler: getEvent,
 };

@@ -5,6 +5,8 @@ const User = require("$models/User");
 const verifyRecaptcha = require("$services/recaptcha")(
   process.env.RECAPTCHA_SECRET
 );
+const addHours = require("date-fns/addHours");
+const { nanoid } = require("nanoid");
 const { validate } = require("$util");
 const { body, header } = require("express-validator");
 
@@ -30,6 +32,10 @@ const login = async function (req, res, next) {
         .send({ message: "User credentials do not match." });
     }
 
+    const jti = nanoid();
+
+    await User.query().patch({ token_id: jti }).where("id", result.id);
+
     const { roles, ...user } = result;
 
     const permissions = roles.flatMap(({ permissions }) =>
@@ -41,6 +47,7 @@ const login = async function (req, res, next) {
     const level = Math.min(roles.map(({ level }) => level));
 
     const data = {
+      jti,
       id: user.id,
       username: user.username,
       avatar: user.avatar,
@@ -50,7 +57,7 @@ const login = async function (req, res, next) {
     };
 
     const token = jwt.sign(data, process.env.JWT_SECRET, {
-      expiresIn: "5h",
+      expiresIn: "1h",
     });
 
     res.status(200).send({ token });

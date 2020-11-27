@@ -5,6 +5,7 @@ exports.up = function (knex) {
       return knex.schema.createTable("users", (t) => {
         t.increments("id").primary();
         t.integer("discord_id").unique();
+        t.string("token_id").nullable();
         t.string("email").unique();
         t.string("username").unique();
         t.string("password");
@@ -114,11 +115,9 @@ exports.up = function (knex) {
           .onUpdate("CASCADE")
           .onDelete("CASCADE");
         t.string("title");
-        t.string("color");
-        t.string("start_date");
         t.string("start_time");
-        t.string("end_date");
         t.string("end_time");
+        t.string("color");
         t.enum("interval", ["once", "daily", "weekly", "monthly"]).defaultTo(
           "once"
         );
@@ -138,10 +137,8 @@ exports.up = function (knex) {
           .references("events.id")
           .onDelete("CASCADE")
           .onUpdate("CASCADE");
-        t.string("start_date");
-        t.string("start_time");
-        t.string("end_date");
-        t.string("end_time");
+        t.date("start_date");
+        t.date("end_date");
       });
     }),
     // knex.schema.raw("ALTER TABLE events_meta ADD duration daterange"),
@@ -204,15 +201,6 @@ exports.up = function (knex) {
         t.timestamps();
       });
     }),
-    // knex.schema.hasTable("form_category").then((exists) => {
-    //   if (exists) return;
-    //   return knex.schema.createTable("form_category", (t) => {
-    //     t.increments("id").primary();
-    //     t.integer("form_id").references("forms.id");
-    //     t.integer("category_id").references("categories.id");
-    //     t.timestamps();
-    //   });
-    // }),
     knex.schema.hasTable("fields").then((exists) => {
       if (exists) return;
       return knex.schema.createTable("fields", (t) => {
@@ -290,33 +278,17 @@ exports.up = function (knex) {
   ]);
 };
 
-exports.down = function (knex) {
-  return Promise.all([
-    // knex.schema.dropTableIfExists("form_category"),
-    knex.schema.dropTableIfExists("user_form_fields"),
-    knex.schema.dropTableIfExists("user_forms"),
-    knex.schema.dropTableIfExists("form_fields"),
-    knex.schema.dropTableIfExists("fields"),
-    knex.schema.dropTableIfExists("forms"),
-
-    knex.schema.dropTableIfExists("menu_tree"),
-    knex.schema.dropTableIfExists("menu"),
-
-    knex.schema.dropTableIfExists("event_meta"),
-    knex.schema.dropTableIfExists("event_participants"),
-    knex.schema.dropTableIfExists("event_roles"),
-    knex.schema.dropTableIfExists("events"),
-    knex.schema.dropTableIfExists("categories"),
-
-    knex.schema.dropTableIfExists("user_roles"),
-    knex.schema.dropTableIfExists("role_permissions"),
-    knex.schema.dropTableIfExists("permissions"),
-    knex.schema.dropTableIfExists("roles"),
-
-    knex.schema.dropTableIfExists("posts"),
-    knex.schema.dropTableIfExists("post_types"),
-
-    knex.schema.dropTableIfExists("media"),
-    knex.schema.dropTableIfExists("users"),
-  ]);
+exports.down = async function (knex) {
+  try {
+    await knex.raw(
+      `DROP TABLE IF EXISTS user_form_fields, 
+      user_forms, form_fields, fields, 
+      forms, menu_tree, menu, event_participants, 
+      event_roles, event_meta, events, categories, 
+      user_roles, role_permissions, permissions, 
+      users, roles, media, posts, post_types`
+    );
+  } catch (err) {
+    throw err;
+  }
 };

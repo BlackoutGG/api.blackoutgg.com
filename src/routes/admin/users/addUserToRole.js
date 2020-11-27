@@ -1,9 +1,11 @@
 "use strict";
 const UserRole = require("$models/UserRole");
+const User = require("$models/User");
 
 const guard = require("express-jwt-permissions")();
 const { param, body } = require("express-validator");
 const { validate } = require("$util");
+const { Redshift } = require("aws-sdk");
 
 const addUserToGroup = async function (req, res) {
   const userId = parseInt(req.params.id, 10),
@@ -18,15 +20,37 @@ const addUserToGroup = async function (req, res) {
     return res.status(422).send("User already has role.");
   }
 
-  const insert = await UserRole.query()
-    .insert({
-      user_id: userId,
-      role_id: roleId,
-    })
-    .withGraphFetched("role(nameAndId)")
-    .returning("*");
+  const result = await UserRole.transaction(async (trx) => {
+    const role = await UserRole.query(trx)
+      .insert({
+        user_id: userId,
+        role_id: roleId,
+      })
+      .withGraphFetched("role(nameAndId)")
+      .returning("*");
 
-  const user = { id: insert.user_id, role: insert.role };
+    const token = await User.query()
+      .select("token_id")
+      .where("id", userId)
+      .first();
+
+    return { role, token };
+  });
+
+  /** If any permission/role changes are made on the user we revoke the token and force the user to relog. */
+  if (!(await req.redis.get(`blacklist:${result.token.token_id}`))) {
+    await req.redis.set(
+      `blacklist:${result.token.token_id}`,
+      `blacklist:${result.token.token_id}`,
+      "EX",
+      60 * 60 * 24
+    );
+  }
+
+  const user = {
+    id: userId,
+    role: result.role,
+  };
 
   res.status(200).send({ user });
 };

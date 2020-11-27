@@ -34,10 +34,17 @@ app.use(
   })
 );
 
+/*** INJECT REDIS INTO RESPONSE ***/
+app.use(function (req, res, next) {
+  req.redis = redis;
+  next();
+});
+
 /*** SETUP AUTHENTICATION FOR ROUTES ***/
 app.use(
   expressJwt({
     secret: process.env.JWT_SECRET,
+    isRevoked: require("$util/revokeToken.js"),
   }).unless({
     path: [
       "/",
@@ -52,12 +59,6 @@ app.use(
 /*** SETUP BODY PARSER ***/
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
-/*** INJECT REDIS INTO RESPONSE ***/
-app.use(function (req, res, next) {
-  req.redis = redis;
-  next();
-});
 
 /*** PARSE NESTED FILTERS */
 app.use(function (req, res, next) {

@@ -1,6 +1,8 @@
 "use strict";
 const Event = require("./models/Event");
+const EventParticipants = require("./models/EventParticipants");
 const guard = require("express-jwt-permissions")();
+const columns = require("./helpers/columns");
 const { query } = require("express-validator");
 const { validate } = require("$util");
 const { raw } = require("objection");
@@ -11,48 +13,50 @@ const validators = validate([
   query("end").isString(),
 ]);
 
-const columns = [
-  "events.id",
-  "title",
-  "category_id",
-  "color",
-  "start_date",
-  "start_time",
-  "interval",
-  "end_date",
-  "end_time",
-  "description",
-  "rvsp",
-  "category.name as category",
-];
+// const columns = [
+//   "events.id as event_id",
+//   "occurrences.group_id as group_id",
+//   "occurrences.id as id",
+//   "all_day",
+//   "title",
+//   "color",
+//   "events.category_id",
+//   "description",
+//   "interval",
+//   "occurrences.start_date as start_date",
+//   "occurrences.end_date as end_date",
+//   "rvsp",
+//   "category.name as category",
+// ];
 
 const getAllEvents = async function (req, res, next) {
   console.log(req.query);
 
-  const filters = req.query.filters || null,
-    { start, end, ...where } = req.query;
-
-  let query = Event.query();
-
-  if (filters && Object.keys(filters).length) {
-    query = query.whereIn("category_id", filters.category_id);
-  }
-
-  query = query.where(raw("duration && '[??, ??)'", start, end));
-
-  // query = query.where(
-  //   raw(
-  //     "daterange('startDate'::date, 'endDate'::date, '[]') && '[??,??)'",
-  //     start,
-  //     end
-  //   )
-  // );
-
   try {
-    const events = await query
-      .joinRelated("category")
+    const events = await Event.query()
+      .joinRelated("[category, occurrences]")
+      .where(
+        raw(
+          "daterange(start_date, end_date, '[]') && '[??,??)'",
+          req.query.start,
+          req.query.end
+        )
+      )
       .withGraphFetched("organizer(defaultSelects)")
-      .select(columns);
+      .select([
+        ...columns,
+        EventParticipants.query()
+          .count("*")
+          .as("participants")
+          .whereColumn("event_id", "occurrences.id"),
+        EventParticipants.query()
+          .count()
+          .as("joined")
+          .whereColumn("event_id", "occurrences.id")
+          .where({ user_id: req.user.id }),
+      ]);
+
+    console.log(events);
 
     res.status(200).send({ events });
   } catch (err) {

@@ -15,8 +15,14 @@ const middleware = [
 
 const removeRole = async function (req, res, next) {
   try {
-    const roles = await Roles.transaction(async (trx) => {
+    const items = await Roles.transaction(async (trx) => {
       await Roles.query(trx).whereIn("id", req.query.ids).delete();
+
+      const tokenIDs = await User.query(trx)
+        .joinRelated("roles")
+        .select("token_id")
+        .whereIn("roles.id", req.query.ids)
+        .distinct();
 
       const results = await buildQuery(
         Roles.query(trx),
@@ -24,10 +30,36 @@ const removeRole = async function (req, res, next) {
         req.body.limit
       );
 
-      return results;
+      return { results, tokenIDs };
     });
 
-    res.status(200).send({ roles });
+    if (items.tokenIDs && items.tokenIDs.length) {
+      let blacklist;
+
+      const stream = req.redis.scanStream({ match: "blacklist:*", count: 100 });
+
+      stream.on("data", (keys) => {
+        const ids = items.tokenIDs.map((id) => `blacklist:${id}`);
+        blacklist = keys.reduce((output, key) => {
+          if (!ids.includes(key)) {
+            output.push(key);
+          }
+          return output;
+        }, []);
+      });
+
+      stream.on("end", async () => {
+        if (blacklist && blacklist.length) {
+          const setCommands = blacklist.map((key) => {
+            return ["set", key, key, "EX", 60 * 60 * 24];
+          });
+
+          await req.redis.multi(setCommands).exec();
+        }
+      });
+    }
+
+    res.status(200).send({ roles: roles.results });
   } catch (err) {
     console.log(err);
     next(err);
