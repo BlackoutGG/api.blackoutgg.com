@@ -51,6 +51,7 @@ app.use(
       `${apiVersion}/auth/login`,
       `${apiVersion}/auth/discord/state`,
       `${apiVersion}/auth/discord`,
+      `${apiVersion}/auth/logout`,
       `${apiVersion}/users/register`,
     ],
   })

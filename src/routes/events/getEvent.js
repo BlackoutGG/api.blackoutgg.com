@@ -12,15 +12,32 @@ const validators = validate([
 
 const getEvent = async function (req, res, next) {
   try {
-    const event = await Event.query()
-      .joinRelated("[occurrences, category]")
-      .select(columns)
-      .withGraphFetched(`[organizer(defaultSelects)]`)
-      .first()
-      .where("events.id", req.params.id)
-      .where("occurrences.id", req.query.id);
+    // const event = await Event.query()
+    //   .joinRelated("[occurrences, category]")
+    //   .select(columns)
+    //   .withGraphFetched(`[organizer(defaultSelects)]`)
+    //   .first()
+    //   .where("events.id", req.params.id)
+    //   .where("occurrences.id", req.query.id);
 
-    console.log(event);
+    const event = await Event.query()
+      .joinRelated("[category, occurrences]")
+      .where("events.id", req.params.id)
+      .where("occurrences.id", req.query.id)
+      .withGraphFetched("organizer(defaultSelects)")
+      .select([
+        ...columns,
+        EventParticipants.query()
+          .count("*")
+          .as("participants")
+          .whereColumn("event_id", "occurrences.id"),
+        EventParticipants.query()
+          .count()
+          .as("joined")
+          .whereColumn("event_id", "occurrences.id")
+          .where({ user_id: req.user.id }),
+      ])
+      .first();
 
     res.status(200).send({ event });
   } catch (err) {

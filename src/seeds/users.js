@@ -78,7 +78,7 @@ const generateUsers = async (num) => {
       username: faker.internet.userName(),
       password: hashed,
       email: faker.internet.email(),
-      avatar: faker.internet.avatar(),
+      avatar: faker.image.cats(),
       user_roles: userRoles,
       created_at: date,
       updated_at: date,

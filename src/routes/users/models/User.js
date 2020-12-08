@@ -36,6 +36,7 @@ class User extends Base {
   static get relationMappings() {
     const Roles = require("$models/Roles");
     const UserRole = require("./UserRole");
+    const UserSession = require("./UserSession");
     return {
       user_roles: {
         relation: Base.HasManyRelation,
@@ -55,6 +56,14 @@ class User extends Base {
             to: "user_roles.role_id",
           },
           to: "roles.id",
+        },
+      },
+      session: {
+        relation: Base.HasOneRelation,
+        modelClass: UserSession,
+        join: {
+          from: "users.id",
+          to: "user_sessions.user_id",
         },
       },
     };

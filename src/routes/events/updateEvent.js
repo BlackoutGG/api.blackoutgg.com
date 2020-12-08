@@ -37,12 +37,10 @@ const updateEvent = async function (req, res, next) {
       let results = [];
 
       if (patch.details && Object.keys(patch.details).length) {
-        results = results.concat(
-          await Events.query(trx)
-            .patch(patch)
-            .where({ event_id })
-            .returning(["id", ...Object.keys(patch)])
-        );
+        await Events.query(trx)
+          .patch(patch)
+          .where({ event_id })
+          .returning(["id", ...Object.keys(patch)]);
       }
 
       if (start_date || end_date) {
@@ -59,37 +57,39 @@ const updateEvent = async function (req, res, next) {
           returning.push("end_date");
         }
 
-        const relation = await Event.relatedQuery("occurrences", trx)
+        await Event.relatedQuery("occurrences", trx)
           .patch(dates)
           .where("id", id)
           .returning(returning);
-
-        results = results.concat(relation);
       }
 
-      // const result = await Event.query(trx)
-      //   .joinRelated("[category, occurrences]")
-      //   .where("events.id", event_id)
-      //   .where("occurrences.id", id)
-      //   .withGraphFetched("organizer(defaultSelects)")
-      //   .select([
-      //     ...columns,
-      //     EventParticipants.query()
-      //       .count("*")
-      //       .as("participants")
-      //       .whereColumn("event_id", "occurrences.id"),
-      //     EventParticipants.query()
-      //       .select("user_id")
-      //       .as("joined")
-      //       .whereColumn("event_id", "occurrences.id")
-      //       .where("user_id", req.user.id),
-      //   ]);
+      const result = await Event.query(trx)
+        .joinRelated("[category, occurrences]")
+        .where("events.id", event_id)
+        .where("occurrences.id", id)
+        .withGraphFetched("organizer(defaultSelects)")
+        .select([
+          ...columns,
+          EventParticipants.query()
+            .count("*")
+            .as("participants")
+            .whereColumn("event_id", "occurrences.id"),
+          EventParticipants.query()
+            .select("user_id")
+            .as("joined")
+            .whereColumn("event_id", "occurrences.id")
+            .where("user_id", req.user.id),
+        ]);
 
-      return results.reduce((output, item) => {
-        Object.assign(output, item);
-        return output;
-      }, {});
+      return result;
+
+      // return results.reduce((output, item) => {
+      //   Object.assign(output, item);
+      //   return output;
+      // }, {});
     });
+
+    console.log(event);
 
     res.status(200).send({ event });
   } catch (err) {

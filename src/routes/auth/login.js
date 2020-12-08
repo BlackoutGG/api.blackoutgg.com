@@ -2,6 +2,7 @@
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const User = require("$models/User");
+const UserSession = require("$models/UserSession");
 const verifyRecaptcha = require("$services/recaptcha")(
   process.env.RECAPTCHA_SECRET
 );
@@ -33,8 +34,15 @@ const login = async function (req, res, next) {
     }
 
     const jti = nanoid();
+    const expires_on = addHours(Date.now(), 1);
 
-    await User.query().patch({ token_id: jti }).where("id", result.id);
+    console.log(expires_on);
+
+    await UserSession.query().insert({
+      token_id: jti,
+      user_id: result.id,
+      expires_on,
+    });
 
     const { roles, ...user } = result;
 
@@ -62,6 +70,7 @@ const login = async function (req, res, next) {
 
     res.status(200).send({ token });
   } catch (err) {
+    console.log(err);
     next(err);
   }
 };

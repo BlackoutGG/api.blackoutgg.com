@@ -14,6 +14,16 @@ exports.up = function (knex) {
         t.timestamps();
       });
     }),
+    knex.schema.hasTable("user_sessions").then((exists) => {
+      if (exists) return;
+      return knex.schema.createTable("user_sessions", (t) => {
+        t.increments("id").primary();
+        t.integer("user_id").references("users.id");
+        t.string("token_id");
+        t.timestamp("expires_on");
+        t.timestamps();
+      });
+    }),
     knex.schema.hasTable("roles").then((exists) => {
       if (exists) return;
       return knex.schema.createTable("roles", (t) => {
@@ -282,7 +292,7 @@ exports.down = async function (knex) {
   try {
     await knex.raw(
       `DROP TABLE IF EXISTS user_form_fields, 
-      user_forms, form_fields, fields, 
+      user_forms, user_sessions, form_fields, fields, 
       forms, menu_tree, menu, event_participants, 
       event_roles, event_meta, events, categories, 
       user_roles, role_permissions, permissions, 

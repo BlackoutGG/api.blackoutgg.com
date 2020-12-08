@@ -49,8 +49,8 @@ const updateRole = async (req, res, next) => {
 
   try {
     const results = await Roles.transaction(async (trx) => {
-      let toUpdate = {}, token;
-
+      let toUpdate = {},
+        tokens;
 
       if (remove && remove.length) {
         await RolePermissions.query(trx)
@@ -75,8 +75,9 @@ const updateRole = async (req, res, next) => {
       if (added || remove) {
         tokens = await User.query(trx)
           .joinRelated("roles")
-          .select("token_id")
-          .where("roles.id", req.params.id)
+          .withGraphJoined("token_info(selectByCreated)")
+          .select("token_info.*")
+          .whereIn("roles.id", req.query.ids)
           .distinct();
       }
 
@@ -91,23 +92,27 @@ const updateRole = async (req, res, next) => {
         .first()
         .returning(["id", "name", "level", "created_at", "updated_at"]);
 
-      return { details: _details, tokensIDs };
+      return { details: _details, tokens };
     });
 
     /**
      * If a permission changes on a role, we pull all the users with that role
      * and revoke their tokens.
      */
-    if (results.tokenIDs && results.tokenIDs.length) {
-      let blacklist;
+    if (results.tokens && results.tokens.length) {
+      let blacklist = [];
 
       const stream = req.redis.scanStream({ match: "blacklist:*", count: 100 });
 
       stream.on("data", (keys) => {
-        const ids = result.tokenIDs.map((id) => `blacklist:${id}`);
-        blacklist = keys.reduce((output, key) => {
-          if (!ids.includes(key)) {
-            output.push(key);
+        blacklist = results.tokens.reduce((output, info) => {
+          //turn seconds into milliseconds for a comparison.
+          const timestamp = new Date(info.expire_on);
+
+          if (isBefore(Date.now(), timestamp)) {
+            if (!keys.include(`blacklist:${info.token_id}`)) {
+              output.push(info);
+            }
           }
           return output;
         }, []);
@@ -115,8 +120,17 @@ const updateRole = async (req, res, next) => {
 
       stream.on("end", async () => {
         if (blacklist && blacklist.length) {
-          const setCommands = blacklist.map((key) => {
-            return ["set", key, key, "EX", 60 * 60 * 24];
+          const setCommands = blacklist.map((info) => {
+            //turn seconds into milliseconds for a comparison.
+            const timestamp = new Date(info.expire_on);
+
+            return [
+              "set",
+              `blacklist:${info.token_id}`,
+              `blacklist:${info.token_id}`,
+              "EX",
+              diffInSeconds(Date.now(), timestamp),
+            ];
           });
 
           await req.redis.multi(setCommands).exec();
