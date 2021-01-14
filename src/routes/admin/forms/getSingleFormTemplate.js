@@ -31,19 +31,28 @@ const validators = validate([param("id").isNumeric().toInt(10)]);
 // };
 
 const getSingleForm = async function (req, res, next) {
-  try {
-    const form = await Form.query()
-      .withGraphFetched("[category(defaultSelects), fields(order)]")
-      .select("id", "name", "description", "category_id")
-      .where("id", req.params.id)
-      .first()
-      .throwIfNotFound();
+  const form = await Form.query()
+    .withGraphFetched("[category(defaultSelects), fields(order)]")
+    .select("id", "name", "description", "category_id")
+    .where("id", req.params.id)
+    .first()
+    .throwIfNotFound();
 
-    res.status(200).send({ form });
-  } catch (err) {
-    console.log(err);
-    next(err);
-  }
+  res.status(200).send({ form });
+
+  // try {
+  //   const form = await Form.query()
+  //     .withGraphFetched("[category(defaultSelects), fields(order)]")
+  //     .select("id", "name", "description", "category_id")
+  //     .where("id", req.params.id)
+  //     .first()
+  //     .throwIfNotFound();
+
+  //   res.status(200).send({ form });
+  // } catch (err) {
+  //   console.log(err);
+  //   next(err);
+  // }
 };
 
 module.exports = {

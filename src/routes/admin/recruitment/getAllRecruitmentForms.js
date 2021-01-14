@@ -24,24 +24,31 @@ const getAllRecruitmentForm = async (req, res, next) => {
 
   const categoryQuery = Category.query().where("recruitment", true);
 
-  try {
-    const [forms, categories] = await Promise.all([
-      buildQuery(
-        formQuery,
-        req.query.page,
-        req.query.limit,
-        null,
-        null,
-        filters
-      ),
-      categoryQuery,
-    ]);
+  const [forms, categories] = await Promise.all([
+    buildQuery(formQuery, req.query.page, req.query.limit, null, null, filters),
+    categoryQuery,
+  ]);
 
-    res.status(200).send({ forms, categories });
-  } catch (err) {
-    console.log(err);
-    next(err);
-  }
+  res.status(200).send({ forms, categories });
+
+  // try {
+  //   const [forms, categories] = await Promise.all([
+  //     buildQuery(
+  //       formQuery,
+  //       req.query.page,
+  //       req.query.limit,
+  //       null,
+  //       null,
+  //       filters
+  //     ),
+  //     categoryQuery,
+  //   ]);
+
+  //   res.status(200).send({ forms, categories });
+  // } catch (err) {
+  //   console.log(err);
+  //   next(err);
+  // }
 };
 
 module.exports = {

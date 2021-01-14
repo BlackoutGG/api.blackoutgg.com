@@ -11,6 +11,15 @@ const formSelect = [
   "form:category.name as category_name",
 ];
 
+// const fieldSelect = [
+//   "user_form_fields.id",
+//   "user_form_fields.answer",
+//   "field.options",
+//   "field.value",
+//   "field.optional",
+//   "field.type",
+// ];
+
 const fieldSelect = [
   "user_form_fields.id",
   "user_form_fields.answer",
@@ -21,31 +30,46 @@ const fieldSelect = [
 ];
 
 const adminGetSingleUserForm = async (req, res, next) => {
+  const formFields = UserForm.relatedQuery("form_fields")
+    .whereColumn("user_form_fields.form_id", "user_forms.id")
+    .joinRelated("field")
+    .select(fieldSelect)
+    .orderBy("field.order")
+    .as("fields");
+
   const formQuery = UserForm.query()
     .where("user_forms.id", req.params.id)
     .joinRelated("form.[category]")
     .withGraphFetched("applicant(defaultSelects)")
-    .select(formSelect)
+    .select([formSelect, formFields])
     .first();
 
-  const fieldsQuery = UserFormField.query()
-    .joinRelated("field")
-    .where("user_form_fields.form_id", req.params.id)
-    .select(fieldSelect)
-    .orderBy("field.order");
+  // const fieldsQuery = UserFormField.query()
+  //   .joinRelated("field")
+  //   .where("user_form_fields.form_id", req.params.id)
+  //   .select(fieldSelect)
+  //   .orderBy("field.order");
 
-  try {
-    const [form, fields] = await Promise.all([formQuery, fieldsQuery]);
+  const form = await formQuery;
 
-    form.fields = fields;
+  console.log(form);
 
-    console.log(form);
+  res.status(200).send({ form });
 
-    res.status(200).send({ form });
-  } catch (err) {
-    console.log(err);
-    next(err);
-  }
+  // try {
+  //   // const [form, fields] = await Promise.all([formQuery, fieldsQuery]);
+
+  //   // form.fields = fields;
+
+  //   const form = await formQuery;
+
+  //   console.log(form);
+
+  //   res.status(200).send({ form });
+  // } catch (err) {
+  //   console.log(err);
+  //   next(err);
+  // }
 };
 
 module.exports = {

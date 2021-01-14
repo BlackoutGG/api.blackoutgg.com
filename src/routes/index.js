@@ -20,10 +20,11 @@ const routes = new fdir()
   .withFullPaths()
   .withMaxDepth(2)
   .exclude(exclude)
-  // .exclude((dir) => dir.startsWith("models") || dir.startsWith("helpers"))
   .filter((path) => !path.endsWith("index.js"))
   .crawl(__dirname)
   .sync();
+
+/** ALL ROUTE HANDLERS MUST BE AN ASYNC FUNCTION */
 
 routes.forEach((r) => {
   const split = r.split(routeDir);
@@ -35,9 +36,13 @@ routes.forEach((r) => {
   if (route) {
     const method = route.method.toLowerCase();
     if (route.middleware && route.middleware.length) {
-      router[method](path.concat(route.path), route.middleware, route.handler);
+      router[method](
+        path.concat(route.path),
+        route.middleware,
+        resolve(route.handler)
+      );
     } else {
-      router[method](path.concat(route.path), route.handler);
+      router[method](path.concat(route.path), resolve(route.handler));
     }
   }
 });

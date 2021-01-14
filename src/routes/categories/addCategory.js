@@ -11,21 +11,32 @@ const validators = validate([
 ]);
 
 const addCategory = async function (req, res, next) {
-  try {
-    const categories = await Category.transaction(async (trx) => {
-      await Category.query(trx).insert({ name: req.body.name });
-      const results = await buildQuery(
-        Category.query(trx),
-        req.body.page,
-        req.body.limit
-      );
-      return results;
-    });
-    res.status(200).send({ categories });
-  } catch (err) {
-    console.log(err);
-    next(err);
-  }
+  const categories = await Category.transaction(async (trx) => {
+    await Category.query(trx).insert({ name: req.body.name });
+    const results = await buildQuery(
+      Category.query(trx),
+      req.body.page,
+      req.body.limit
+    );
+    return results;
+  });
+  res.status(200).send({ categories });
+
+  // try {
+  //   const categories = await Category.transaction(async (trx) => {
+  //     await Category.query(trx).insert({ name: req.body.name });
+  //     const results = await buildQuery(
+  //       Category.query(trx),
+  //       req.body.page,
+  //       req.body.limit
+  //     );
+  //     return results;
+  //   });
+  //   res.status(200).send({ categories });
+  // } catch (err) {
+  //   console.log(err);
+  //   next(err);
+  // }
 };
 
 module.exports = {

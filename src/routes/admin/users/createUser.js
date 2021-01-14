@@ -46,46 +46,83 @@ const createUser = async function (req, res, next) {
     limit = req.body.limit,
     roles = req.body.roles;
 
-  try {
-    const salt = await bcrypt.genSalt(SALT_ROUNDS);
-    const password = await bcrypt.hash(req.body.password, salt);
+  const salt = await bcrypt.genSalt(SALT_ROUNDS);
+  const password = await bcrypt.hash(req.body.password, salt);
 
-    const creds = {
-      username: req.body.username,
-      email,
-      password,
-    };
+  const creds = {
+    username: req.body.username,
+    email,
+    password,
+  };
 
-    const insert = insertFn(creds, roles);
-    const options = { relate: true };
+  const insert = insertFn(creds, roles);
+  const options = { relate: true };
 
-    const { username, users } = await User.transaction(async (trx) => {
-      const user = await User.query(trx)
-        .insertGraph(insert, options)
-        .returning("*");
+  const { username, users } = await User.transaction(async (trx) => {
+    const user = await User.query(trx)
+      .insertGraph(insert, options)
+      .returning("*");
 
-      let query = User.query(trx)
-        .withGraphFetched("roles(nameAndId)")
-        .orderBy("id")
-        .select("id", "avatar", "username", "email", "created_at");
+    let query = User.query(trx)
+      .withGraphFetched("roles(nameAndId)")
+      .orderBy("id")
+      .select("id", "avatar", "username", "email", "created_at");
 
-      if (filters && Object.keys(filters).length) {
-        console.log(filters);
+    if (filters && Object.keys(filters).length) {
+      console.log(filters);
 
-        query = query.whereExists(
-          User.relatedQuery("roles").whereIn("id", filters.id)
-        );
-      }
+      query = query.whereExists(
+        User.relatedQuery("roles").whereIn("id", filters.id)
+      );
+    }
 
-      const users = await buildQuery(query, page, limit);
+    const users = await buildQuery(query, page, limit);
 
-      return { username: user.username, users };
-    });
+    return { username: user.username, users };
+  });
 
-    res.status(200).send({ username, users });
-  } catch (err) {
-    next(err);
-  }
+  res.status(200).send({ username, users });
+
+  // try {
+  //   const salt = await bcrypt.genSalt(SALT_ROUNDS);
+  //   const password = await bcrypt.hash(req.body.password, salt);
+
+  //   const creds = {
+  //     username: req.body.username,
+  //     email,
+  //     password,
+  //   };
+
+  //   const insert = insertFn(creds, roles);
+  //   const options = { relate: true };
+
+  //   const { username, users } = await User.transaction(async (trx) => {
+  //     const user = await User.query(trx)
+  //       .insertGraph(insert, options)
+  //       .returning("*");
+
+  //     let query = User.query(trx)
+  //       .withGraphFetched("roles(nameAndId)")
+  //       .orderBy("id")
+  //       .select("id", "avatar", "username", "email", "created_at");
+
+  //     if (filters && Object.keys(filters).length) {
+  //       console.log(filters);
+
+  //       query = query.whereExists(
+  //         User.relatedQuery("roles").whereIn("id", filters.id)
+  //       );
+  //     }
+
+  //     const users = await buildQuery(query, page, limit);
+
+  //     return { username: user.username, users };
+  //   });
+
+  //   res.status(200).send({ username, users });
+  // } catch (err) {
+  //   next(err);
+  // }
 };
 
 module.exports = {

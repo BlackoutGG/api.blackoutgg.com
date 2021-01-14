@@ -15,12 +15,15 @@ const getSingleRoleForEditing = async function (req, res) {
 
   const permQuery = Permissions.query().where("level", ">=", req.user.level);
 
-  try {
-    const [role, selectable] = await Promise.all([roleQuery, permQuery]);
-    res.status(200).send({ role, selectable });
-  } catch (err) {
-    next(err);
-  }
+  const [role, selectable] = await Promise.all([roleQuery, permQuery]);
+  res.status(200).send({ role, selectable });
+
+  // try {
+  //   const [role, selectable] = await Promise.all([roleQuery, permQuery]);
+  //   res.status(200).send({ role, selectable });
+  // } catch (err) {
+  //   next(err);
+  // }
 };
 
 module.exports = {

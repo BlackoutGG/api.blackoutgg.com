@@ -20,32 +20,54 @@ const removeUser = async function (req, res, next) {
 
   const filters = req.query.filters || null;
 
-  try {
-    const users = await User.transaction(async (trx) => {
-      await User.query(trx).whereIn("id", req.query.ids).delete();
+  const users = await User.transaction(async (trx) => {
+    await User.query(trx).whereIn("id", req.query.ids).delete();
 
-      let query = User.query(trx)
-        .select(columns)
-        .withGraphFetched("roles(nameAndId)");
+    let query = User.query(trx)
+      .select(columns)
+      .withGraphFetched("roles(nameAndId)");
 
-      if (filters && Object.keys(filters).length) {
-        query = query.whereExists(
-          User.relatedQuery("roles").whereIn("id", filters.id)
-        );
-      }
+    if (filters && Object.keys(filters).length) {
+      query = query.whereExists(
+        User.relatedQuery("roles").whereIn("id", filters.id)
+      );
+    }
 
-      const results = await buildQuery(query, req.query.page, req.query.limit);
+    const results = await buildQuery(query, req.query.page, req.query.limit);
 
-      return results;
-    });
+    return results;
+  });
 
-    console.log(users);
+  console.log(users);
 
-    res.status(200).send({ users });
-  } catch (err) {
-    console.log(err);
-    next(err);
-  }
+  res.status(200).send({ users });
+
+  // try {
+  //   const users = await User.transaction(async (trx) => {
+  //     await User.query(trx).whereIn("id", req.query.ids).delete();
+
+  //     let query = User.query(trx)
+  //       .select(columns)
+  //       .withGraphFetched("roles(nameAndId)");
+
+  //     if (filters && Object.keys(filters).length) {
+  //       query = query.whereExists(
+  //         User.relatedQuery("roles").whereIn("id", filters.id)
+  //       );
+  //     }
+
+  //     const results = await buildQuery(query, req.query.page, req.query.limit);
+
+  //     return results;
+  //   });
+
+  //   console.log(users);
+
+  //   res.status(200).send({ users });
+  // } catch (err) {
+  //   console.log(err);
+  //   next(err);
+  // }
 };
 
 module.exports = {

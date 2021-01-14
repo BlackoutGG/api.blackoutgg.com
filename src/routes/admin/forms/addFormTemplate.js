@@ -2,17 +2,30 @@
 const Form = require("./models/Form");
 
 const guard = require("express-jwt-permissions")();
+const sanitize = require("sanitize-html");
 const { body } = require("express-validator");
 const { buildQuery, validate } = require("$util");
 
 const validators = validate([
   body("form.category_id").isNumeric(),
-  body("form.name").isString().trim().escape(),
-  body("form.description").isString().trim().escape(),
+  body("form.name")
+    .isString()
+    .trim()
+    .escape()
+    .customSanitizer((v) => sanitize(v)),
+  body("form.description")
+    .isString()
+    .trim()
+    .escape()
+    .customSanitizer((v) => sanitize(v)),
   // body("fields.*.order").isNumeric(),
   // body("fields.*.type").isAlphanumeric().trim().escape(),
   // body("fields.*.optional").isBoolean(),
-  // body("fields.*.value").isAlphanumeric().trim().escape(),
+  body("fields.*.value")
+    .isAlphanumeric()
+    .trim()
+    .escape()
+    .customSanitizer((v) => sanitize(v)),
   body("page").optional().isNumeric(),
   body("limit").optional().isNumeric(),
   body("orderBy").optional().isString().trim().escape(),
@@ -46,28 +59,46 @@ const addForm = async function (req, res, next) {
 
   const insert = insertFn(form, fields);
 
-  try {
-    const forms = await Form.transaction(async (trx) => {
-      await Form.query(trx).insertGraph(insert).returning("*");
+  const forms = await Form.transaction(async (trx) => {
+    await Form.query(trx).insertGraph(insert).returning("*");
 
-      const result = await buildQuery(
-        Form.query(trx).withGraphFetched("category"),
-        req.body.page,
-        req.body.limit,
-        null,
-        null,
-        filters
-      );
+    const result = await buildQuery(
+      Form.query(trx).withGraphFetched("category"),
+      req.body.page,
+      req.body.limit,
+      null,
+      null,
+      filters
+    );
 
-      return result;
-    });
+    return result;
+  });
 
-    console.log(forms);
-    res.status(200).send({ forms });
-  } catch (err) {
-    console.log(err);
-    next(err);
-  }
+  console.log(forms);
+  res.status(200).send({ forms });
+
+  // try {
+  //   const forms = await Form.transaction(async (trx) => {
+  //     await Form.query(trx).insertGraph(insert).returning("*");
+
+  //     const result = await buildQuery(
+  //       Form.query(trx).withGraphFetched("category"),
+  //       req.body.page,
+  //       req.body.limit,
+  //       null,
+  //       null,
+  //       filters
+  //     );
+
+  //     return result;
+  //   });
+
+  //   console.log(forms);
+  //   res.status(200).send({ forms });
+  // } catch (err) {
+  //   console.log(err);
+  //   next(err);
+  // }
 };
 
 module.exports = {

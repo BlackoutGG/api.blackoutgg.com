@@ -3,6 +3,12 @@ const UserForm = require("$models/UserForm");
 const UserRole = require("$models/UserRole");
 const guard = require("express-jwt-permissions")();
 const { param, body } = require("express-validator");
+const { validate } = require("$util");
+
+const validators = validate([
+  param("id").isNumeric().toInt(10),
+  body("details.status").isIn(["pending", "accepted", "rejected"]),
+]);
 
 const select = [
   "user_forms.id",
@@ -50,10 +56,6 @@ const updateRecruitmentForm = async (req, res, next) => {
 module.exports = {
   path: "/:id",
   method: "PATCH",
-  middleware: [
-    guard.check(["view:admin", "update:forms"]),
-    param("id").isNumeric().toInt(10),
-    body("details.status").isIn(["pending", "accepted", "rejected"]),
-  ],
+  middleware: [guard.check(["view:admin", "update:forms"]), validators],
   handler: updateRecruitmentForm,
 };
