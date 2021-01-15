@@ -3,13 +3,19 @@ const RolePermissions = require("./models/RolePermissions");
 const Roles = require("./models/Roles");
 const User = require("$models/User");
 const guard = require("express-jwt-permissions")();
+const sanitize = require("sanitize-html");
 
-const { param, body } = require("express-validator");
+const { param, body, sanitize } = require("express-validator");
 const { validate } = require("$util");
 
 const validators = validate([
   param("id").isNumeric().toInt(10),
-  body("details.name").optional().isAlphanumeric().escape().trim(),
+  body("details.name")
+    .optional()
+    .isAlphanumeric()
+    .escape()
+    .trim()
+    .customSanitizer((v) => sanitize(v)),
   body("details.level")
     .optional()
     .custom((v, { req }) => v >= req.user.level),
@@ -47,102 +53,97 @@ const updateRole = async (req, res, next) => {
 
   console.log(req.body);
 
-  try {
-    const results = await Roles.transaction(async (trx) => {
-      let toUpdate = {},
-        tokens;
+  const results = await Roles.transaction(async (trx) => {
+    let toUpdate = {},
+      tokens;
 
-      if (remove && remove.length) {
-        await RolePermissions.query(trx)
-          .whereIn("perm_id", remove)
-          .andWhere("role_id", req.params.id)
-          .delete();
-      }
+    if (remove && remove.length) {
+      await RolePermissions.query(trx)
+        .whereIn("perm_id", remove)
+        .andWhere("role_id", req.params.id)
+        .delete();
+    }
 
-      // const result = await Roles.query(trx)
-      //   .upsertGraph(graphFn(req.params.id, details, added), options)
-      //   .returning("*");
+    // const result = await Roles.query(trx)
+    //   .upsertGraph(graphFn(req.params.id, details, added), options)
+    //   .returning("*");
 
-      if (added && added.length) {
-        const insert = added.map((perm_id) => ({
-          role_id: req.params.id,
-          perm_id,
-        }));
+    if (added && added.length) {
+      const insert = added.map((perm_id) => ({
+        role_id: req.params.id,
+        perm_id,
+      }));
 
-        await RolePermissions.query(trx).insert(insert).returning("*");
-      }
+      await RolePermissions.query(trx).insert(insert).returning("*");
+    }
 
-      if (added || remove) {
-        tokens = await User.query(trx)
-          .joinRelated("roles")
-          .withGraphJoined("token_info(selectByCreated)")
-          .select("token_info.*")
-          .whereIn("roles.id", req.query.ids)
-          .distinct();
-      }
+    if (added || remove) {
+      tokens = await User.query(trx)
+        .joinRelated("roles")
+        .withGraphJoined("token_info(selectByCreated)")
+        .select("token_info.*")
+        .whereIn("roles.id", req.query.ids)
+        .distinct();
+    }
 
-      if (details && Object.keys(details).length) {
-        Object.assign(toUpdate, details);
-        console.log(toUpdate);
-      }
+    if (details && Object.keys(details).length) {
+      Object.assign(toUpdate, details);
+      console.log(toUpdate);
+    }
 
-      const _details = await Roles.query(trx)
-        .patch({ updated_at: new Date().toISOString(), ...toUpdate })
-        .where("id", req.params.id)
-        .first()
-        .returning(["id", "name", "level", "created_at", "updated_at"]);
+    const _details = await Roles.query(trx)
+      .patch({ updated_at: new Date().toISOString(), ...toUpdate })
+      .where("id", req.params.id)
+      .first()
+      .returning(["id", "name", "level", "created_at", "updated_at"]);
 
-      return { details: _details, tokens };
+    return { details: _details, tokens };
+  });
+
+  /**
+   * If a permission changes on a role, we pull all the users with that role
+   * and revoke their tokens.
+   */
+  if (results.tokens && results.tokens.length) {
+    let blacklist = [];
+
+    const stream = req.redis.scanStream({ match: "blacklist:*", count: 100 });
+
+    stream.on("data", (keys) => {
+      blacklist = results.tokens.reduce((output, info) => {
+        //turn seconds into milliseconds for a comparison.
+        const timestamp = new Date(info.expire_on);
+
+        if (isBefore(Date.now(), timestamp)) {
+          if (!keys.include(`blacklist:${info.token_id}`)) {
+            output.push(info);
+          }
+        }
+        return output;
+      }, []);
     });
 
-    /**
-     * If a permission changes on a role, we pull all the users with that role
-     * and revoke their tokens.
-     */
-    if (results.tokens && results.tokens.length) {
-      let blacklist = [];
-
-      const stream = req.redis.scanStream({ match: "blacklist:*", count: 100 });
-
-      stream.on("data", (keys) => {
-        blacklist = results.tokens.reduce((output, info) => {
+    stream.on("end", async () => {
+      if (blacklist && blacklist.length) {
+        const setCommands = blacklist.map((info) => {
           //turn seconds into milliseconds for a comparison.
           const timestamp = new Date(info.expire_on);
 
-          if (isBefore(Date.now(), timestamp)) {
-            if (!keys.include(`blacklist:${info.token_id}`)) {
-              output.push(info);
-            }
-          }
-          return output;
-        }, []);
-      });
+          return [
+            "set",
+            `blacklist:${info.token_id}`,
+            `blacklist:${info.token_id}`,
+            "EX",
+            diffInSeconds(Date.now(), timestamp),
+          ];
+        });
 
-      stream.on("end", async () => {
-        if (blacklist && blacklist.length) {
-          const setCommands = blacklist.map((info) => {
-            //turn seconds into milliseconds for a comparison.
-            const timestamp = new Date(info.expire_on);
-
-            return [
-              "set",
-              `blacklist:${info.token_id}`,
-              `blacklist:${info.token_id}`,
-              "EX",
-              diffInSeconds(Date.now(), timestamp),
-            ];
-          });
-
-          await req.redis.multi(setCommands).exec();
-        }
-      });
-    }
-
-    res.status(200).send({ role: results.details });
-  } catch (err) {
-    console.log(err);
-    next(err);
+        await req.redis.multi(setCommands).exec();
+      }
+    });
   }
+
+  res.status(200).send({ role: results.details });
 };
 
 module.exports = {

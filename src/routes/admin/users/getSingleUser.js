@@ -22,20 +22,6 @@ const getSingleUser = async function (req, res, next) {
     .throwIfNotFound();
 
   res.status(200).send({ user });
-
-  // try {
-  //   const user = await User.query()
-  //     .where("id", req.params.id)
-  //     .withGraphFetched("roles(nameAndId)")
-  //     .columns(columns)
-  //     .first()
-  //     .throwIfNotFound();
-
-  //   res.status(200).send({ user });
-  // } catch (err) {
-  //   console.log(err);
-  //   next(err);
-  // }
 };
 
 module.exports = {

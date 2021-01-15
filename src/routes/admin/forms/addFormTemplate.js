@@ -76,29 +76,6 @@ const addForm = async function (req, res, next) {
 
   console.log(forms);
   res.status(200).send({ forms });
-
-  // try {
-  //   const forms = await Form.transaction(async (trx) => {
-  //     await Form.query(trx).insertGraph(insert).returning("*");
-
-  //     const result = await buildQuery(
-  //       Form.query(trx).withGraphFetched("category"),
-  //       req.body.page,
-  //       req.body.limit,
-  //       null,
-  //       null,
-  //       filters
-  //     );
-
-  //     return result;
-  //   });
-
-  //   console.log(forms);
-  //   res.status(200).send({ forms });
-  // } catch (err) {
-  //   console.log(err);
-  //   next(err);
-  // }
 };
 
 module.exports = {

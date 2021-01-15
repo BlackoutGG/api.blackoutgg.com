@@ -18,26 +18,6 @@ const logout = async function (req, res, next) {
   }
 
   res.status(204).send();
-
-  // try {
-  //   if (req.headers && req.headers.authorization) {
-  //     const parts = req.headers.authorization.split(" ");
-  //     if (parts.length === 2) {
-  //       const token = parts[1];
-  //       if (token) {
-  //         const payload = jwt.verify(token, process.env.JWT_SECRET);
-  //         if (payload && payload.jti) {
-  //           await req.redis.del(`blacklist:${payload.jti}`);
-  //         }
-  //       }
-  //     }
-  //   }
-
-  // res.status(204).send();
-  // } catch (err) {
-  //   console.log(err);
-  //   next(err);
-  // }
 };
 
 module.exports = {

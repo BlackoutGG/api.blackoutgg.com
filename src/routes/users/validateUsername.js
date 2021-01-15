@@ -5,16 +5,12 @@ const { query } = require("express-validator");
 const { validate } = require("$util");
 
 const validateUsername = async function (req, res, next) {
-  try {
-    const user = await User.query()
-      .where("username", req.query.value)
-      .select("id")
-      .first();
-    if (user) return res.status(422).send("Username already exists.");
-    res.status(200).send();
-  } catch (err) {
-    next(err);
-  }
+  const user = await User.query()
+    .where("username", req.query.value)
+    .select("id")
+    .first();
+  if (user) return res.status(422).send("Username already exists.");
+  res.status(200).send();
 };
 
 module.exports = {

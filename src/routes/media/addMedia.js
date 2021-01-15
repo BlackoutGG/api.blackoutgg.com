@@ -23,13 +23,8 @@ const uploadMedia = async function (req, res, next) {
 
   console.log(data);
 
-  try {
-    await Media.query().insert(data);
-    res.status(200).send();
-  } catch (err) {
-    console.log(err);
-    next(err);
-  }
+  await Media.query().insert(data);
+  res.status(200).send();
 };
 
 module.exports = {

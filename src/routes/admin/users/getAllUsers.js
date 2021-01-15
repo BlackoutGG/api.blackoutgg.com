@@ -31,22 +31,6 @@ const getAllUsersForAdmin = async function (req, res, next) {
   ]);
 
   res.status(200).send({ users, roles });
-
-  // try {
-  //   const [users, roles] = await Promise.all([
-  //     buildQuery(query, req.query.page, req.query.limit),
-  //     req.query.roles
-  //       ? Roles.query()
-  //           .select("id", "name")
-  //           .where("level", ">=", req.user.level)
-  //       : Promise.resolve(null),
-  //   ]);
-
-  //   res.status(200).send({ users, roles });
-  // } catch (err) {
-  //   console.log(err);
-  //   next(err);
-  // }
 };
 
 module.exports = {

@@ -67,43 +67,6 @@ const updateUser = async function (req, res, next) {
   });
 
   res.status(200).send({ user });
-
-  // try {
-  //   const user = await User.transaction(async (trx) => {
-  //     if (details && Object.keys(details).length) {
-  //       await User.query(trx).where("id", req.params.id).patch(details).first();
-  //     }
-
-  //     if (remove && remove.length) {
-  //       await UserRole.query(trx)
-  //         .delete()
-  //         .where("user_id", req.params.id)
-  //         .whereIn("role_id", remove);
-  //     }
-
-  //     if (added && added.length) {
-  //       const roles = added.map((role) => ({
-  //         user_id: req.params.id,
-  //         role_id: role,
-  //       }));
-
-  //       await UserRole.query(trx).insert(roles).returning("*");
-  //     }
-
-  //     const results = await User.query(trx)
-  //       .where("id", req.params.id)
-  //       .withGraphFetched("roles(nameAndId)")
-  //       .first()
-  //       .columns(columns);
-
-  //     return results;
-  //   });
-
-  //   res.status(200).send({ user });
-  // } catch (err) {
-  //   console.log(err);
-  //   next(err);
-  // }
 };
 
 module.exports = {

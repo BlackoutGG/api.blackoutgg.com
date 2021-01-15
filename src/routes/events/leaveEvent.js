@@ -14,16 +14,11 @@ const validators = validate([
 
 const leaveEvent = async function (req, res, next) {
   const { joined, rvsp_enabled, ...fields } = req.body;
-  try {
-    const result = await EventParticipants.query()
-      .where({ user_id: req.user.id, event_id: fields.event_id })
-      .delete()
-      .returning("*");
-    res.status(200).send({ id: fields.event_id, join: false });
-  } catch (err) {
-    console.log(err);
-    next(err);
-  }
+  const result = await EventParticipants.query()
+    .where({ user_id: req.user.id, event_id: fields.event_id })
+    .delete()
+    .returning("*");
+  res.status(200).send({ id: fields.event_id, join: false });
 };
 
 module.exports = {

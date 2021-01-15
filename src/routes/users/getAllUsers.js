@@ -21,14 +21,9 @@ const getAllUsers = async function (req, res, next) {
   //   );
   // }
 
-  try {
-    const users = await buildQuery(query, req.query.page, req.query.limit);
+  const users = await buildQuery(query, req.query.page, req.query.limit);
 
-    res.status(200).send({ users });
-  } catch (err) {
-    console.log(err);
-    next(err);
-  }
+  res.status(200).send({ users });
 };
 
 module.exports = {

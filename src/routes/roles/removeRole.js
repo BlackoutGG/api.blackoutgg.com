@@ -4,7 +4,6 @@ const User = require("$models/User");
 const guard = require("express-jwt-permissions")();
 const isBefore = require("date-fns/isBefore");
 const diffInSeconds = require("date-fns/differenceInSeconds");
-const parseISO = require("date-fns/parseISO");
 const { query } = require("express-validator");
 const { validate, buildQuery } = require("$util");
 
@@ -18,70 +17,65 @@ const middleware = [
 ];
 
 const removeRole = async function (req, res, next) {
-  try {
-    const items = await Roles.transaction(async (trx) => {
-      await Roles.query(trx).whereIn("id", req.query.ids).delete();
+  const items = await Roles.transaction(async (trx) => {
+    await Roles.query(trx).whereIn("id", req.query.ids).delete();
 
-      const tokens = await User.query(trx)
-        .joinRelated("roles")
-        .withGraphJoined("token_info(selectByCreated)")
-        .select("token_info.*")
-        .whereIn("roles.id", req.query.ids)
-        .distinct();
+    const tokens = await User.query(trx)
+      .joinRelated("roles")
+      .withGraphJoined("token_info(selectByCreated)")
+      .select("token_info.*")
+      .whereIn("roles.id", req.query.ids)
+      .distinct();
 
-      const results = await buildQuery(
-        Roles.query(trx),
-        req.body.page,
-        req.body.limit
-      );
+    const results = await buildQuery(
+      Roles.query(trx),
+      req.body.page,
+      req.body.limit
+    );
 
-      return { results, tokens };
+    return { results, tokens };
+  });
+
+  if (items.tokens && items.tokens.length) {
+    let blacklist = [];
+
+    const stream = req.redis.scanStream({ match: "blacklist:*", count: 100 });
+
+    stream.on("data", (keys) => {
+      blacklist = items.tokens.reduce((output, info) => {
+        //turn seconds into milliseconds for a comparison.
+        const timestamp = new Date(info.expire_on);
+
+        if (isBefore(Date.now(), timestamp)) {
+          if (!keys.include(`blacklist:${info.token_id}`)) {
+            output.push(info);
+          }
+        }
+        return output;
+      }, []);
     });
 
-    if (items.tokens && items.tokens.length) {
-      let blacklist = [];
-
-      const stream = req.redis.scanStream({ match: "blacklist:*", count: 100 });
-
-      stream.on("data", (keys) => {
-        blacklist = items.tokens.reduce((output, info) => {
+    stream.on("end", async () => {
+      if (blacklist && blacklist.length) {
+        const setCommands = blacklist.map((info) => {
           //turn seconds into milliseconds for a comparison.
           const timestamp = new Date(info.expire_on);
 
-          if (isBefore(Date.now(), timestamp)) {
-            if (!keys.include(`blacklist:${info.token_id}`)) {
-              output.push(info);
-            }
-          }
-          return output;
-        }, []);
-      });
+          return [
+            "set",
+            `blacklist:${info.token_id}`,
+            `blacklist:${info.token_id}`,
+            "EX",
+            diffInSeconds(Date.now(), timestamp),
+          ];
+        });
 
-      stream.on("end", async () => {
-        if (blacklist && blacklist.length) {
-          const setCommands = blacklist.map((info) => {
-            //turn seconds into milliseconds for a comparison.
-            const timestamp = new Date(info.expire_on);
-
-            return [
-              "set",
-              `blacklist:${info.token_id}`,
-              `blacklist:${info.token_id}`,
-              "EX",
-              diffInSeconds(Date.now(), timestamp),
-            ];
-          });
-
-          await req.redis.multi(setCommands).exec();
-        }
-      });
-    }
-
-    res.status(200).send({ roles: roles.results });
-  } catch (err) {
-    console.log(err);
-    next(err);
+        await req.redis.multi(setCommands).exec();
+      }
+    });
   }
+
+  res.status(200).send({ roles: roles.results });
 };
 
 module.exports = {

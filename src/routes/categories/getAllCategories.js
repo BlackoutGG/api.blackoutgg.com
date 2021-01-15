@@ -12,13 +12,8 @@ const getAllCategories = async function (req, res, next) {
     query = query.where({ recruitment });
   }
 
-  try {
-    const categories = await buildQuery(query, req.query.page, req.query.limit);
-    res.status(200).send({ categories });
-  } catch (err) {
-    console.log(err);
-    next(err);
-  }
+  const categories = await buildQuery(query, req.query.page, req.query.limit);
+  res.status(200).send({ categories });
 };
 
 module.exports = {

@@ -11,17 +11,12 @@ const validators = validate([
 ]);
 
 const editCategory = async function (req, res, next) {
-  try {
-    const category = await Category.query()
-      .patch(req.body.details)
-      .where("id", req.params.id)
-      .first()
-      .returning("id", "name");
-    res.status(200).send({ category });
-  } catch (err) {
-    console.log(err);
-    next(err);
-  }
+  const category = await Category.query()
+    .patch(req.body.details)
+    .where("id", req.params.id)
+    .first()
+    .returning("id", "name");
+  res.status(200).send({ category });
 };
 
 module.exports = {

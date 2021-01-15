@@ -32,37 +32,32 @@ const validators = validate([
 const getAllEvents = async function (req, res, next) {
   console.log(req.query);
 
-  try {
-    const events = await Event.query()
-      .joinRelated("[category, occurrences]")
-      .where(
-        raw(
-          "daterange(start_date, end_date, '[]') && '[??,??)'",
-          req.query.start,
-          req.query.end
-        )
+  const events = await Event.query()
+    .joinRelated("[category, occurrences]")
+    .where(
+      raw(
+        "daterange(start_date, end_date, '[]') && '[??,??)'",
+        req.query.start,
+        req.query.end
       )
-      .withGraphFetched("organizer(defaultSelects)")
-      .select([
-        ...columns,
-        EventParticipants.query()
-          .count("*")
-          .as("participants")
-          .whereColumn("event_id", "occurrences.id"),
-        EventParticipants.query()
-          .count()
-          .as("joined")
-          .whereColumn("event_id", "occurrences.id")
-          .where({ user_id: req.user.id }),
-      ]);
+    )
+    .withGraphFetched("organizer(defaultSelects)")
+    .select([
+      ...columns,
+      EventParticipants.query()
+        .count("*")
+        .as("participants")
+        .whereColumn("event_id", "occurrences.id"),
+      EventParticipants.query()
+        .count()
+        .as("joined")
+        .whereColumn("event_id", "occurrences.id")
+        .where({ user_id: req.user.id }),
+    ]);
 
-    console.log(events);
+  console.log(events);
 
-    res.status(200).send({ events });
-  } catch (err) {
-    console.log(err);
-    next(err);
-  }
+  res.status(200).send({ events });
 };
 
 module.exports = {

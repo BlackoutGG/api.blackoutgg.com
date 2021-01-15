@@ -62,33 +62,6 @@ const addRole = async function (req, res, next) {
   });
 
   res.status(200).send({ roles });
-
-  // try {
-  //   const roles = await Roles.transaction(async (trx) => {
-  //     await Roles.query(trx)
-  //       .insertGraph(insert, { relate: true })
-  //       .returning("*");
-
-  //     const results = await buildQuery(
-  //       Roles.query(trx).select(
-  //         "id",
-  //         "name",
-  //         "level",
-  //         "created_at",
-  //         "updated_at"
-  //       ),
-  //       req.body.page,
-  //       req.body.limit
-  //     );
-
-  //     return results;
-  //   });
-
-  //   res.status(200).send({ roles });
-  // } catch (err) {
-  //   console.log(err);
-  //   next(err);
-  // }
 };
 
 module.exports = {

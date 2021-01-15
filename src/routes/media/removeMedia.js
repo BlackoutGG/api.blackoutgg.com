@@ -8,24 +8,26 @@ const { buildQuery, validate } = require("$util");
 const validators = validate([query("keys.*").isString()]);
 
 const removeMedia = async (req, res, next) => {
-  try {
-    const s3 = await deleteFiles(process.env.AWS_BUCKET_NAME, req.query.keys);
-    if (!s3.Errors.length && s3.Deleted.length) {
-      const ids = await Media.transaction(async (trx) => {
-        const results = await Media.query(trx)
-          .delete()
-          .whereIn("storage_key", req.query.keys)
-          .returning(["id"]);
+  const s3 = await deleteFiles(process.env.AWS_BUCKET_NAME, req.query.keys);
+  if (!s3.Errors.length && s3.Deleted.length) {
+    // const ids = await Media.transaction(async (trx) => {
+    //   const results = await Media.query(trx)
+    //     .delete()
+    //     .whereIn("storage_key", req.query.keys)
+    //     .returning(["id"]);
 
-        return results.map(({ id }) => id);
-      });
-      return res.status(200).send({ ids });
-    }
+    //   return results.map(({ id }) => id);
+    // });
 
-    throw new Error("Encountered an internal problem.");
-  } catch (err) {
-    console.log(err);
-    next(err);
+    const results = await Media.query()
+      .delete()
+      .whereIn("storage_key", req.query.keys)
+      .returning(["id"]);
+
+    const ids = results.map(({ id }) => id);
+    return res.status(200).send({ ids });
+  } else {
+    res.status(500).send({ message: "Encountered an internal problem." });
   }
 };
 

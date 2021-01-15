@@ -17,13 +17,6 @@ const getSingleRoleForEditing = async function (req, res) {
 
   const [role, selectable] = await Promise.all([roleQuery, permQuery]);
   res.status(200).send({ role, selectable });
-
-  // try {
-  //   const [role, selectable] = await Promise.all([roleQuery, permQuery]);
-  //   res.status(200).send({ role, selectable });
-  // } catch (err) {
-  //   next(err);
-  // }
 };
 
 module.exports = {

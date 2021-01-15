@@ -126,43 +126,6 @@ const editForm = async function (req, res, next) {
   });
 
   res.status(200).send({ form });
-
-  // try {
-  //   const form = await Form.transaction(async (trx) => {
-  //     let result = await Form.query(trx)
-  //       .upsertGraph(up, {
-  //         noDelete: true,
-  //       })
-  //       .first()
-  //       .returning("*");
-
-  //     if (remove && remove.length) {
-  //       await Field.query(trx).whereIn("id", remove).del().returning("*");
-  //       if (!details && !added && !update) {
-  //         result = await Form.query(trx)
-  //           .patch({
-  //             updated_at: new Date().toISOString(),
-  //           })
-  //           .returning("*");
-  //       }
-  //     }
-
-  //     // return pick(result, [
-  //     //   "name",
-  //     //   "status",
-  //     //   "category",
-  //     //   "created_at",
-  //     //   "updated_at",
-  //     // ]);
-
-  //     return result;
-  //   });
-
-  //   res.status(200).send({ form });
-  // } catch (err) {
-  //   console.log(err);
-  //   next(err);
-  // }
 };
 
 module.exports = {

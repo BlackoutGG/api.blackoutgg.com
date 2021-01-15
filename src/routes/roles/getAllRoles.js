@@ -9,13 +9,8 @@ const getAllRoles = async function (req, res, next) {
     .select("id", "name", "level", "created_at", "updated_at")
     .where("level", ">=", req.user.level);
 
-  try {
-    const roles = await buildQuery(query, req.query.page, req.query.limit);
-    res.status(200).send({ roles });
-  } catch (err) {
-    console.log(err);
-    next(err);
-  }
+  const roles = await buildQuery(query, req.query.page, req.query.limit);
+  res.status(200).send({ roles });
 };
 
 module.exports = {

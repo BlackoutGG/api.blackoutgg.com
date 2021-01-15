@@ -14,17 +14,12 @@ const validators = validate([
 
 const joinEvent = async function (req, res, next) {
   const { joined, rvsp_enabled, ...fields } = req.body;
-  try {
-    const result = await EventParticipants.query()
-      .insert({ user_id: req.user.id, ...fields })
-      .first()
-      .returning(["event_id"]);
+  const result = await EventParticipants.query()
+    .insert({ user_id: req.user.id, ...fields })
+    .first()
+    .returning(["event_id"]);
 
-    return res.status(200).send({ id: result.event_id, join: true });
-  } catch (err) {
-    console.log(err);
-    next(err);
-  }
+  return res.status(200).send({ id: result.event_id, join: true });
 };
 
 module.exports = {

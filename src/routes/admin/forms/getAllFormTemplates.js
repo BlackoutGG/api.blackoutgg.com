@@ -17,18 +17,6 @@ const getAllFormTemplates = async function (req, res, next) {
   ]);
 
   res.status(200).send({ forms, categories });
-  // try {
-  //   const [forms, categories] = await Promise.all([
-  //     buildQuery(query, req.query.page, req.query.limit, null, null, filters),
-  //     req.query.categories
-  //       ? Category.query().select("id", "name")
-  //       : Promise.resolve(null),
-  //   ]);
-
-  //   res.status(200).send({ forms, categories });
-  // } catch (err) {
-  //   next(err);
-  // }
 };
 
 module.exports = {

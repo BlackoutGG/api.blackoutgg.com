@@ -50,53 +50,48 @@ const addEvent = async function (req, res, next) {
   const insert = generateGraph(req.user.id, fields);
   console.log(insert);
 
-  try {
-    const data = await Event.transaction(async (trx) => {
-      if (wasRecurring) {
-        await Event.relatedQuery("occurrences", trx)
-          .delete()
-          .where("id", req.body.id);
-      }
+  const data = await Event.transaction(async (trx) => {
+    if (wasRecurring) {
+      await Event.relatedQuery("occurrences", trx)
+        .delete()
+        .where("id", req.body.id);
+    }
 
-      const entry = await Event.query(trx)
-        .insertGraph(insert)
-        .returning("id")
-        .first();
+    const entry = await Event.query(trx)
+      .insertGraph(insert)
+      .returning("id")
+      .first();
 
-      let query = Event.query(trx)
-        .joinRelated("[category, occurrences]")
-        .where("event_id", entry.id)
-        .where(
-          raw("daterange(start_date, end_date, '[]') && '[??,??)'", start, end)
-        )
-        .withGraphFetched("organizer(defaultSelects)")
-        .select([
-          ...columns,
-          EventParticipants.query()
-            .count("*")
-            .as("participants")
-            .whereColumn("event_id", "occurrences.id"),
-          EventParticipants.query()
-            .count()
-            .as("joined")
-            .whereColumn("event_id", "occurrences.id")
-            .where("user_id", req.user.id),
-        ]);
+    let query = Event.query(trx)
+      .joinRelated("[category, occurrences]")
+      .where("event_id", entry.id)
+      .where(
+        raw("daterange(start_date, end_date, '[]') && '[??,??)'", start, end)
+      )
+      .withGraphFetched("organizer(defaultSelects)")
+      .select([
+        ...columns,
+        EventParticipants.query()
+          .count("*")
+          .as("participants")
+          .whereColumn("event_id", "occurrences.id"),
+        EventParticipants.query()
+          .count()
+          .as("joined")
+          .whereColumn("event_id", "occurrences.id")
+          .where("user_id", req.user.id),
+      ]);
 
-      if (!fields.interval !== "once") query = query.first();
+    if (!fields.interval !== "once") query = query.first();
 
-      const results = await query;
+    const results = await query;
 
-      return results;
-    });
+    return results;
+  });
 
-    console.log(data);
+  console.log(data);
 
-    res.status(200).send(data);
-  } catch (err) {
-    console.log(err);
-    next(err);
-  }
+  res.status(200).send(data);
 };
 
 module.exports = {

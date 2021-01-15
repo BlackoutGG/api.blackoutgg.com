@@ -11,16 +11,12 @@ const middleware = [
 ];
 
 const getAllMedia = async function (req, res, next) {
-  try {
-    const media = await buildQuery(
-      Media.query(),
-      req.query.start,
-      req.query.limit
-    );
-    res.status(200).send({ media: media.results });
-  } catch (err) {
-    next(err);
-  }
+  const media = await buildQuery(
+    Media.query(),
+    req.query.start,
+    req.query.limit
+  );
+  res.status(200).send({ media: media.results });
 };
 
 module.exports = {

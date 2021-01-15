@@ -12,24 +12,19 @@ const validators = validate([
 ]);
 
 const removeCategory = async function (req, res, next) {
-  try {
-    const categories = await Category.transaction(async (trx) => {
-      await Category.query(trx).whereIn("id", req.query.ids).delete();
+  const categories = await Category.transaction(async (trx) => {
+    await Category.query(trx).whereIn("id", req.query.ids).delete();
 
-      const results = buildQuery(
-        Category.query(trx),
-        req.query.page,
-        req.query.limit
-      );
+    const results = buildQuery(
+      Category.query(trx),
+      req.query.page,
+      req.query.limit
+    );
 
-      return results;
-    });
+    return results;
+  });
 
-    res.status(200).send({ categories });
-  } catch (err) {
-    console.log(err);
-    next(err);
-  }
+  res.status(200).send({ categories });
 };
 
 module.exports = {

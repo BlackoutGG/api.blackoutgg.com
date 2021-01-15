@@ -5,17 +5,13 @@ const { param } = require("express-validator");
 const { validate } = require("$util");
 
 const getSingleGroup = async function (req, res) {
-  try {
-    const role = await Roles.query()
-      .where("id", req.params.id)
-      .withGraphFetched("permissions")
-      .first()
-      .throwIfNotFound();
+  const role = await Roles.query()
+    .where("id", req.params.id)
+    .withGraphFetched("permissions")
+    .first()
+    .throwIfNotFound();
 
-    res.status(200).send({ role });
-  } catch (err) {
-    next(err);
-  }
+  res.status(200).send({ role });
 };
 
 module.exports = {

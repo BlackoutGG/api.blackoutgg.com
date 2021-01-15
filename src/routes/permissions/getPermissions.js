@@ -3,17 +3,12 @@ const Permissions = require("./models/Permissions.js");
 const guard = require("express-jwt-permissions")();
 
 const getPermissions = async function (req, res, next) {
-  try {
-    const permissions = await Permissions.query().where(
-      "level",
-      ">=",
-      req.user.level
-    );
-    res.status(200).send({ permissions });
-  } catch (err) {
-    console.log(err);
-    next(err);
-  }
+  const permissions = await Permissions.query().where(
+    "level",
+    ">=",
+    req.user.level
+  );
+  res.status(200).send({ permissions });
 };
 
 // const getPermissionsForLevel = async function (req, res, next) {

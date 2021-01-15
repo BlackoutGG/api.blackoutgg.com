@@ -30,25 +30,6 @@ const getAllRecruitmentForm = async (req, res, next) => {
   ]);
 
   res.status(200).send({ forms, categories });
-
-  // try {
-  //   const [forms, categories] = await Promise.all([
-  //     buildQuery(
-  //       formQuery,
-  //       req.query.page,
-  //       req.query.limit,
-  //       null,
-  //       null,
-  //       filters
-  //     ),
-  //     categoryQuery,
-  //   ]);
-
-  //   res.status(200).send({ forms, categories });
-  // } catch (err) {
-  //   console.log(err);
-  //   next(err);
-  // }
 };
 
 module.exports = {

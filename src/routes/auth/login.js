@@ -83,63 +83,6 @@ const login = async function (req, res, next) {
   });
 
   res.status(200).send({ token });
-
-  // try {
-  //   const result = await User.query()
-  //     .where({ email: req.body.email })
-  //     .select("id", "username", "avatar", "password")
-  //     .withGraphFetched("[roles.permissions]")
-  //     .first()
-  //     .throwIfNotFound();
-
-  //   const match = await bcrypt.compare(req.body.password, result.password);
-
-  //   if (!match) {
-  //     return res
-  //       .status(422)
-  //       .send({ message: "User credentials do not match." });
-  //   }
-
-  //   const jti = nanoid();
-  //   const expires_on = addHours(Date.now(), 1);
-
-  //   console.log(expires_on);
-
-  //   await UserSession.query().insert({
-  //     token_id: jti,
-  //     user_id: result.id,
-  //     expires_on,
-  //   });
-
-  //   const { roles, ...user } = result;
-
-  //   const permissions = roles.flatMap(({ permissions }) =>
-  //     permissions.map(({ action, resource }) => {
-  //       return `${action}:${resource}`;
-  //     })
-  //   );
-
-  //   const level = Math.min(roles.map(({ level }) => level));
-
-  //   const data = {
-  //     jti,
-  //     id: user.id,
-  //     username: user.username,
-  //     avatar: user.avatar,
-  //     roles: roles.map(({ name }) => name),
-  //     level,
-  //     permissions,
-  //   };
-
-  //   const token = jwt.sign(data, process.env.JWT_SECRET, {
-  //     expiresIn: "1h",
-  //   });
-
-  //   res.status(200).send({ token });
-  // } catch (err) {
-  //   console.log(err);
-  //   next(err);
-  // }
 };
 
 module.exports = {

@@ -20,28 +20,24 @@ const insertFn = (creds) => {
 };
 
 const register = async function (req, res, next) {
-  try {
-    const salt = await bcrypt.genSalt(SALT_ROUNDS);
-    const hashed = await bcrypt.hash(req.body.password, salt);
+  const salt = await bcrypt.genSalt(SALT_ROUNDS);
+  const hashed = await bcrypt.hash(req.body.password, salt);
 
-    const creds = {
-      username: req.body.username,
-      email: req.body.email,
-      password: hashed,
-    };
+  const creds = {
+    username: req.body.username,
+    email: req.body.email,
+    password: hashed,
+  };
 
-    const user = await User.transaction(async (trx) => {
-      const result = await User.query(trx)
-        .insertGraph(insertFn(creds, { relate: true }))
-        .returning("*");
+  const user = await User.transaction(async (trx) => {
+    const result = await User.query(trx)
+      .insertGraph(insertFn(creds, { relate: true }))
+      .returning("*");
 
-      return result.username;
-    });
+    return result.username;
+  });
 
-    res.status(200).send({ user });
-  } catch (err) {
-    next(err);
-  }
+  res.status(200).send({ user });
 };
 
 module.exports = {

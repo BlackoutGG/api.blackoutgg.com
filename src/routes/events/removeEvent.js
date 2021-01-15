@@ -7,16 +7,11 @@ const { validate } = require("$util");
 const validators = validate([param("eventId").toInt(10).isNumeric()]);
 
 const removeEvent = async function (req, res, next) {
-  try {
-    const event = Event.query()
-      .where("id", req.params.id)
-      .delete()
-      .returning("id");
-    res.status(200).send({ event });
-  } catch (err) {
-    console.log(err);
-    next(err);
-  }
+  const event = Event.query()
+    .where("id", req.params.id)
+    .delete()
+    .returning("id");
+  res.status(200).send({ event });
 };
 
 module.exports = {
