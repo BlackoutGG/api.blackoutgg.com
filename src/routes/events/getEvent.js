@@ -4,6 +4,7 @@ const guard = require("express-jwt-permissions")();
 const columns = require("./helpers/columns.js");
 const { param, query } = require("express-validator");
 const { validate } = require("$util");
+const { VIEW_ALL_EVENTS } = require("$util/permissions");
 
 const validators = validate([
   param("id").isNumeric().toInt(10),
@@ -44,6 +45,6 @@ const getEvent = async function (req, res, next) {
 module.exports = {
   path: "/:id",
   method: "GET",
-  middleware: [guard.check("view:events"), validators],
+  middleware: [guard.check(VIEW_ALL_EVENTS), validators],
   handler: getEvent,
 };

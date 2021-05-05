@@ -5,6 +5,7 @@ const guard = require("express-jwt-permissions")();
 const sanitize = require("sanitize-html");
 const { body } = require("express-validator");
 const { buildQuery, validate } = require("$util");
+const { VIEW_ALL_ADMIN, ADD_ALL_FORMS } = require("$util/permissions");
 
 const validators = validate([
   body("form.category_id").isNumeric(),
@@ -82,7 +83,7 @@ module.exports = {
   path: "/",
   method: "POST",
   middleware: [
-    guard.check(["view:admin", "add:forms"]),
+    guard.check([VIEW_ALL_ADMIN, ADD_ALL_FORMS]),
     (req, res, next) => {
       console.log(req.body);
       next();

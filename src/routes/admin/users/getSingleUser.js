@@ -3,6 +3,7 @@ const User = require("$models/User");
 const guard = require("express-jwt-permissions")();
 const { param } = require("express-validator");
 const { validate } = require("$util");
+const { VIEW_ALL_ADMIN, VIEW_ALL_USERS } = require("$util/permissions");
 
 const columns = [
   "id",
@@ -28,7 +29,7 @@ module.exports = {
   path: "/:id",
   method: "GET",
   middleware: [
-    guard.check("view:users"),
+    guard.check([VIEW_ALL_ADMIN, VIEW_ALL_USERS]),
     validate([param("id").isNumeric().toInt(10)]),
   ],
   handler: getSingleUser,

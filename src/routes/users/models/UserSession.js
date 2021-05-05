@@ -6,9 +6,11 @@ class UserSession extends Base {
     return "user_sessions";
   }
 
-  static get modifers() {
+  static get modifiers() {
     return {
-      selectByCreated: (qb) => qb.orderBy("created_at", "DESC").limit(1),
+      selectByCreated(builder) {
+        builder.orderBy("created_at", "DESC").limit(1);
+      },
     };
   }
 

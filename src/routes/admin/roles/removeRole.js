@@ -22,8 +22,8 @@ const removeRole = async function (req, res, next) {
 
     const tokens = await User.query(trx)
       .joinRelated("roles")
-      .withGraphJoined("token_info(selectByCreated)")
-      .select("token_info.*")
+      .withGraphJoined("session(selectByCreated)")
+      .select("session.*")
       .whereIn("roles.id", req.query.ids)
       .distinct();
 
@@ -75,7 +75,7 @@ const removeRole = async function (req, res, next) {
     });
   }
 
-  res.status(200).send({ roles: roles.results });
+  res.status(200).send({ roles: items.results });
 };
 
 module.exports = {

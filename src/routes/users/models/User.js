@@ -37,6 +37,8 @@ class User extends Base {
     const Roles = require("$models/Roles");
     const UserRole = require("./UserRole");
     const UserSession = require("./UserSession");
+    const Permissions = require("$models/Permissions");
+    // const UserPermissions = require("./UserPermissions");
     return {
       user_roles: {
         relation: Base.HasManyRelation,
@@ -44,6 +46,18 @@ class User extends Base {
         join: {
           from: "users.id",
           to: "user_roles.user_id",
+        },
+      },
+      user_permissions: {
+        relation: Base.ManyToManyRelation,
+        modelClass: Permissions,
+        join: {
+          from: "users.id",
+          through: {
+            from: "user_permissions.user_id",
+            to: "user_permissions.permission_id",
+          },
+          to: "permissions.id",
         },
       },
       roles: {

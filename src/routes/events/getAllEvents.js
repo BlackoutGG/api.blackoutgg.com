@@ -6,6 +6,7 @@ const columns = require("./helpers/columns");
 const { query } = require("express-validator");
 const { validate } = require("$util");
 const { raw } = require("objection");
+const { VIEW_ALL_EVENTS } = require("$util/permissions");
 
 const validators = validate([
   // query("category_id").optional().isArray(),
@@ -63,6 +64,6 @@ const getAllEvents = async function (req, res, next) {
 module.exports = {
   path: "/",
   method: "GET",
-  middleware: [guard.check("view:events"), validators],
+  middleware: [guard.check(VIEW_ALL_EVENTS), validators],
   handler: getAllEvents,
 };

@@ -7,6 +7,7 @@ const columns = require("./helpers/columns");
 const { body } = require("express-validator");
 const { validate } = require("$util");
 const { raw } = require("objection");
+const { ADD_ALL_EVENTS } = require("$util/permissions");
 
 const validators = validate([
   body("id").optional().isNumeric().toInt(10),
@@ -97,6 +98,6 @@ const addEvent = async function (req, res, next) {
 module.exports = {
   path: "/",
   method: "POST",
-  middleware: [guard.check("add:events"), log],
+  middleware: [guard.check(ADD_ALL_EVENTS), log],
   handler: addEvent,
 };

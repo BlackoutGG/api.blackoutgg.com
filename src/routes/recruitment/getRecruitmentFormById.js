@@ -6,6 +6,7 @@ const Category = require("$models/Category");
 const guard = require("express-jwt-permissions")();
 const { param, query } = require("express-validator");
 const { validate } = require("$util");
+const { VIEW_ALL_FORMS } = require("$util/permissions");
 
 const validators = validate([param("id").isNumeric().toInt(10)]);
 
@@ -50,7 +51,7 @@ module.exports = {
   path: "/:id",
   method: "GET",
   middleware: [
-    guard.check(["view:forms"]),
+    guard.check([VIEW_ALL_FORMS]),
     (req, res, next) => {
       console.log(req.body);
       next();

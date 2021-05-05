@@ -4,6 +4,7 @@ const Category = require("$models/Category");
 const guard = require("express-jwt-permissions")();
 const { query } = require("express-validator");
 const { buildQuery, validate } = require("$util");
+const { VIEW_ALL_ADMIN, VIEW_ALL_FORMS } = require("$util/permissions");
 
 const getAllFormTemplates = async function (req, res, next) {
   const filters = req.query.filters || null;
@@ -23,7 +24,7 @@ module.exports = {
   path: "/",
   method: "GET",
   middleware: [
-    guard.check(["view:forms"]),
+    guard.check([VIEW_ALL_ADMIN, VIEW_ALL_FORMS]),
     validate([
       query("page").optional().isNumeric(),
       query("limit").optional().isNumeric(),

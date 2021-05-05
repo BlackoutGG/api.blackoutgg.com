@@ -4,6 +4,7 @@ const Roles = require("$models/Roles");
 const guard = require("express-jwt-permissions")();
 const { query } = require("express-validator");
 const { buildQuery, validate } = require("$util");
+const { VIEW_ALL_ADMIN, VIEW_ALL_USERS } = require("$util/permissions");
 
 const columns = ["id", "avatar", "username", "email", "created_at"];
 
@@ -37,7 +38,7 @@ module.exports = {
   path: "/",
   method: "GET",
   middleware: [
-    guard.check(["view:admin", "view:users"]),
+    guard.check([VIEW_ALL_ADMIN, VIEW_ALL_USERS]),
     validate([
       query("page").optional().isNumeric(),
       query("limit").optional().isNumeric(),

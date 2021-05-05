@@ -1,9 +1,10 @@
 "use strict";
-const Media = require("./models/Media");
+const Media = require("$models/Media");
 const guard = require("express-jwt-permissions")();
 const { query } = require("express-validator");
 const { deleteFiles } = require("$services/upload");
-const { buildQuery, validate } = require("$util");
+const { validate } = require("$util");
+const { REMOVE_OWN_MEDIA } = require("$util/permissions");
 
 const validators = validate([query("keys.*").isString()]);
 
@@ -22,6 +23,7 @@ const removeMedia = async (req, res, next) => {
     const results = await Media.query()
       .delete()
       .whereIn("storage_key", req.query.keys)
+      .where("owner_id", req.user.id)
       .returning(["id"]);
 
     const ids = results.map(({ id }) => id);
@@ -34,6 +36,6 @@ const removeMedia = async (req, res, next) => {
 module.exports = {
   path: "/",
   method: "DELETE",
-  middleware: [guard.check("delete:media"), validators],
+  middleware: [guard.check([REMOVE_OWN_MEDIA]), validators],
   handler: removeMedia,
 };

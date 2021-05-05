@@ -32,6 +32,13 @@ function errorHandler(err, req, res, next) {
     });
   }
 
+  if (err.name === "RevokeTokenError") {
+    return res.status(401).send({
+      message: err.message,
+      type: "Revoked",
+    });
+  }
+
   if (err instanceof ValidationError) {
     switch (err.type) {
       case "ModelValidation":

@@ -3,6 +3,7 @@ const Form = require("./models/Form");
 const guard = require("express-jwt-permissions")();
 const { body, param } = require("express-validator");
 const { validate } = require("$util");
+const { VIEW_ALL_ADMIN, UPDATE_ALL_FORMS } = require("$util/permissions");
 
 // const setFormStatus = async function (req, res, next) {
 //   try {
@@ -67,7 +68,7 @@ module.exports = {
   path: "/:id/status",
   method: "PATCH",
   middleware: [
-    guard.check(["view:admin", "update:forms"]),
+    guard.check([VIEW_ALL_ADMIN, UPDATE_ALL_FORMS]),
     validate([
       param("id").isNumeric().toInt(10),
       body("category_id").isNumeric().toInt(10),

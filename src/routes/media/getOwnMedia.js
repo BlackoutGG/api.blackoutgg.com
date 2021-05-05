@@ -3,16 +3,17 @@ const Media = require("./models/Media");
 const guard = require("express-jwt-permissions")();
 const { query } = require("express-validator");
 const { buildQuery } = require("$util");
+const { VIEW_OWN_MEDIA } = require("$util/permissions");
 
 const middleware = [
-  guard.check("view:media"),
+  guard.check(VIEW_OWN_MEDIA),
   query("start").optional().isNumeric(),
   query("limit").optional().isNumeric(),
 ];
 
-const getAllMedia = async function (req, res, next) {
+const getOwnMedia = async function (req, res, next) {
   const media = await buildQuery(
-    Media.query(),
+    Media.query().where("owner_id", req.user.id),
     req.query.start,
     req.query.limit
   );
@@ -20,8 +21,8 @@ const getAllMedia = async function (req, res, next) {
 };
 
 module.exports = {
-  path: "/",
+  path: "/own",
   method: "GET",
   middleware,
-  handler: getAllMedia,
+  handler: getOwnMedia,
 };

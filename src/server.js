@@ -1,8 +1,9 @@
 "use strict";
-/*** SETUP MODEL PATHS ***/
+
 const moduleAlias = require("module-alias");
 const { fdir } = require("fdir");
 
+/*** SETUP MODEL PATHS ***/
 const models = new fdir()
   .withFullPaths()
   .withMaxDepth(3)
@@ -24,8 +25,12 @@ require("module-alias/register");
 
 /*** START UP SERVER ***/
 const app = require("./app.js");
-const server = app.listen(process.env.PORT || 3000);
 
-/*** SETUP SOCKETS ***/
-// const io = require("socket.io")(server);
-// require("./sockets.js")(io);
+app.listen(process.env.PORT || 3000, (err) => {
+  console.log(`Server running at ${process.env.PORT}...`);
+});
+
+app.on("SIGINT", function gracefulShutdown() {
+  console.log("[SIGINT]: Shutting down...");
+  process.exitCode(0);
+});

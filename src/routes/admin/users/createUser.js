@@ -6,6 +6,7 @@ const SALT_ROUNDS = 12;
 const guard = require("express-jwt-permissions")();
 const { body } = require("express-validator");
 const { validate, buildQuery } = require("$util");
+const { VIEW_ALL_ADMIN, ADD_ALL_USERS } = require("$util/permissions");
 
 const validators = validate([
   body("username").notEmpty().isAlphanumeric().escape().trim(),
@@ -87,6 +88,6 @@ const createUser = async function (req, res, next) {
 module.exports = {
   path: "/",
   method: "POST",
-  middleware: [guard.check(["view:admin", "add:users"]), validators],
+  middleware: [guard.check([VIEW_ALL_ADMIN, ADD_ALL_USERS]), validators],
   handler: createUser,
 };

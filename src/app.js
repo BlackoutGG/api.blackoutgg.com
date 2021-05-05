@@ -4,9 +4,7 @@ const express = require("express");
 const app = express();
 const cors = require("cors");
 const expressJwt = require("express-jwt");
-const aws = require("aws-sdk");
-const routes = require("./routes");
-const errorHandler = require("./middleware/errors");
+const pino = require("express-pino-logger")();
 
 /** SETUP PG TO USE RANGE */
 const pg = require("pg");
@@ -22,7 +20,6 @@ if (
   process.env.NODE_ENV === "debug" ||
   process.env.NODE_ENV === "development"
 ) {
-  const pino = require("express-pino-logger")();
   app.use(pino);
 }
 
@@ -53,6 +50,7 @@ app.use(
       `${apiVersion}/auth/discord`,
       `${apiVersion}/auth/logout`,
       `${apiVersion}/users/register`,
+      `${apiVersion}/settings`,
     ],
   })
 );
@@ -75,12 +73,12 @@ app.get("/", (req, res) => {
 });
 
 /*** SETUP KNEX AND OBJECTION ***/
-require("./util/setupDB")();
+require("./util/setupDB").setupObjection();
 
 /** SETUP ROUTES */
-app.use(apiVersion, routes);
+app.use(apiVersion, require("./routes"));
 
 /*** SETUP ERROR HANDLING ***/
-app.use(errorHandler);
+app.use(require("./middleware/errors"));
 
 module.exports = app;

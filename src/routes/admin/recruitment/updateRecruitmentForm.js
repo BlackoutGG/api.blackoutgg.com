@@ -4,6 +4,7 @@ const UserRole = require("$models/UserRole");
 const guard = require("express-jwt-permissions")();
 const { param, body } = require("express-validator");
 const { validate } = require("$util");
+const { VIEW_ALL_ADMIN, UPDATE_ALL_FORMS } = require("$util/permissions");
 
 const validators = validate([
   param("id").isNumeric().toInt(10),
@@ -56,6 +57,6 @@ const updateRecruitmentForm = async (req, res, next) => {
 module.exports = {
   path: "/:id",
   method: "PATCH",
-  middleware: [guard.check(["view:admin", "update:forms"]), validators],
+  middleware: [guard.check([VIEW_ALL_ADMIN, UPDATE_ALL_FORMS]), validators],
   handler: updateRecruitmentForm,
 };

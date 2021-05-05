@@ -4,6 +4,7 @@ const UserFormField = require("$models/UserFormField");
 const guard = require("express-jwt-permissions")();
 const { param } = require("express-validator");
 const { validate } = require("$util");
+const { VIEW_ALL_ADMIN, VIEW_ALL_FORMS } = require("$util/permissions");
 
 const formSelect = [
   "user_forms.id",
@@ -30,7 +31,7 @@ const fieldSelect = [
 ];
 
 const adminGetSingleUserForm = async (req, res, next) => {
-  const formFields = UserForm.relatedQuery("form_fields")
+  const formFields = UserFormField.query()
     .whereColumn("user_form_fields.form_id", "user_forms.id")
     .joinRelated("field")
     .select(fieldSelect)
@@ -76,7 +77,7 @@ module.exports = {
   path: "/:id",
   method: "GET",
   middleware: [
-    guard.check("view:admin", "view:forms"),
+    guard.check([VIEW_ALL_ADMIN, VIEW_ALL_FORMS]),
     validate([param("id").isNumeric().toInt(10)]),
   ],
   handler: adminGetSingleUserForm,

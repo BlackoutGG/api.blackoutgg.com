@@ -1,5 +1,5 @@
 "use strict";
-const Category = require("./models/Category");
+const Category = require("$models/Category");
 const guard = require("express-jwt-permissions")();
 const sanitize = require("sanitize-html");
 const { body } = require("express-validator");
@@ -10,7 +10,7 @@ const validators = validate([
     .isAlphanumeric()
     .escape()
     .trim()
-    .customSanitizer((v = sanitize(v))),
+    .customSanitizer((v) => sanitize(v)),
   body("page").isNumeric(),
   body("limit").isNumeric(),
 ]);

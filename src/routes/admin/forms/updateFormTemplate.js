@@ -1,11 +1,11 @@
 "use strict";
 const Form = require("./models/Form");
 const Field = require("./models/Field");
-
+const sanitize = require("sanitize-html");
 const guard = require("express-jwt-permissions")();
 const { body, param } = require("express-validator");
 const { validate } = require("$util");
-const sanitize = require("sanitize-html");
+const { VIEW_ALL_ADMIN, UPDATE_ALL_FORMS } = require("$util/permissions");
 
 const pick = require("lodash/pick");
 
@@ -133,7 +133,7 @@ module.exports = {
   method: "PATCH",
   middleware: [
     consoleRequest,
-    guard.check(["view:admin", "update:forms"]),
+    guard.check([VIEW_ALL_ADMIN, UPDATE_ALL_FORMS]),
     validators,
   ],
   handler: editForm,

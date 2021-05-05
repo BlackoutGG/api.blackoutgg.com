@@ -7,6 +7,7 @@ const guard = require("express-jwt-permissions")();
 
 const { body, param } = require("express-validator");
 const { validate } = require("$util");
+const { VIEW_ALL_ADMIN, UPDATE_ALL_EVENTS } = require("$util/permissions");
 
 const validators = validate([
   param("id").isNumeric().toInt(10),
@@ -26,7 +27,11 @@ const log = (req, res, next) => {
   next();
 };
 
-const middleware = [guard.check("update:events"), log, validators];
+const middleware = [
+  guard.check([VIEW_ALL_ADMIN, UPDATE_ALL_EVENTS]),
+  log,
+  validators,
+];
 
 const updateEvent = async function (req, res, next) {
   const { id, start_date, end_date, ...patch } = req.body,

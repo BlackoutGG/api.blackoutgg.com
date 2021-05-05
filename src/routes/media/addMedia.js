@@ -2,6 +2,7 @@
 const Media = require("./models/Media");
 const guard = require("express-jwt-permissions")();
 const { uploadFiles } = require("$services/upload");
+const { ADD_ALL_MEDIA } = require("$util/permissions");
 
 const upload = uploadFiles({
   fields: [{ name: "media", maxCount: 10 }],

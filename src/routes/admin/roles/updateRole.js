@@ -1,11 +1,12 @@
 "use strict";
 const RolePermissions = require("./models/RolePermissions");
+const isFuture = require("date-fns/isFuture");
 const Roles = require("./models/Roles");
 const User = require("$models/User");
 const guard = require("express-jwt-permissions")();
 const sanitize = require("sanitize-html");
 
-const { param, body, sanitize } = require("express-validator");
+const { param, body } = require("express-validator");
 const { validate } = require("$util");
 
 const validators = validate([
@@ -77,13 +78,14 @@ const updateRole = async (req, res, next) => {
       await RolePermissions.query(trx).insert(insert).returning("*");
     }
 
-    if (added || remove) {
+    if ((added && added.length) || (remove && remove.length)) {
       tokens = await User.query(trx)
         .joinRelated("roles")
-        .withGraphJoined("token_info(selectByCreated)")
-        .select("token_info.*")
-        .whereIn("roles.id", req.query.ids)
-        .distinct();
+        .withGraphJoined("session(selectByCreated)")
+        .select("session.*")
+        .where("roles.id", req.params.id);
+
+      console.log(tokens);
     }
 
     if (details && Object.keys(details).length) {
@@ -114,7 +116,12 @@ const updateRole = async (req, res, next) => {
         //turn seconds into milliseconds for a comparison.
         const timestamp = new Date(info.expire_on);
 
-        if (isBefore(Date.now(), timestamp)) {
+        // if (isBefore(Date.now(), timestamp)) {
+        //   if (!keys.include(`blacklist:${info.token_id}`)) {
+        //     output.push(info);
+        //   }
+        // }
+        if (isFuture(timestamp)) {
           if (!keys.include(`blacklist:${info.token_id}`)) {
             output.push(info);
           }

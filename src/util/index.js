@@ -54,6 +54,21 @@ const validate = (validations, statusCode) => {
   };
 };
 
+const verifySignature = (label, signature, secret, buf) => {
+  return function (req, res, buf, encoding) {
+    if (req.headers && req.headers[signature]) {
+      const sigToVerify = req.headers[signature].split("=");
+      const hex = crypto
+        .createHmac(sigToVerify[0], secret)
+        .update(buf)
+        .digest("hex");
+
+      if (hex === sigToVerify[1]) req[label] = true;
+      else throw Error("signaure cannot be verified");
+    }
+  };
+};
+
 module.exports = {
   buildQuery,
   validate,

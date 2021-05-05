@@ -1,7 +1,8 @@
 "use strict";
-const Base = require("$base");
+const dateMixin = require("$util/dateMixin");
+const { Model } = require("objection");
 
-class Form extends Base {
+class Form extends dateMixin(Model) {
   static get tableName() {
     return "forms";
   }

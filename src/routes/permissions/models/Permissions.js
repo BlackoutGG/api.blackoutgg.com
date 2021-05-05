@@ -12,6 +12,7 @@ class Permission extends Model {
       properties: {
         id: { type: "integer" },
         action: { type: "string" },
+        target: { type: "string" },
         resource: { type: "string" },
         level: { type: "integer" },
       },

@@ -1,5 +1,5 @@
 "use strict";
-const Category = require("./models/Category");
+const Category = require("$models/Category");
 const guard = require("express-jwt-permissions")();
 const { body, param } = require("express-validator");
 const { validate } = require("$util");

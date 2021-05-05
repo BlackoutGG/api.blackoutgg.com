@@ -68,7 +68,7 @@ const generateUsers = async (num) => {
     const roles = [];
     const roleNum = faker.random.number({ min: 1, max: 4 });
 
-    for (let u = 0; u < roleNum; u++) {
+    for (let u = 0; u <= roleNum; u++) {
       roles.push({ role_id: faker.random.number({ min: 1, max: 4 }) });
     }
 
@@ -78,7 +78,9 @@ const generateUsers = async (num) => {
       username: faker.internet.userName(),
       password: hashed,
       email: faker.internet.email(),
-      avatar: faker.image.cats(),
+      avatar: faker.internet.avatar(),
+      first_name: faker.name.firstName(),
+      last_name: faker.name.lastName(),
       user_roles: userRoles,
       created_at: date,
       updated_at: date,

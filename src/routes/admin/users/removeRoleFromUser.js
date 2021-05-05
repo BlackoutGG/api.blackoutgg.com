@@ -7,6 +7,7 @@ const diffInSeconds = require("date-fns/differenceInSeconds");
 const guard = require("express-jwt-permissions")();
 const { param, query } = require("express-validator");
 const { validate } = require("$util");
+const { VIEW_ALL_ADMIN, UPDATE_ALL_USERS } = require("$util/permissions");
 
 const removeUserRole = async function (req, res, next) {
   const userId = req.params.id,
@@ -59,7 +60,7 @@ module.exports = {
   path: "/:id/role",
   method: "DELETE",
   middleware: [
-    guard.check(["view:admin", "update:users"]),
+    guard.check([VIEW_ALL_ADMIN, UPDATE_ALL_USERS]),
     validate([param("id").isNumeric().toInt(10), query("roleId").isNumeric()]),
   ],
   handler: removeUserRole,

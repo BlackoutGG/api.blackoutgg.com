@@ -6,6 +6,7 @@ const UserForm = require("$models/UserForm");
 const guard = require("express-jwt-permissions")();
 const { param, query } = require("express-validator");
 const { validate } = require("$util");
+const { VIEW_ALL_FORMS } = require("$util/permissions");
 
 const validators = validate([param("id").optional().isNumeric().toInt(10)]);
 
@@ -65,6 +66,6 @@ const getRecruitmentForm = async function (req, res, next) {
 module.exports = {
   path: "/",
   method: "GET",
-  middleware: [guard.check(["view:forms"]), validators],
+  middleware: [guard.check([VIEW_ALL_FORMS]), validators],
   handler: getRecruitmentForm,
 };

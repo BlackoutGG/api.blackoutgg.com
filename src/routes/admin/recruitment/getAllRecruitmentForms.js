@@ -3,6 +3,7 @@ const UserForm = require("$models/UserForm");
 const Category = require("$models/Category");
 const guard = require("express-jwt-permissions")();
 const { buildQuery, validate } = require("$util");
+const { VIEW_ALL_ADMIN, VIEW_ALL_FORMS } = require("$util/permissions");
 
 const select = [
   "user_forms.id",
@@ -35,6 +36,6 @@ const getAllRecruitmentForm = async (req, res, next) => {
 module.exports = {
   path: "/",
   method: "GET",
-  middleware: [guard.check("view:forms")],
+  middleware: [guard.check([VIEW_ALL_ADMIN, VIEW_ALL_FORMS])],
   handler: getAllRecruitmentForm,
 };

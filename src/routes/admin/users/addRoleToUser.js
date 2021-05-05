@@ -6,6 +6,7 @@ const diffInSeconds = require("date-fns/differenceInSeconds");
 const guard = require("express-jwt-permissions")();
 const { param, body } = require("express-validator");
 const { validate } = require("$util");
+const { VIEW_ALL_ADMIN, UPDATE_ALL_USERS } = require("$util/permissions");
 
 const addRoleToUser = async function (req, res) {
   const userId = parseInt(req.params.id, 10),
@@ -69,7 +70,7 @@ module.exports = {
   path: "/:id/role",
   method: "PUT",
   middleware: [
-    guard.check("update:users"),
+    guard.check([VIEW_ALL_ADMIN, UPDATE_ALL_USERS]),
     validate([param("id").isNumeric(), body("roleId").isNumeric()]),
   ],
   handler: addRoleToUser,

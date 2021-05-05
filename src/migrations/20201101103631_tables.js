@@ -8,9 +8,19 @@ exports.up = function (knex) {
         t.string("token_id").nullable();
         t.string("email").unique();
         t.string("username").unique();
+        t.string("first_name");
+        t.string("last_name");
+        t.string("location");
+        t.string("birthday");
+        t.enum("gender", ["Male", "Female", "Other"]);
+        t.text("description");
         t.string("password");
         t.string("avatar");
         t.index("discord_id");
+        t.string("password_reset_code");
+        t.string("activation_code");
+        t.date("last_password_reset_sent");
+        t.date("last_activation_email_sent");
         t.timestamps();
       });
     }),
@@ -51,19 +61,9 @@ exports.up = function (knex) {
       if (exists) return;
       return knex.schema.createTable("permissions", (t) => {
         t.increments("id").primary();
-        // t.enum("action", ["view", "add", "update", "delete"]);
-        // t.enum("resource", [
-        //   "admin",
-        //   "posts",
-        //   "forms",
-        //   "events",
-        //   "users",
-        //   "roles",
-        //   "media",
-        // ]);
-        // t.enum("level", [0, 1, 2, 3, 4, 5]);
-        t.string("action");
-        t.enum("target", ["own", "others"]);
+        t.enum("action", ["view", "add", "update", "delete"]);
+        // t.string("action");
+        t.enum("target", ["own", "all"]);
         t.string("resource");
         t.integer("level");
       });
@@ -78,6 +78,19 @@ exports.up = function (knex) {
         t.integer("role_id")
           .references("roles.id")
           .onUpdate("CASCADE")
+          .onDelete("CASCADE");
+      });
+    }),
+    knex.schema.hasTable("user_permissions").then((exists) => {
+      if (exists) return;
+      return knex.schema.createTable("user_permissions", (t) => {
+        t.integer("user_id")
+          .references("id")
+          .inTable("users")
+          .onDelete("CASCADE");
+        t.integer("permission_id")
+          .references("id")
+          .inTable("permissions")
           .onDelete("CASCADE");
       });
     }),
@@ -112,6 +125,45 @@ exports.up = function (knex) {
           .onDelete("CASCADE")
           .onUpdate("CASCADE");
         t.jsonb("answer").nullable();
+        t.timestamps();
+      });
+    }),
+    knex.schema.hasTable("testimonies").then((exists) => {
+      if (exists) return;
+      return knex.schema.createTable("testimonies", (t) => {
+        t.increments("id").primary();
+        t.integer("order");
+        t.string("author");
+        t.string("avatar");
+        t.text("text");
+        t.timestamps();
+      });
+    }),
+    knex.schema.hasTable("settings").then((exists) => {
+      if (exists) return;
+      return knex.schema.createTable("settings", (t) => {
+        t.increments("id").primary();
+        t.boolean("show_history_carousel_on_frontpage").defaultTo(true);
+        t.boolean("show_video").defaultTo(true);
+        t.boolean("show_video_on_mobile").defaultTo(true);
+        t.boolean("show_testimonies").defaultTo(true);
+        t.boolean("flip_info_blocks_on_even").defaultTo(true);
+        t.boolean("show_recruitment_button").defaultTo(true);
+        t.boolean("enable_social_authentication").defaultTo(true);
+        t.string("front_page_video_url").defaultTo(
+          "https://blackout-gaming.s3.amazonaws.com/video/0001-0876.webm"
+        );
+      });
+    }),
+    knex.schema.hasTable("front_page_info").then((exists) => {
+      if (exists) return;
+      return knex.schema.createTable("front_page_info", (t) => {
+        t.increments("id").primary();
+        t.integer("order");
+        t.string("title");
+        t.string("text");
+        t.enum("position", ["left", "right"]).defaultTo("right");
+        t.string("image");
         t.timestamps();
       });
     }),
@@ -183,7 +235,7 @@ exports.up = function (knex) {
       return knex.schema.createTable("categories", (t) => {
         t.increments("id").primary();
         t.string("name");
-        t.boolean("recruitment").defaultTo(false);
+        t.boolean("enable_recruitment").defaultTo(false);
         t.unique("name");
         t.timestamps();
       });
@@ -281,7 +333,7 @@ exports.up = function (knex) {
         t.string("mimetype");
         t.string("url");
         t.string("storage_key");
-        t.integer("user_id").references("users.id");
+        t.integer("owner_id").references("users.id");
         t.timestamps();
       });
     }),
@@ -292,11 +344,12 @@ exports.down = async function (knex) {
   try {
     await knex.raw(
       `DROP TABLE IF EXISTS user_form_fields, 
-      user_forms, user_sessions, form_fields, fields, 
+      user_forms, user_sessions, user_permissions, form_fields, fields, 
       forms, menu_tree, menu, event_participants, 
       event_roles, event_meta, events, categories, 
       user_roles, role_permissions, permissions, 
-      users, roles, media, posts, post_types`
+      users, roles, media, posts, post_types, testimonies, 
+      settings, front_page_info`
     );
   } catch (err) {
     throw err;

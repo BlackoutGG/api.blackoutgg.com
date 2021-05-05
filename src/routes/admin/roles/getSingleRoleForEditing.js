@@ -5,6 +5,11 @@ const Permissions = require("$models/Permissions");
 const guard = require("express-jwt-permissions")();
 const { param } = require("express-validator");
 const { validate } = require("$util");
+const {
+  VIEW_ALL_ADMIN,
+  VIEW_ALL_ROLES,
+  UPDATE_ALL_ROLES,
+} = require("$util/permissions");
 
 const getSingleRoleForEditing = async function (req, res) {
   const roleQuery = Roles.query()
@@ -23,7 +28,7 @@ module.exports = {
   path: "/:id",
   method: "GET",
   middleware: [
-    guard.check(["view:admin", "view:roles", "update:roles"]),
+    guard.check([VIEW_ALL_ADMIN, VIEW_ALL_ROLES, UPDATE_ALL_ROLES]),
     validate([param("id").isNumeric().toInt(10)]),
   ],
   handler: getSingleRoleForEditing,

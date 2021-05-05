@@ -7,6 +7,7 @@ const { validate } = require("$util");
 const verifyRecaptcha = require("$services/recaptcha")(
   process.env.RECAPTCHA_SECRET
 );
+const { ADD_OWN_FORM } = require("$util/permissions");
 
 const validators = validate([
   body("form_id").isNumeric(),
@@ -73,7 +74,7 @@ module.exports = {
   path: "/",
   method: "POST",
   middleware: [
-    guard.check(["add:forms"]),
+    guard.check(ADD_OWN_FORM),
     (req, res, next) => {
       console.log(req.body);
       next();

@@ -1,5 +1,6 @@
 "use strict";
 const jwt = require("jsonwebtoken");
+const uniq = require("lodash.uniq");
 const bcrypt = require("bcrypt");
 const User = require("$models/User");
 const UserSession = require("$models/UserSession");
@@ -37,7 +38,7 @@ const login = async function (req, res, next) {
   const result = await User.query()
     .where({ email: req.body.email })
     .select("id", "username", "avatar", "password")
-    .withGraphFetched("[roles.permissions]")
+    .withGraphFetched("[roles.permissions, user_permissions]")
     .first()
     .throwIfNotFound();
 
@@ -60,11 +61,17 @@ const login = async function (req, res, next) {
 
   const { roles, ...user } = result;
 
-  const permissions = roles.flatMap(({ permissions }) =>
-    permissions.map(({ action, resource }) => {
-      return `${action}:${resource}`;
+  const rolePermissions = roles.flatMap(({ permissions }) =>
+    permissions.map(({ action, target, resource }) => {
+      return `${action}:${target}:${resource}`;
     })
   );
+
+  const userPermissions = user.user_permissions.map(
+    ({ action, target, resource }) => `${action}:${target}:${resource}`
+  );
+
+  const permissions = uniq([...userPermissions, ...rolePermissions]);
 
   const level = Math.min(roles.map(({ level }) => level));
 
