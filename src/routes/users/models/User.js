@@ -35,29 +35,20 @@ class User extends Base {
 
   static get relationMappings() {
     const Roles = require("$models/Roles");
-    const UserRole = require("./UserRole");
     const UserSession = require("./UserSession");
-    const Permissions = require("$models/Permissions");
-    // const UserPermissions = require("./UserPermissions");
+    const Policies = require("$models/Policies");
+
     return {
-      user_roles: {
-        relation: Base.HasManyRelation,
-        modelClass: UserRole,
-        join: {
-          from: "users.id",
-          to: "user_roles.user_id",
-        },
-      },
-      user_permissions: {
+      policies: {
         relation: Base.ManyToManyRelation,
-        modelClass: Permissions,
+        modelClass: Policies,
         join: {
           from: "users.id",
           through: {
-            from: "user_permissions.user_id",
-            to: "user_permissions.permission_id",
+            from: "user_policies.user_id",
+            to: "user_policies.policy_id",
           },
-          to: "permissions.id",
+          to: "policies.id",
         },
       },
       roles: {

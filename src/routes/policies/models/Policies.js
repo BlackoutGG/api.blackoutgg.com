@@ -1,9 +1,9 @@
 "use strict";
 const { Model } = require("objection");
 
-class Permission extends Model {
+class Policies extends Model {
   static get tableName() {
-    return "permissions";
+    return "policies";
   }
 
   static get jsonSchema() {
@@ -20,4 +20,4 @@ class Permission extends Model {
   }
 }
 
-module.exports = Permission;
+module.exports = Policies;

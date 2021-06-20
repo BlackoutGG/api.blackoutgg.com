@@ -11,6 +11,9 @@ class Role extends Base {
       nameAndId(builder) {
         builder.select("id", "name");
       },
+      distinctOnRole(builder) {
+        builder.distinctOn("id");
+      },
     };
   }
 
@@ -29,8 +32,8 @@ class Role extends Base {
 
   static get relationMappings() {
     const Users = require("$models/User");
-    const Permissions = require("$models/Permissions");
-    const RolePermissions = require("./RolePermissions");
+    const Policies = require("$models/Policies");
+
     return {
       users: {
         relation: Base.ManyToManyRelation,
@@ -44,24 +47,17 @@ class Role extends Base {
           to: "users.id",
         },
       },
-      role_perms: {
-        relation: Base.HasManyRelation,
-        modelClass: RolePermissions,
-        join: {
-          from: "roles.id",
-          to: "role_permissions.role_id",
-        },
-      },
-      permissions: {
+
+      policies: {
         relation: Base.ManyToManyRelation,
-        modelClass: Permissions,
+        modelClass: Policies,
         join: {
           from: "roles.id",
           through: {
-            from: "role_permissions.role_id",
-            to: "role_permissions.perm_id",
+            from: "role_policies.role_id",
+            to: "role_policies.policy_id",
           },
-          to: "permissions.id",
+          to: "policies.id",
         },
       },
     };

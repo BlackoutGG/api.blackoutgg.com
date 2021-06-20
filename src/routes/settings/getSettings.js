@@ -1,23 +1,28 @@
 "use strict";
-const knex = require("$util/setupDB").knex;
-
+const Settings = require("$models/Settings");
 const select = [
   "show_video",
   "show_video_on_mobile",
   "show_testimonies",
   // "show_history_carousel_on_frontpage",
-  "flip_info_blocks_on_even",
+  "password_reset_request_ttl_in_minutes",
+  "password_reset_resend_timer_in_minutes",
+  "user_activation_request_ttl_in_minutes",
+  "user_activation_resend_timer_in_minutes",
   "show_recruitment_button",
   "enable_social_authentication",
   "front_page_video_url",
 ];
 
 const getSettings = async (req, res) => {
-  const settings = await knex("settings").select(select).where("id", 1).first();
+  const _settings = await Settings.query()
+    .where("id", 1)
+    .select(select)
+    .first();
 
-  console.log(settings);
+  console.log(_settings);
 
-  res.status(200).send({ settings });
+  res.status(200).send(_settings);
 };
 
 module.exports = {

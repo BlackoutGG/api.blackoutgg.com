@@ -2,17 +2,28 @@
 const User = require("$models/User");
 const bcrypt = require("bcrypt");
 const SALT_ROUNDS = 12;
-
+const sanitize = require("sanitize-html");
 const guard = require("express-jwt-permissions")();
 const { body } = require("express-validator");
 const { validate, buildQuery } = require("$util");
 const { VIEW_ALL_ADMIN, ADD_ALL_USERS } = require("$util/permissions");
 
 const validators = validate([
-  body("username").notEmpty().isAlphanumeric().escape().trim(),
+  body("username")
+    .notEmpty()
+    .isAlphanumeric()
+    .escape()
+    .trim()
+    .customSanitizer((v) => sanitize(v)),
   body("email").notEmpty().isEmail().escape().normalizeEmail().trim(),
-  body("password").notEmpty().escape().trim(),
+  body("password")
+    .notEmpty()
+    .escape()
+    .trim()
+    .customSanitizer((v) => sanitize(v)),
+  body("active").isBoolean(),
   body("roles.*").optional().isNumeric(),
+  body("policies.*").optional().isNumeric(),
   body("page").optional().isNumeric(),
   body("limit").optional().isNumeric(),
 ]);
@@ -22,18 +33,19 @@ const consoleLog = (req, res, next) => {
   next();
 };
 
-const insertFn = (credentials, roles) => {
+const insertFn = (credentials, roles, policies) => {
   const data = {
     "#id": "user",
     ...credentials,
   };
 
   if (roles && roles.length) {
-    const user_roles = roles.map((roleId) => ({
-      role_id: roleId,
-    }));
+    Object.assign(data, { roles: roles.map((id) => ({ id })) });
+  }
 
-    Object.assign(data, { user_roles });
+  if (policies && policies.length) {
+    const _policies = policies.map((id) => ({ id }));
+    Object.assign(data, { policies: _policies });
   }
 
   return data;
@@ -45,6 +57,8 @@ const createUser = async function (req, res, next) {
   const email = req.body.email,
     page = req.body.page,
     limit = req.body.limit,
+    active = req.body.active,
+    policies = req.body.policies,
     roles = req.body.roles;
 
   const salt = await bcrypt.genSalt(SALT_ROUNDS);
@@ -52,12 +66,13 @@ const createUser = async function (req, res, next) {
 
   const creds = {
     username: req.body.username,
+    active,
     email,
     password,
   };
 
-  const insert = insertFn(creds, roles);
-  const options = { relate: true };
+  const insert = insertFn(creds, roles, policies);
+  const options = { relate: true, unrelate: true };
 
   const { username, users } = await User.transaction(async (trx) => {
     const user = await User.query(trx)
@@ -65,7 +80,7 @@ const createUser = async function (req, res, next) {
       .returning("*");
 
     let query = User.query(trx)
-      .withGraphFetched("roles(nameAndId)")
+      .withGraphFetched("[roles(nameAndId), policies]")
       .orderBy("id")
       .select("id", "avatar", "username", "email", "created_at");
 
@@ -88,6 +103,10 @@ const createUser = async function (req, res, next) {
 module.exports = {
   path: "/",
   method: "POST",
-  middleware: [guard.check([VIEW_ALL_ADMIN, ADD_ALL_USERS]), validators],
+  middleware: [
+    guard.check([VIEW_ALL_ADMIN, ADD_ALL_USERS]),
+    consoleLog,
+    validators,
+  ],
   handler: createUser,
 };

@@ -3,8 +3,16 @@
 const express = require("express");
 const app = express();
 const cors = require("cors");
+const aws = require("aws-sdk");
 const expressJwt = require("express-jwt");
 const pino = require("express-pino-logger")();
+
+/*** SETUP S3 CONFIG ***/
+aws.config.update({
+  secretAccessKey: process.env.AWS_SECRET,
+  accessKeyId: process.env.AWS_ACCESS_ID,
+  region: process.env.AWS_REGION,
+});
 
 /** SETUP PG TO USE RANGE */
 const pg = require("pg");
@@ -50,6 +58,12 @@ app.use(
       `${apiVersion}/auth/discord`,
       `${apiVersion}/auth/logout`,
       `${apiVersion}/users/register`,
+      `${apiVersion}/users/activation`,
+      `${apiVersion}/users/password-reset`,
+      `${apiVersion}/users/password-reset-confirm`,
+      `${apiVersion}/users/resend/activation`,
+      `${apiVersion}/users/update`,
+      `${apiVersion}/users/update-password`,
       `${apiVersion}/settings`,
     ],
   })

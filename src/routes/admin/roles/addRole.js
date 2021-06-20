@@ -4,6 +4,7 @@ const guard = require("express-jwt-permissions")();
 const pick = require("lodash").pick;
 const { body } = require("express-validator");
 const { validate, buildQuery } = require("$util");
+const { VIEW_ALL_ADMIN, ADD_ALL_ROLES } = require("$util/permissions");
 
 const consoleLog = (req, res, next) => {
   console.log(req.body, req.query);
@@ -11,7 +12,7 @@ const consoleLog = (req, res, next) => {
 };
 
 const middleware = [
-  guard.check("add:roles"),
+  guard.check([VIEW_ALL_ADMIN, ADD_ALL_ROLES]),
   consoleLog,
   validate([
     body("details.name").isAlphanumeric().escape().trim(),
@@ -20,20 +21,20 @@ const middleware = [
     body("details.level")
       .isNumeric()
       .custom((v, { req }) => v >= req.user.level),
-    body("permissions.*").optional().isNumeric(),
+    body("policies.*").optional().isNumeric(),
   ]),
 ];
 
 const graphFn = (role) => {
-  const { permissions, ...r } = role;
+  const { policies, ...r } = role;
   const data = {
     name: r.details.name,
     level: r.details.level,
   };
 
-  if (permissions && permissions.length) {
+  if (policies && policies.length) {
     Object.assign(data, {
-      role_perms: permissions.map((perm) => ({ perm_id: perm })),
+      policies: policies.map((perm) => ({ id: perm })),
     });
   }
 
@@ -44,7 +45,9 @@ const addRole = async function (req, res, next) {
   const insert = graphFn(req.body);
 
   const roles = await Roles.transaction(async (trx) => {
-    await Roles.query(trx).insertGraph(insert, { relate: true }).returning("*");
+    await Roles.query(trx)
+      .insertGraph(insert, { relate: true, noDelete: true })
+      .returning("*");
 
     const results = await buildQuery(
       Roles.query(trx).select(

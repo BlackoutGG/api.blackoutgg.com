@@ -5,7 +5,6 @@ exports.up = function (knex) {
       return knex.schema.createTable("users", (t) => {
         t.increments("id").primary();
         t.integer("discord_id").unique();
-        t.string("token_id").nullable();
         t.string("email").unique();
         t.string("username").unique();
         t.string("first_name");
@@ -17,10 +16,11 @@ exports.up = function (knex) {
         t.string("password");
         t.string("avatar");
         t.index("discord_id");
-        t.string("password_reset_code");
-        t.string("activation_code");
-        t.date("last_password_reset_sent");
+        t.boolean("active").defaultTo(false);
+        t.integer("login_attempts").defaultTo(0);
         t.date("last_activation_email_sent");
+        t.date("last_password_reset_sent");
+        t.date("last_signed_in");
         t.timestamps();
       });
     }),
@@ -30,7 +30,7 @@ exports.up = function (knex) {
         t.increments("id").primary();
         t.integer("user_id").references("users.id");
         t.string("token_id");
-        t.timestamp("expires_on");
+        t.timestamp("expires");
         t.timestamps();
       });
     }),
@@ -41,25 +41,27 @@ exports.up = function (knex) {
         t.string("name").unique();
         t.integer("level").defaultTo(5);
         t.index("level");
+        t.boolean("is_deletable").default(true);
+        t.boolean("is_removable").default(true);
         t.timestamps();
       });
     }),
-    knex.schema.hasTable("role_permissions").then((exists) => {
+    knex.schema.hasTable("role_policies").then((exists) => {
       if (exists) return;
-      return knex.schema.createTable("role_permissions", (t) => {
+      return knex.schema.createTable("role_policies", (t) => {
         t.integer("role_id")
           .references("id")
           .inTable("roles")
           .onDelete("CASCADE");
-        t.integer("perm_id")
+        t.integer("policy_id")
           .references("id")
-          .inTable("permissions")
+          .inTable("policies")
           .onDelete("CASCADE");
       });
     }),
-    knex.schema.hasTable("permissions").then((exists) => {
+    knex.schema.hasTable("policies").then((exists) => {
       if (exists) return;
-      return knex.schema.createTable("permissions", (t) => {
+      return knex.schema.createTable("policies", (t) => {
         t.increments("id").primary();
         t.enum("action", ["view", "add", "update", "delete"]);
         // t.string("action");
@@ -81,16 +83,16 @@ exports.up = function (knex) {
           .onDelete("CASCADE");
       });
     }),
-    knex.schema.hasTable("user_permissions").then((exists) => {
+    knex.schema.hasTable("user_policies").then((exists) => {
       if (exists) return;
-      return knex.schema.createTable("user_permissions", (t) => {
+      return knex.schema.createTable("user_policies", (t) => {
         t.integer("user_id")
           .references("id")
           .inTable("users")
           .onDelete("CASCADE");
-        t.integer("permission_id")
+        t.integer("policy_id")
           .references("id")
-          .inTable("permissions")
+          .inTable("policies")
           .onDelete("CASCADE");
       });
     }),
@@ -147,89 +149,94 @@ exports.up = function (knex) {
         t.boolean("show_video").defaultTo(true);
         t.boolean("show_video_on_mobile").defaultTo(true);
         t.boolean("show_testimonies").defaultTo(true);
-        t.boolean("flip_info_blocks_on_even").defaultTo(true);
+
         t.boolean("show_recruitment_button").defaultTo(true);
         t.boolean("enable_social_authentication").defaultTo(true);
+        t.integer("password_reset_request_ttl_in_minutes").defaultTo(10);
+        t.integer("password_reset_resend_timer_in_minutes").defaultTo(10);
+        t.integer("user_activation_request_ttl_in_minutes").defaultTo(10);
+        t.integer("user_activation_resend_timer_in_minutes").defaultTo(10);
         t.string("front_page_video_url").defaultTo(
           "https://blackout-gaming.s3.amazonaws.com/video/0001-0876.webm"
         );
       });
     }),
-    knex.schema.hasTable("front_page_info").then((exists) => {
-      if (exists) return;
-      return knex.schema.createTable("front_page_info", (t) => {
-        t.increments("id").primary();
-        t.integer("order");
-        t.string("title");
-        t.string("text");
-        t.enum("position", ["left", "right"]).defaultTo("right");
-        t.string("image");
-        t.timestamps();
-      });
-    }),
-    knex.schema.hasTable("events").then((exists) => {
-      if (exists) return;
-      return knex.schema.createTable("events", (t) => {
-        t.increments("id").primary();
-        t.integer("category_id").references("categories.id").defaultTo(1);
-        t.integer("user_id")
-          .references("users.id")
-          .onUpdate("CASCADE")
-          .onDelete("CASCADE");
-        t.string("title");
-        t.string("start_time");
-        t.string("end_time");
-        t.string("color");
-        t.enum("interval", ["once", "daily", "weekly", "monthly"]).defaultTo(
-          "once"
-        );
-        t.text("description");
-        t.boolean("rvsp").defaultTo(false);
-        t.boolean("all_day").defaultTo(false);
-        t.index("user_id");
-        t.timestamps();
-      });
-    }),
-    knex.schema.hasTable("event_meta").then((exists) => {
-      if (exists) return;
-      return knex.schema.createTable("event_meta", (t) => {
-        t.increments("id").primary();
-        t.string("group_id").nullable();
-        t.integer("event_id")
-          .references("events.id")
-          .onDelete("CASCADE")
-          .onUpdate("CASCADE");
-        t.date("start_date");
-        t.date("end_date");
-      });
-    }),
-    // knex.schema.raw("ALTER TABLE events_meta ADD duration daterange"),
-    knex.schema.hasTable("event_roles").then((exists) => {
-      if (exists) return;
-      return knex.schema.createTable("event_roles", (t) => {
-        t.integer("event_id")
-          .references("events.id")
-          .onUpdate("CASCADE")
-          .onDelete("CASCADE");
-        t.integer("role_id")
-          .references("roles.id")
-          .onUpdate("CASCADE")
-          .onDelete("CASCADE");
-      });
-    }),
-    knex.schema.hasTable("event_participants").then((exists) => {
-      if (exists) return;
-      return knex.schema.createTable("event_participants", (t) => {
-        t.integer("event_id")
-          .references("event_meta.id")
-          .onUpdate("CASCADE")
-          .onDelete("CASCADE");
-        t.integer("user_id")
-          .references("users.id")
-          .onUpdate("CASCADE")
-          .onDelete("CASCADE");
-      });
-    }),
+
+    // knex.schema.hasTable("front_page_info").then((exists) => {
+    //   if (exists) return;
+    //   return knex.schema.createTable("front_page_info", (t) => {
+    //     t.increments("id").primary();
+    //     t.integer("order");
+    //     t.string("title");
+    //     t.string("text");
+    //     t.enum("position", ["left", "right"]).defaultTo("right");
+    //     t.string("image");
+    //     t.timestamps();
+    //   });
+    // }),
+    // knex.schema.hasTable("events").then((exists) => {
+    //   if (exists) return;
+    //   return knex.schema.createTable("events", (t) => {
+    //     t.increments("id").primary();
+    //     t.integer("category_id").references("categories.id").defaultTo(1);
+    //     t.integer("user_id")
+    //       .references("users.id")
+    //       .onUpdate("CASCADE")
+    //       .onDelete("CASCADE");
+    //     t.string("title");
+    //     t.string("start_time");
+    //     t.string("end_time");
+    //     t.string("color");
+    //     t.enum("interval", ["once", "daily", "weekly", "monthly"]).defaultTo(
+    //       "once"
+    //     );
+    //     t.text("description");
+    //     t.boolean("rvsp").defaultTo(false);
+    //     t.boolean("all_day").defaultTo(false);
+    //     t.index("user_id");
+    //     t.timestamps();
+    //   });
+    // }),
+    // knex.schema.hasTable("event_meta").then((exists) => {
+    //   if (exists) return;
+    //   return knex.schema.createTable("event_meta", (t) => {
+    //     t.increments("id").primary();
+    //     t.string("group_id").nullable();
+    //     t.integer("event_id")
+    //       .references("events.id")
+    //       .onDelete("CASCADE")
+    //       .onUpdate("CASCADE");
+    //     t.date("start_date");
+    //     t.date("end_date");
+    //   });
+    // }),
+    // // knex.schema.raw("ALTER TABLE events_meta ADD duration daterange"),
+    // knex.schema.hasTable("event_roles").then((exists) => {
+    //   if (exists) return;
+    //   return knex.schema.createTable("event_roles", (t) => {
+    //     t.integer("event_id")
+    //       .references("events.id")
+    //       .onUpdate("CASCADE")
+    //       .onDelete("CASCADE");
+    //     t.integer("role_id")
+    //       .references("roles.id")
+    //       .onUpdate("CASCADE")
+    //       .onDelete("CASCADE");
+    //   });
+    // }),
+    // knex.schema.hasTable("event_participants").then((exists) => {
+    //   if (exists) return;
+    //   return knex.schema.createTable("event_participants", (t) => {
+    //     t.integer("event_id")
+    //       .references("event_meta.id")
+    //       .onUpdate("CASCADE")
+    //       .onDelete("CASCADE");
+    //     t.integer("user_id")
+    //       .references("users.id")
+    //       .onUpdate("CASCADE")
+    //       .onDelete("CASCADE");
+    //   });
+    // }),
     knex.schema.hasTable("categories").then((exists) => {
       if (exists) return;
       return knex.schema.createTable("categories", (t) => {
@@ -344,10 +351,10 @@ exports.down = async function (knex) {
   try {
     await knex.raw(
       `DROP TABLE IF EXISTS user_form_fields, 
-      user_forms, user_sessions, user_permissions, form_fields, fields, 
+      user_forms, user_sessions, user_policies, form_fields, fields, 
       forms, menu_tree, menu, event_participants, 
       event_roles, event_meta, events, categories, 
-      user_roles, role_permissions, permissions, 
+      user_roles, role_policies, policies, 
       users, roles, media, posts, post_types, testimonies, 
       settings, front_page_info`
     );

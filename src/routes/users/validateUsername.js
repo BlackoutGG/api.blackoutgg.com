@@ -1,6 +1,7 @@
 "use strict";
 const User = require("./models/User");
 const guard = require("express-jwt-permissions")();
+const sanitize = require("sanitize-html");
 const { query } = require("express-validator");
 const { validate } = require("$util");
 
@@ -21,12 +22,13 @@ module.exports = {
       [
         query("value")
           .notEmpty()
-          .isAlphanumeric()
+          .isString()
           .withMessage("Username must be alphanumeric.")
           .isLength({ min: 3, max: 30 })
           .withMessage("Username must be 3 to 30 in length.")
           .escape()
-          .trim(),
+          .trim()
+          .customSanitizer((v) => sanitize(v)),
       ],
       422
     ),

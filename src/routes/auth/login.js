@@ -9,6 +9,7 @@ const verifyRecaptcha = require("$services/recaptcha")(
 );
 const sanitize = require("sanitize-html");
 const addHours = require("date-fns/addHours");
+const AWS = require("aws-sdk");
 const { nanoid } = require("nanoid");
 const { validate } = require("$util");
 const { body, header } = require("express-validator");
@@ -17,6 +18,8 @@ const consoleLogout = (req, res, next) => {
   console.log(req.body);
   next();
 };
+
+const docClient = new AWS.DynamoDB.DocumentClient();
 
 const validators = validate([
   header("Authorization").isEmpty(),
@@ -35,58 +38,94 @@ const validators = validate([
 ]);
 
 const login = async function (req, res, next) {
-  const result = await User.query()
+  const user = await User.query()
     .where({ email: req.body.email })
-    .select("id", "username", "avatar", "password")
-    .withGraphFetched("[roles.permissions, user_permissions]")
-    .first()
-    .throwIfNotFound();
+    .select("id", "username", "avatar", "password", "login_attempts")
+    .withGraphFetched("[roles.policies, policies]")
+    .first();
 
-  const match = await bcrypt.compare(req.body.password, result.password);
+  if (!user) {
+    return res
+      .status(422)
+      .send({ message: "User doesn't exist or has not been activated." });
+  }
+
+  if (user && user.login_attempts === 5) {
+    return res.status(400).send({
+      message:
+        "Due to multiple failed login attempts your account is locked. Reset your password to re-enable your account.",
+    });
+  }
+
+  const match = await bcrypt.compare(req.body.password, user.password);
 
   if (!match) {
-    return res.status(422).send({ message: "User credentials do not match." });
+    if (user.login_attempts !== 5) {
+      await User.query().patch({ login_attempts: user.login_attempts + 1 });
+    }
+
+    return res.status(422).send({
+      message: `Login failed. You have ${
+        5 - user.login_attempts
+      } more attempts before your account is disabled.`,
+    });
   }
 
   const jti = nanoid();
-  const expires_on = addHours(Date.now(), 1);
+  const expires = addHours(new Date(), 1);
 
-  console.log(expires_on);
+  // const { roles, ...user } = user;
 
-  await UserSession.query().insert({
-    token_id: jti,
-    user_id: result.id,
-    expires_on,
-  });
-
-  const { roles, ...user } = result;
-
-  const rolePermissions = roles.flatMap(({ permissions }) =>
-    permissions.map(({ action, target, resource }) => {
+  const rolePolicies = user.roles.flatMap(({ policies }) =>
+    policies.map(({ action, target, resource }) => {
       return `${action}:${target}:${resource}`;
     })
   );
 
-  const userPermissions = user.user_permissions.map(
+  const userPolicies = user.policies.map(
     ({ action, target, resource }) => `${action}:${target}:${resource}`
   );
 
-  const permissions = uniq([...userPermissions, ...rolePermissions]);
+  const permissions = uniq([...userPolicies, ...rolePolicies]);
 
-  const level = Math.min(roles.map(({ level }) => level));
+  const level = Math.min(user.roles.map(({ level }) => level));
+
+  // const params = {
+  //   TableName: "user_sessions",
+  //   Item: {
+  //     token_id: jti,
+  //     user_id: user.id,
+  //     // user_roles: docClient.createSet(roles.map(({ id }) => id)),
+  //     expires: expires.toISOString(),
+  //     ttl: Math.floor(expires.getTime() / 1000),
+  //   },
+  // };
+
+  // await docClient.put(params).promise();
 
   const data = {
     jti,
     id: user.id,
-    username: user.username,
-    avatar: user.avatar,
-    roles: roles.map(({ name }) => name),
+    roles: user.roles.map(({ name }) => name),
     level,
     permissions,
   };
 
   const token = jwt.sign(data, process.env.JWT_SECRET, {
     expiresIn: "1h",
+  });
+
+  const refreshToken = jwt.sign(
+    { jti: data.jti, id: data.id },
+    process.env.JWT_REFRESH_SECRET
+  );
+
+  await UserSession.query().insert({
+    token_id: jti,
+    user_id: user.id,
+    access_token: token,
+    refresh_token: refreshToken,
+    expires,
   });
 
   res.status(200).send({ token });

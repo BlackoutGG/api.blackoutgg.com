@@ -5,13 +5,6 @@ const aws = require("aws-sdk");
 const path = require("path");
 const { nanoid } = require("nanoid");
 
-/*** SETUP S3 CONFIG ***/
-aws.config.update({
-  secretAccessKey: process.env.AWS_SECRET,
-  accessKeyId: process.env.AWS_ACCESS_ID,
-  region: process.env.AWS_REGION,
-});
-
 const s3 = new aws.S3();
 
 /*** FUNCTION CHECK FILE TYPE***/
@@ -55,13 +48,11 @@ const uploadFiles = function (opts) {
 
   return function (req, res, next) {
     upload(req, res, async (err) => {
-      // console.log("file", req.file || req.files);
       if (err) {
         console.log(err);
         res.status(422).send();
       } else {
         if (req.files === undefined) {
-          console.log("Error: no file selected.");
           res.status(422).send("No file selected.");
         } else {
           next();

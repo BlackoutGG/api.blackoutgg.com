@@ -9,7 +9,7 @@ const upload = uploadFiles({
   bucket: process.env.AWS_BUCKET_NAME,
 });
 
-const middleware = [guard.check("add:media"), upload];
+const middleware = [guard.check([ADD_ALL_MEDIA]), upload];
 
 const uploadMedia = async function (req, res, next) {
   const files = req.files.media;
@@ -19,7 +19,7 @@ const uploadMedia = async function (req, res, next) {
     mimetype: file.contentType,
     url: file.location,
     storage_key: file.key,
-    user_id: req.user.id,
+    owner_id: req.user.id,
   }));
 
   console.log(data);

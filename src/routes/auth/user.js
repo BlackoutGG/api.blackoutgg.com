@@ -1,12 +1,19 @@
 "use strict";
+const User = require("$models/User");
 
 const userDetails = async function (req, res, next) {
   if (!req.user) res.status(403).send("Forbidden");
-  const { id, username, avatar, roles, level, permissions } = req.user;
+  const { id, roles, level, permissions } = req.user;
+
+  const results = await User.query()
+    .select("username", "avatar")
+    .where("id", req.user.id)
+    .first();
+
   const user = {
     id,
-    username,
-    avatar,
+    username: results.username,
+    avatar: results.avatar,
     roles,
     level,
     scope: permissions,

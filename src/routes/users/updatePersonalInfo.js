@@ -1,8 +1,6 @@
 "use strict";
 const User = require("./models/User");
 const pick = require("lodash/pick");
-const bcrypt = require("bcrypt");
-const SALT_ROUNDS = 12;
 const sanitize = require("sanitize-html");
 const guard = require("express-jwt-permissions")();
 const { body, param } = require("express-validator");
@@ -62,18 +60,28 @@ const middleware = [
 ];
 
 const updatePersonalInfo = async function (req, res, next) {
+  const body = pick(req.body, [
+    "username",
+    "first_name",
+    "last_name",
+    "location",
+    "gender",
+    "description",
+    "birthday",
+  ]);
+
   const user = await User.query()
     .patch(req.body)
     .where("id", req.user.id)
     .first()
     .throwIfNotFound()
-    .returning(["id", ...Object.keys(req.body)]);
+    .returning(["id", ...body]);
 
   res.status(200).send(user);
 };
 
 module.exports = {
-  path: "/update/personal",
+  path: "/update",
   method: "PATCH",
   middleware,
   handler: updatePersonalInfo,

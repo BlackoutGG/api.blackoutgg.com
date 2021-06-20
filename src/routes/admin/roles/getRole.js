@@ -1,6 +1,6 @@
 "use strict";
 const Roles = require("$models/Roles");
-const Permissions = require("$models/Permissions");
+const Policies = require("$models/Policies");
 
 const guard = require("express-jwt-permissions")();
 const { param } = require("express-validator");
@@ -11,16 +11,16 @@ const {
   UPDATE_ALL_ROLES,
 } = require("$util/permissions");
 
-const getSingleRoleForEditing = async function (req, res) {
-  const roleQuery = Roles.query()
+const getRole = async function (req, res) {
+  const _role = Roles.query()
     .where("id", req.params.id)
-    .withGraphFetched("permissions")
+    .withGraphFetched("policies")
     .first()
     .throwIfNotFound();
 
-  const permQuery = Permissions.query().where("level", ">=", req.user.level);
+  const _policies = Policies.query().where("level", ">=", req.user.level);
 
-  const [role, selectable] = await Promise.all([roleQuery, permQuery]);
+  const [role, selectable] = await Promise.all([_role, _policies]);
   res.status(200).send({ role, selectable });
 };
 
@@ -31,5 +31,5 @@ module.exports = {
     guard.check([VIEW_ALL_ADMIN, VIEW_ALL_ROLES, UPDATE_ALL_ROLES]),
     validate([param("id").isNumeric().toInt(10)]),
   ],
-  handler: getSingleRoleForEditing,
+  handler: getRole,
 };

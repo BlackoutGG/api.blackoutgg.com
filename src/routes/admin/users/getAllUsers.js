@@ -6,7 +6,7 @@ const { query } = require("express-validator");
 const { buildQuery, validate } = require("$util");
 const { VIEW_ALL_ADMIN, VIEW_ALL_USERS } = require("$util/permissions");
 
-const columns = ["id", "avatar", "username", "email", "created_at"];
+const columns = ["id", "avatar", "username", "email", "active", "created_at"];
 
 const getAllUsersForAdmin = async function (req, res, next) {
   console.log(req.query);

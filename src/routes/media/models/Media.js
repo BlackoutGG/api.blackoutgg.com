@@ -9,13 +9,13 @@ class Media extends Base {
   static get jsonSchema() {
     return {
       type: "object",
-      required: ["mimetype", "url", "storage_key", "user_id"],
+      required: ["mimetype", "url", "storage_key", "owner_id"],
       properties: {
         id: { type: "integer" },
         mimetype: { type: "string" },
         url: { type: "string" },
         storage_key: { type: "string" },
-        user_id: { type: "integer" },
+        owner_id: { type: "integer" },
       },
     };
   }

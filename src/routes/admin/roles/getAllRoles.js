@@ -3,6 +3,7 @@ const Roles = require("./models/Roles.js");
 const guard = require("express-jwt-permissions")();
 const { query } = require("express-validator");
 const { validate, buildQuery } = require("$util");
+const { VIEW_ALL_ADMIN, VIEW_ALL_ROLES } = require("$util/permissions");
 
 const getAllRoles = async function (req, res, next) {
   const query = Roles.query()
@@ -10,14 +11,14 @@ const getAllRoles = async function (req, res, next) {
     .where("level", ">=", req.user.level);
 
   const roles = await buildQuery(query, req.query.page, req.query.limit);
-  res.status(200).send({ roles });
+  res.status(200).send(roles);
 };
 
 module.exports = {
   path: "/",
   method: "GET",
   middleware: [
-    guard.check(["view:roles"]),
+    guard.check([VIEW_ALL_ADMIN, VIEW_ALL_ROLES]),
     validate([
       query("page").optional().isNumeric(),
       query("limit").optional().isNumeric(),

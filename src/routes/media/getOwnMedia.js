@@ -21,7 +21,7 @@ const getOwnMedia = async function (req, res, next) {
 };
 
 module.exports = {
-  path: "/own",
+  path: "/",
   method: "GET",
   middleware,
   handler: getOwnMedia,
