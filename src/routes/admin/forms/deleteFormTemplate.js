@@ -4,7 +4,7 @@ const Form = require("./models/Form");
 const guard = require("express-jwt-permissions")();
 const { query } = require("express-validator");
 const { buildQuery, validate } = require("$util");
-const { VIEW_ALL_ADMIN, REMOVE_ALL_FORMS } = require("$util/permissions");
+const { VIEW_ALL_ADMIN, DELETE_ALL_FORMS } = require("$util/policies");
 
 const removeForm = async function (req, res, next) {
   const filters = req.query.filters || null;
@@ -41,7 +41,7 @@ module.exports = {
       console.log(req.body);
       next();
     },
-    guard.check([VIEW_ALL_ADMIN, REMOVE_ALL_FORMS]),
+    guard.check([VIEW_ALL_ADMIN, DELETE_ALL_FORMS]),
     validate([query("ids.*").isNumeric()]),
   ],
   handler: removeForm,

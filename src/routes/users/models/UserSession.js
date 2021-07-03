@@ -17,20 +17,12 @@ class UserSession extends Base {
   static get jsonSchema() {
     return {
       type: "object",
-      required: [
-        "token_id",
-        "user_id",
-        "expires",
-        "refresh_token",
-        "access_token",
-      ],
+      required: ["token_id", "user_id", "expires"],
       properties: {
         id: { type: "integer" },
         user_id: { type: "integer" },
         token_id: { type: "string" },
         expires: { type: "date" },
-        refresh_token: { type: "string" },
-        access_token: { type: "string" },
         created_at: { type: "string" },
         updated_at: { type: "string" },
       },

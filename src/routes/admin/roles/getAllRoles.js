@@ -3,11 +3,19 @@ const Roles = require("./models/Roles.js");
 const guard = require("express-jwt-permissions")();
 const { query } = require("express-validator");
 const { validate, buildQuery } = require("$util");
-const { VIEW_ALL_ADMIN, VIEW_ALL_ROLES } = require("$util/permissions");
+const { VIEW_ALL_ADMIN, VIEW_ALL_ROLES } = require("$util/policies");
 
 const getAllRoles = async function (req, res, next) {
   const query = Roles.query()
-    .select("id", "name", "level", "created_at", "updated_at")
+    .select(
+      "id",
+      "name",
+      "level",
+      "is_deletable",
+      "is_removable",
+      "created_at",
+      "updated_at"
+    )
     .where("level", ">=", req.user.level);
 
   const roles = await buildQuery(query, req.query.page, req.query.limit);

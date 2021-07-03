@@ -4,7 +4,7 @@ exports.up = function (knex) {
       if (exists) return;
       return knex.schema.createTable("users", (t) => {
         t.increments("id").primary();
-        t.integer("discord_id").unique();
+        t.string("discord_id").unique();
         t.string("email").unique();
         t.string("username").unique();
         t.string("first_name");
@@ -30,6 +30,7 @@ exports.up = function (knex) {
         t.increments("id").primary();
         t.integer("user_id").references("users.id");
         t.string("token_id");
+        t.string("refresh_token_id");
         t.timestamp("expires");
         t.timestamps();
       });

@@ -7,7 +7,7 @@ const { validate } = require("$util");
 const verifyRecaptcha = require("$services/recaptcha")(
   process.env.RECAPTCHA_SECRET
 );
-const { ADD_OWN_FORM } = require("$util/permissions");
+const { ADD_OWN_FORM } = require("$util/policies");
 
 const validators = validate([
   body("form_id").isNumeric(),

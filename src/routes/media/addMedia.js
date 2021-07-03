@@ -2,14 +2,23 @@
 const Media = require("./models/Media");
 const guard = require("express-jwt-permissions")();
 const { uploadFiles } = require("$services/upload");
-const { ADD_ALL_MEDIA } = require("$util/permissions");
+const { ADD_ALL_MEDIA } = require("$util/policies");
 
-const upload = uploadFiles({
-  fields: [{ name: "media", maxCount: 10 }],
-  bucket: process.env.AWS_BUCKET_NAME,
-});
+const uploadFileMiddleware = async (req, res, next) => {
+  const upload = uploadFiles({
+    dest: `uploads/media/${req.user.id}-${req.user.username}/`,
+    fields: [{ name: "media", maxCount: 10 }],
+    bucket: process.env.AWS_BUCKET_NAME,
+  });
 
-const middleware = [guard.check([ADD_ALL_MEDIA]), upload];
+  try {
+    await upload.promise(req, res);
+    next();
+  } catch (err) {
+    console.error(err);
+    next(err);
+  }
+};
 
 const uploadMedia = async function (req, res, next) {
   const files = req.files.media;
@@ -31,6 +40,6 @@ const uploadMedia = async function (req, res, next) {
 module.exports = {
   path: "/",
   method: "POST",
-  middleware,
+  middleware: [guard.check([ADD_ALL_MEDIA]), uploadFileMiddleware],
   handler: uploadMedia,
 };

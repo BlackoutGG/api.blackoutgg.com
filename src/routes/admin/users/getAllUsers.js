@@ -4,7 +4,7 @@ const Roles = require("$models/Roles");
 const guard = require("express-jwt-permissions")();
 const { query } = require("express-validator");
 const { buildQuery, validate } = require("$util");
-const { VIEW_ALL_ADMIN, VIEW_ALL_USERS } = require("$util/permissions");
+const { VIEW_ALL_ADMIN, VIEW_ALL_USERS } = require("$util/policies");
 
 const columns = ["id", "avatar", "username", "email", "active", "created_at"];
 

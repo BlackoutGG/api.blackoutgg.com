@@ -1,5 +1,6 @@
 "use strict";
 const Settings = require("$models/Settings");
+const Policies = require("$models/Policies");
 const select = [
   "show_video",
   "show_video_on_mobile",
@@ -15,12 +16,25 @@ const select = [
 ];
 
 const getSettings = async (req, res) => {
+  // let [settings, policies] = await Promise.all([
+  //   Settings.query().where("id", 1).select(select).first(),
+  //   Policies.query().select("action", "target", "resource"),
+  // ]);
+
+  // policies = policies.reduce((output, { action, target, resource }) => {
+  //   const key = `${action.toUpperCase()}_${target.toUpperCase()}_${resource.toUpperCase()}`;
+  //   const value = `${action}:${target}:${resource}`;
+
+  //   output[key] = value;
+  //   return output;
+  // }, {});
+
   const _settings = await Settings.query()
     .where("id", 1)
     .select(select)
     .first();
 
-  console.log(_settings);
+  // console.log(_settings);
 
   res.status(200).send(_settings);
 };

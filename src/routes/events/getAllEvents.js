@@ -6,7 +6,7 @@ const columns = require("./helpers/columns");
 const { query } = require("express-validator");
 const { validate } = require("$util");
 const { raw } = require("objection");
-const { VIEW_ALL_EVENTS } = require("$util/permissions");
+const { VIEW_ALL_EVENTS } = require("$util/policies");
 
 const validators = validate([
   // query("category_id").optional().isArray(),

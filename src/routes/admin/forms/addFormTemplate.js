@@ -5,7 +5,7 @@ const guard = require("express-jwt-permissions")();
 const sanitize = require("sanitize-html");
 const { body } = require("express-validator");
 const { buildQuery, validate } = require("$util");
-const { VIEW_ALL_ADMIN, ADD_ALL_FORMS } = require("$util/permissions");
+const { VIEW_ALL_ADMIN, ADD_ALL_FORMS } = require("$util/policies");
 
 const validators = validate([
   body("form.category_id").isNumeric(),

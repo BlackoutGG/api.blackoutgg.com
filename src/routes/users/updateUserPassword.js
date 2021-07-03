@@ -59,10 +59,12 @@ const updateUserPassword = async (req, res, next) => {
     const hashed = await bcrypt.hash(req.body.password, salted);
 
     await User.query(trx)
-      .patch({ password: hashed, login_attempts: 0 })
-      .where("id", id);
+      .patch({ password: hashed })
+      .where("id", id)
+      .returning("id");
 
     await r.del(`pw:${id}`);
+    await r.del(`l_user:${id}`);
 
     await trx.commit();
 

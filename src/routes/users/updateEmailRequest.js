@@ -29,6 +29,24 @@ const middleware = [
 const updateEmailRequest = async function (req, res) {
   const r = req.redis;
 
+  if (await r.exists(`e:${req.user.id}`)) {
+    const json = JSON.parse(await r.get(`pw:${account.req.user.id}`));
+
+    const expiry = parseISO(json.expiry);
+
+    const time = subSeconds(expiry, differenceInSeconds(expiry, new Date()));
+
+    const timeInMinutes = formatDistanceStrict(new Date(), expiry, {
+      unit: "minute",
+    });
+
+    return res.status(200).send({
+      resend: true,
+      count: time.getTime() / 1000,
+      message: `Request already exists. Please wait ${timeInMinutes} before performing another request for this account.`,
+    });
+  }
+
   const [account, settings] = await Promise.all([
     User.query()
       .where("id", req.user.id)
@@ -43,22 +61,6 @@ const updateEmailRequest = async function (req, res) {
       ])
       .first(),
   ]);
-
-  if (await r.exists(`e:${account.id}`)) {
-    const json = JSON.parse(await r.get(`e:${req.body.id}`));
-    // const expiry = parseISO(json.expiry);
-    const expiry =
-      new Date().getTime() / 1000 +
-      settings.password_reset_request_ttl_in_minutes * 60;
-    const time = isFuture(expiry) ? differenceInSeconds(Date.now(), expiry) : 0;
-    const timeInMinutes = format(time, "m");
-    return res.status(200).send({
-      status: 1,
-      resend: true,
-      count: time,
-      message: `Request already exists. Please wait ${timeInMinutes} minutes before performing another request.`,
-    });
-  }
 
   if (!account) {
     return res.status(404).send("User account doesn't exist.");
@@ -90,7 +92,7 @@ const updateEmailRequest = async function (req, res) {
   );
 
   await sendEmail(user.email, "CHANGE_EMAIL", {
-    url: process.env.BASE_URL + "/change-email/",
+    url: process.env.BASE_URL + "change-email/",
     id,
     code,
   });

@@ -7,8 +7,7 @@ const sanitize = require("sanitize-html");
 const diffInSeconds = require("date-fns/differenceInSeconds");
 const { param, body } = require("express-validator");
 const { validate } = require("$util");
-const { VIEW_ALL_ADMIN, UPDATE_ALL_ROLES } = require("$util/permissions");
-const { parseISO } = require("date-fns");
+const { VIEW_ALL_ADMIN, UPDATE_ALL_ROLES } = require("$util/policies");
 const { transaction, raw } = require("objection");
 
 const validators = validate([
@@ -22,8 +21,7 @@ const validators = validate([
   body("details.level")
     .optional()
     .custom((v, { req }) => v >= req.user.level),
-  body("remove.*").optional().isNumeric(),
-  body("added.*").optional().isNumeric(),
+  body("altered").default(false).isBoolean(),
 ]);
 
 const middleware = [
@@ -65,7 +63,7 @@ const updateRole = async (req, res, next) => {
         .joinRelated("user.roles")
         .where("user:roles.id", req.params.id)
         .whereRaw(raw("expires >= CURRENT_TIMESTAMP"))
-        .select(["user_sessions.token_id", "expires"])
+        .select(["user_sessions.refresh_token_id", "expires"])
         .orderBy("user_sessions.created_at", "DESC");
 
       // .distinctOn("user_sessions.user_id");
@@ -77,7 +75,7 @@ const updateRole = async (req, res, next) => {
           const timestamp = s.expires;
           if (isFuture(timestamp)) {
             const diff = diffInSeconds(timestamp, new Date());
-            const id = s.token_id;
+            const id = s.refresh_token_id;
             const key = `blacklist:${id}`;
             output.push(["set", key, id, "NX", "EX", diff]);
           }
@@ -86,27 +84,6 @@ const updateRole = async (req, res, next) => {
 
         await req.redis.multi(commands).exec();
       }
-
-      // if (tokens && tokens.length) {
-      //   console.log(tokens);
-
-      //   const commands = tokens.reduce((output, t) => {
-      //     const timestamp = new Date(t.expires_on);
-      //     if (isFuture(timestamp)) {
-      //       output.push([
-      //         "set",
-      //         `blacklist:${t.token_id}`,
-      //         t.token_id,
-      //         "NX",
-      //         "EX",
-      //         diffInSeconds(timestamp, Date.now()),
-      //       ]);
-      //     }
-      //     return output;
-      //   }, []);
-
-      //   await req.redis.multi(commands).exec();
-      // }
     }
     await trx.commit();
     res.status(200).send();

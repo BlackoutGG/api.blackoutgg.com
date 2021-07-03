@@ -4,7 +4,7 @@ const guard = require("express-jwt-permissions")();
 const { query } = require("express-validator");
 const { deleteFiles } = require("$services/upload");
 const { buildQuery, validate } = require("$util");
-const { VIEW_ALL_ADMIN, REMOVE_ALL_MEDIA } = require("$util/permissions");
+const { VIEW_ALL_ADMIN, DELETE_ALL_MEDIA } = require("$util/policies");
 
 const validators = validate([query("keys.*").isString()]);
 
@@ -35,6 +35,6 @@ const removeMedia = async (req, res, next) => {
 module.exports = {
   path: "/",
   method: "DELETE",
-  middleware: [guard.check([VIEW_ALL_ADMIN, REMOVE_ALL_MEDIA]), validators],
+  middleware: [guard.check([VIEW_ALL_ADMIN, DELETE_ALL_MEDIA]), validators],
   handler: removeMedia,
 };

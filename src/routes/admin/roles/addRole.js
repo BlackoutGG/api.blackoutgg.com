@@ -4,7 +4,7 @@ const guard = require("express-jwt-permissions")();
 const pick = require("lodash").pick;
 const { body } = require("express-validator");
 const { validate, buildQuery } = require("$util");
-const { VIEW_ALL_ADMIN, ADD_ALL_ROLES } = require("$util/permissions");
+const { VIEW_ALL_ADMIN, ADD_ALL_ROLES } = require("$util/policies");
 
 const consoleLog = (req, res, next) => {
   console.log(req.body, req.query);

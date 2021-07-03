@@ -22,12 +22,12 @@ const UPDATE_ALL_EVENTS = "update:all:events";
 const UPDATE_ALL_MEDIA = "update:all:media";
 const UPDATE_ALL_SETTINGS = "update:all:settings";
 
-const REMOVE_ALL_USERS = "remove:all:users";
-const REMOVE_ALL_ROLES = "remove:all:roles";
-const REMOVE_ALL_CATEGORIES = "remove:all:categories";
-const REMOVE_ALL_FORMS = "remove:all:forms";
-const REMOVE_ALL_EVENTS = "remove:all:events";
-const REMOVE_ALL_MEDIA = "remove:all:media";
+const DELETE_ALL_USERS = "delete:all:users";
+const DELETE_ALL_ROLES = "delete:all:roles";
+const DELETE_ALL_CATEGORIES = "delete:all:categories";
+const DELETE_ALL_FORMS = "delete:all:forms";
+const DELETE_ALL_EVENTS = "delete:all:events";
+const DELETE_ALL_MEDIA = "delete:all:media";
 
 /** OWN */
 const VIEW_OWN_FORMS = "view:own:forms";
@@ -42,9 +42,9 @@ const UPDATE_OWN_FORMS = "update:own:forms";
 const UPDATE_OWN_EVENTS = "update:own:events";
 const UPDATE_OWN_MEDIA = "update:own:media";
 
-const REMOVE_OWN_FORMS = "remove:own:forms";
-const REMOVE_OWN_EVENTS = "remove:own:events";
-const REMOVE_OWN_MEDIA = "remove:own:media";
+const DELETE_OWN_FORMS = "delete:own:forms";
+const DELETE_OWN_EVENTS = "delete:own:events";
+const DELETE_OWN_MEDIA = "delete:own:media";
 
 module.exports = {
   VIEW_ALL_ADMIN,
@@ -68,12 +68,12 @@ module.exports = {
   UPDATE_ALL_EVENTS,
   UPDATE_ALL_MEDIA,
   UPDATE_ALL_SETTINGS,
-  REMOVE_ALL_USERS,
-  REMOVE_ALL_ROLES,
-  REMOVE_ALL_CATEGORIES,
-  REMOVE_ALL_FORMS,
-  REMOVE_ALL_EVENTS,
-  REMOVE_ALL_MEDIA,
+  DELETE_ALL_USERS,
+  DELETE_ALL_ROLES,
+  DELETE_ALL_CATEGORIES,
+  DELETE_ALL_FORMS,
+  DELETE_ALL_EVENTS,
+  DELETE_ALL_MEDIA,
   VIEW_OWN_FORMS,
   VIEW_OWN_EVENTS,
   VIEW_OWN_MEDIA,
@@ -83,7 +83,7 @@ module.exports = {
   UPDATE_OWN_FORMS,
   UPDATE_OWN_EVENTS,
   UPDATE_OWN_MEDIA,
-  REMOVE_OWN_FORMS,
-  REMOVE_OWN_EVENTS,
-  REMOVE_OWN_MEDIA,
+  DELETE_OWN_FORMS,
+  DELETE_OWN_EVENTS,
+  DELETE_OWN_MEDIA,
 };

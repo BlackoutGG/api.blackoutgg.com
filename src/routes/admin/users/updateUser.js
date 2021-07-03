@@ -6,12 +6,10 @@ const guard = require("express-jwt-permissions")();
 const AWS = require("aws-sdk");
 const { body, param } = require("express-validator");
 const { validate } = require("$util");
-const { VIEW_ALL_ADMIN, UPDATE_ALL_USERS } = require("$util/permissions");
+const { VIEW_ALL_ADMIN, UPDATE_ALL_USERS } = require("$util/policies");
 const { transaction } = require("objection");
 const { isFuture, differenceInSeconds } = require("date-fns");
 const { raw } = require("express");
-
-const docClient = new AWS.DynamoDB.DocumentClient();
 
 const validators = validate([
   param("id").isNumeric().toInt(10),
@@ -73,16 +71,16 @@ const updateUser = async (req, res, next) => {
       const sessions = await UserSession.query()
         .where("user_id", userId)
         .whereRaw(raw("expires >= CURRENT_TIMESTAMP"))
-        .select("token_id", "expires")
+        .select("refresh_token_id", "expires")
         .orderBy("created_at", "DESC");
 
       if (sessions && sessions.length) {
         const commands = sessions.reduce((output, s) => {
           const date = s.expires;
-          const id = s.token_id;
+          const id = s.refresh_token_id;
           const key = `blacklist:${id}`;
           if (isFuture(date)) {
-            const diff = diffInSeconds(date, new Date());
+            const diff = differenceInSeconds(date, new Date());
             output.push(["set", key, id, "NX", "EX", diff]);
           }
           return output;

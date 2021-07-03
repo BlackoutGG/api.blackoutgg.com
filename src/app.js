@@ -54,7 +54,7 @@ app.use(
     path: [
       "/",
       `${apiVersion}/auth/login`,
-      `${apiVersion}/auth/discord/state`,
+      `${apiVersion}/auth/refresh`,
       `${apiVersion}/auth/discord`,
       `${apiVersion}/auth/logout`,
       `${apiVersion}/users/register`,
@@ -62,7 +62,6 @@ app.use(
       `${apiVersion}/users/password-reset`,
       `${apiVersion}/users/password-reset-confirm`,
       `${apiVersion}/users/resend/activation`,
-      `${apiVersion}/users/update`,
       `${apiVersion}/users/update-password`,
       `${apiVersion}/settings`,
     ],

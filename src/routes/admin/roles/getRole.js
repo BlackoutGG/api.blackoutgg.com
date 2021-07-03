@@ -9,7 +9,7 @@ const {
   VIEW_ALL_ADMIN,
   VIEW_ALL_ROLES,
   UPDATE_ALL_ROLES,
-} = require("$util/permissions");
+} = require("$util/policies");
 
 const getRole = async function (req, res) {
   const _role = Roles.query()

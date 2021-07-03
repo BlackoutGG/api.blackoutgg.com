@@ -6,7 +6,7 @@ const sanitize = require("sanitize-html");
 const guard = require("express-jwt-permissions")();
 const { body } = require("express-validator");
 const { validate, buildQuery } = require("$util");
-const { VIEW_ALL_ADMIN, ADD_ALL_USERS } = require("$util/permissions");
+const { VIEW_ALL_ADMIN, ADD_ALL_USERS } = require("$util/policies");
 
 const validators = validate([
   body("username")

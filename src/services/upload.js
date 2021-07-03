@@ -1,5 +1,6 @@
 "use strict";
 const multer = require("multer");
+const util = require("util");
 const multerS3 = require("multer-s3");
 const aws = require("aws-sdk");
 const path = require("path");
@@ -46,7 +47,9 @@ const uploadFiles = function (opts) {
 
   const upload = multer(config).fields(opts.fields);
 
-  return function (req, res, next) {
+  const promise = util.promisify(upload);
+
+  const standard = function (req, res, next) {
     upload(req, res, async (err) => {
       if (err) {
         console.log(err);
@@ -59,6 +62,11 @@ const uploadFiles = function (opts) {
         }
       }
     });
+  };
+
+  return {
+    standard,
+    promise,
   };
 };
 

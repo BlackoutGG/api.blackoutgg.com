@@ -3,7 +3,7 @@ const EventParticipants = require("./models/EventParticipants");
 const guard = require("express-jwt-permissions")();
 const { body } = require("express-validator");
 const { validate } = require("$util");
-const { VIEW_ALL_EVENTS } = require("$util/permissions");
+const { VIEW_ALL_EVENTS } = require("$util/policies");
 
 const validators = validate([
   body("event_id").isNumeric().toInt(10),

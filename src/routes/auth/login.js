@@ -9,7 +9,6 @@ const verifyRecaptcha = require("$services/recaptcha")(
 );
 const sanitize = require("sanitize-html");
 const addHours = require("date-fns/addHours");
-const AWS = require("aws-sdk");
 const { nanoid } = require("nanoid");
 const { validate } = require("$util");
 const { body, header } = require("express-validator");
@@ -18,8 +17,6 @@ const consoleLogout = (req, res, next) => {
   console.log(req.body);
   next();
 };
-
-const docClient = new AWS.DynamoDB.DocumentClient();
 
 const validators = validate([
   header("Authorization").isEmpty(),
@@ -38,9 +35,11 @@ const validators = validate([
 ]);
 
 const login = async function (req, res, next) {
+  let attempts = 0;
+
   const user = await User.query()
     .where({ email: req.body.email })
-    .select("id", "username", "avatar", "password", "login_attempts")
+    .select("id", "username", "avatar", "password")
     .withGraphFetched("[roles.policies, policies]")
     .first();
 
@@ -50,31 +49,34 @@ const login = async function (req, res, next) {
       .send({ message: "User doesn't exist or has not been activated." });
   }
 
-  if (user && user.login_attempts === 5) {
-    return res.status(400).send({
-      message:
-        "Due to multiple failed login attempts your account is locked. Reset your password to re-enable your account.",
-    });
+  const key = `l_user:${user.id}`;
+  const keyExists = await req.redis.exists(key);
+
+  if (user && keyExists) {
+    attempts = JSON.parse(await req.redis.get(key));
+    if (attempts === 5) {
+      return res.status(400).send({
+        message:
+          "Due to multiple failed login attempts your account is been temporary locked for 24 hours. Reset your password to re-enable your account.",
+      });
+    }
   }
 
   const match = await bcrypt.compare(req.body.password, user.password);
 
   if (!match) {
-    if (user.login_attempts !== 5) {
-      await User.query().patch({ login_attempts: user.login_attempts + 1 });
+    if (attempts !== 5 && keyExists) {
+      await req.redis.set(key, attempts + 1, "NX", "KEEPTTL");
+    } else {
+      await req.redis.set(key, attempts + 1, "NX", "EX", 60 * 60 * 24);
     }
 
     return res.status(422).send({
       message: `Login failed. You have ${
-        5 - user.login_attempts
+        5 - attempts
       } more attempts before your account is disabled.`,
     });
   }
-
-  const jti = nanoid();
-  const expires = addHours(new Date(), 1);
-
-  // const { roles, ...user } = user;
 
   const rolePolicies = user.roles.flatMap(({ policies }) =>
     policies.map(({ action, target, resource }) => {
@@ -90,45 +92,40 @@ const login = async function (req, res, next) {
 
   const level = Math.min(user.roles.map(({ level }) => level));
 
-  // const params = {
-  //   TableName: "user_sessions",
-  //   Item: {
-  //     token_id: jti,
-  //     user_id: user.id,
-  //     // user_roles: docClient.createSet(roles.map(({ id }) => id)),
-  //     expires: expires.toISOString(),
-  //     ttl: Math.floor(expires.getTime() / 1000),
-  //   },
-  // };
-
-  // await docClient.put(params).promise();
+  const access_jti = nanoid();
+  const refresh_jti = nanoid();
+  const expires = addHours(new Date(), 1);
 
   const data = {
-    jti,
+    jti: access_jti,
+    refresh_jti,
     id: user.id,
+    username: user.username,
     roles: user.roles.map(({ name }) => name),
     level,
     permissions,
   };
 
-  const token = jwt.sign(data, process.env.JWT_SECRET, {
-    expiresIn: "1h",
+  const access_token = jwt.sign(data, process.env.JWT_SECRET, {
+    expiresIn: process.env.JWT_TOKEN_DURATION,
   });
 
-  const refreshToken = jwt.sign(
-    { jti: data.jti, id: data.id },
-    process.env.JWT_REFRESH_SECRET
+  const refresh_token = jwt.sign(
+    { jti: refresh_jti, id: data.id },
+    process.env.JWT_REFRESH_SECRET,
+    { expiresIn: process.env.JWT_REFRESH_TOKEN_DURATION }
   );
 
   await UserSession.query().insert({
-    token_id: jti,
+    token_id: access_jti,
+    refresh_token_id: refresh_jti,
     user_id: user.id,
-    access_token: token,
-    refresh_token: refreshToken,
     expires,
   });
 
-  res.status(200).send({ token });
+  await req.redis.del(key);
+
+  res.status(200).send({ access_token, refresh_token });
 };
 
 module.exports = {

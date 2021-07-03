@@ -3,14 +3,11 @@ const UserRole = require("$models/UserRole");
 const UserSession = require("$models/UserSession");
 const isFuture = require("date-fns/isFuture");
 const diffInSeconds = require("date-fns/differenceInSeconds");
-const AWS = require("aws-sdk");
 const guard = require("express-jwt-permissions")();
 const { param, query } = require("express-validator");
 const { validate } = require("$util");
-const { VIEW_ALL_ADMIN, UPDATE_ALL_USERS } = require("$util/permissions");
+const { VIEW_ALL_ADMIN, UPDATE_ALL_USERS } = require("$util/policies");
 const { transaction, raw } = require("objection");
-
-const docClient = new AWS.DynamoDB.DocumentClient();
 
 const removeUserRole = async function (req, res, next) {
   const userId = req.params.id,
@@ -29,48 +26,13 @@ const removeUserRole = async function (req, res, next) {
     const sessions = await UserSession.query()
       .where("user_id", userId)
       .whereRaw(raw("expires >= CURRENT_TIMESTAMP"))
-      .select("token_id", "expires")
+      .select("refresh_token_id", "expires")
       .orderBy("created_at", "DESC");
-
-    // const params = {
-    //   TableName: "user_sessions",
-    //   Key: {
-    //     user_id: userId,
-    //   },
-    //   UpdateExpression: "DELETE #roles :roleToRemove",
-    //   ExpressionAttributeNames: {
-    //     "#roles": "user_roles",
-    //   },
-    //   ExpressionAttributeValues: {
-    //     ":roleToRemove": docClient.createSet([roleId]),
-    //     ":id": userId,
-    //   },
-    //   ConditionExpression: "user_id = :id",
-    //   ReturnValues: "ALL_NEW",
-    // };
-
-    // const session = await docClient.update(params).promise();
-
-    /** If any permission/role changes are made on the user we revoke the token and force the user to relog. */
-    // if (session) {
-    //   const date = session.expires;
-
-    //   console.log(date);
-    //   console.log(session);
-
-    //   const id = session.token_id;
-    //   const key = `blacklist:${id}`;
-    //   if (isFuture(date)) {
-    //     const diff = diffInSeconds(date, new Date());
-    //     const exists = await req.redis.exists(key);
-    //     if (!exists) await req.redis.set(key, id, "NX", "EX", diff);
-    //   }
-    // }
 
     if (sessions && sessions.length) {
       const commands = sessions.reduce((output, s) => {
         const date = s.expires;
-        const id = s.token_id;
+        const id = s.refresh_token_id;
         const key = `blacklist:${id}`;
         if (isFuture(date)) {
           const diff = diffInSeconds(date, new Date());

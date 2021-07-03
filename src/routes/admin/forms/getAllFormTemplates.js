@@ -4,7 +4,7 @@ const Category = require("$models/Category");
 const guard = require("express-jwt-permissions")();
 const { query } = require("express-validator");
 const { buildQuery, validate } = require("$util");
-const { VIEW_ALL_ADMIN, VIEW_ALL_FORMS } = require("$util/permissions");
+const { VIEW_ALL_ADMIN, VIEW_ALL_FORMS } = require("$util/policies");
 
 const getAllFormTemplates = async function (req, res, next) {
   const filters = req.query.filters || null;

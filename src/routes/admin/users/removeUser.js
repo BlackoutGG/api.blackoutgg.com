@@ -3,12 +3,12 @@ const User = require("$models/User");
 const guard = require("express-jwt-permissions")();
 const { query } = require("express-validator");
 const { validate, buildQuery } = require("$util");
-const { VIEW_ALL_ADMIN, REMOVE_ALL_USERS } = require("$util/permissions");
+const { VIEW_ALL_ADMIN, DELETE_ALL_USERS } = require("$util/policies");
 
 const columns = ["id", "avatar", "username", "email", "created_at"];
 
 const middleware = [
-  guard.check([VIEW_ALL_ADMIN, REMOVE_ALL_USERS]),
+  guard.check([VIEW_ALL_ADMIN, DELETE_ALL_USERS]),
   validate([
     query("ids.*").isNumeric(),
     query("page").optional().isNumeric().toInt(10),

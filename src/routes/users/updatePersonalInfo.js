@@ -5,6 +5,7 @@ const sanitize = require("sanitize-html");
 const guard = require("express-jwt-permissions")();
 const { body, param } = require("express-validator");
 const { validate } = require("$util");
+const { transaction } = require("objection");
 
 const middleware = [
   validate([
@@ -70,14 +71,23 @@ const updatePersonalInfo = async function (req, res, next) {
     "birthday",
   ]);
 
-  const user = await User.query()
-    .patch(req.body)
-    .where("id", req.user.id)
-    .first()
-    .throwIfNotFound()
-    .returning(["id", ...body]);
+  const trx = await User.startTransaction();
 
-  res.status(200).send(user);
+  try {
+    const user = await User.query()
+      .patch(req.body)
+      .where("id", req.user.id)
+      .first()
+      .throwIfNotFound()
+      .returning(["id", ...Object.keys(body)]);
+
+    await trx.commit();
+    res.status(200).send(user);
+  } catch (err) {
+    console.log(err);
+    await trx.rollback();
+    next(err);
+  }
 };
 
 module.exports = {

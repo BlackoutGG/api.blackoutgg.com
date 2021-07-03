@@ -7,7 +7,7 @@ const guard = require("express-jwt-permissions")();
 
 const { body, param } = require("express-validator");
 const { validate } = require("$util");
-const { VIEW_ALL_ADMIN, UPDATE_ALL_EVENTS } = require("$util/permissions");
+const { VIEW_ALL_ADMIN, UPDATE_ALL_EVENTS } = require("$util/policies");
 
 const validators = validate([
   param("id").isNumeric().toInt(10),

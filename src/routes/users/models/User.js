@@ -23,12 +23,12 @@ class User extends Base {
       required: ["username", "password"],
       properties: {
         id: { type: "integer" },
-        discord_id: { type: "integer" },
+        discord_id: { type: "string" },
         username: { type: "string" },
         email: { type: "string" },
         password: { type: "string" },
         avatar: { type: "string" },
-        is_disabled: { type: "boolean" },
+        active: { type: "boolean" },
       },
     };
   }

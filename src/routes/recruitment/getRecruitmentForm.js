@@ -6,7 +6,7 @@ const UserForm = require("$models/UserForm");
 const guard = require("express-jwt-permissions")();
 const { param, query } = require("express-validator");
 const { validate } = require("$util");
-const { VIEW_ALL_FORMS } = require("$util/permissions");
+const { VIEW_ALL_FORMS } = require("$util/policies");
 
 const validators = validate([param("id").optional().isNumeric().toInt(10)]);
 

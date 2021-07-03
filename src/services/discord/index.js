@@ -32,13 +32,14 @@ class DiscordClient {
    * @param {string} code The code we use to retrieve the access token for the user.
    * @returns {promise<Object>}
    */
-  setClientUser(code) {
+  getCurrentUser(code) {
     return new Promise(async (resolve, reject) => {
       try {
         const access = await this.getAccess(code);
         const user = await this.getUser(access);
         resolve(user);
       } catch (err) {
+        reject(err);
         console.log(err);
       }
     });

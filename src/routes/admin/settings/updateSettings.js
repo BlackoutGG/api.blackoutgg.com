@@ -4,13 +4,12 @@ const sanitize = require("sanitize-html");
 const guard = require("express-jwt-permissions")();
 const { body } = require("express-validator");
 const { validate } = require("$util");
-const { VIEW_ALL_ADMIN, UPDATE_ALL_SETTINGS } = require("$util/permissions");
+const { VIEW_ALL_ADMIN, UPDATE_ALL_SETTINGS } = require("$util/policies");
 
 const validators = validate([
   body("settings.*.show_video").optional().isBoolean(),
   body("settings.*.show_video_on_mobile").optional().isBoolean(),
   body("settings.*.show_testimonies").optional().isBoolean(),
-  body("settings.*.flip_info_blocks_on_even").optional().isBoolean(),
   body("settings.*.show_recruitment_button").optional().isBoolean(),
   body("settings.*.enable_social_authenticate").optional().isBoolean(),
   body("settings.*.password_reset_request_ttl_in_minutes")

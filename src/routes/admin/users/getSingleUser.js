@@ -4,7 +4,7 @@ const Policies = require("$models/Policies");
 const guard = require("express-jwt-permissions")();
 const { param } = require("express-validator");
 const { validate } = require("$util");
-const { VIEW_ALL_ADMIN, VIEW_ALL_USERS } = require("$util/permissions");
+const { VIEW_ALL_ADMIN, VIEW_ALL_USERS } = require("$util/policies");
 
 const columns = [
   "id",

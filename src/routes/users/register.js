@@ -1,6 +1,5 @@
 "use strict";
 const bcrypt = require("bcrypt");
-const cryptoRandomString = require("crypto-random-string");
 const SALT_ROUNDS = 12;
 const sendEmail = require("$services/email");
 const verifyRecaptcha = require("$services/recaptcha")(
@@ -19,7 +18,6 @@ const insertFn = (creds) => {
   return {
     "#id": "newUser",
     ...creds,
-    activation_id: nanoid(12),
     last_activation_email_sent: new Date().toISOString(),
     roles: [{ id: 3 }],
   };
@@ -49,16 +47,16 @@ const register = async function (req, res, next) {
         .first(),
     ]);
 
-    if (user && user.activation_id) {
+    if (user) {
       const code = nanoid(32);
 
       const exp = settings.user_activation_request_ttl_in_minutes * 60;
 
-      await r.set(user.activation_id, code, "NX", "EX", exp);
+      await r.set(user.id, code, "NX", "EX", exp);
 
       await sendEmail(user.email, "USER_REGISTERATION", {
         url: process.env.BASE_URL + "/activation/",
-        id: user.activation_id,
+        id: user.id,
         code,
       });
     }

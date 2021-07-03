@@ -3,7 +3,7 @@ const Form = require("./models/Form");
 const guard = require("express-jwt-permissions")();
 const { body, param } = require("express-validator");
 const { validate } = require("$util");
-const { VIEW_ALL_ADMIN, UPDATE_ALL_FORMS } = require("$util/permissions");
+const { VIEW_ALL_ADMIN, UPDATE_ALL_FORMS } = require("$util/policies");
 
 // const setFormStatus = async function (req, res, next) {
 //   try {

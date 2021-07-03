@@ -3,7 +3,7 @@ const Media = require("./models/Media");
 const guard = require("express-jwt-permissions")();
 const { query } = require("express-validator");
 const { buildQuery } = require("$util");
-const { VIEW_OWN_MEDIA } = require("$util/permissions");
+const { VIEW_OWN_MEDIA } = require("$util/policies");
 
 const middleware = [
   guard.check(VIEW_OWN_MEDIA),
