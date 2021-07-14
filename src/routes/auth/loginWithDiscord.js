@@ -49,7 +49,7 @@ const loginWithDiscord = async (req, res, next) => {
     state = req.body.state;
 
   if (!(await req.redis.exists(state))) {
-    return res.status(400).send({ message: "State doesn't exist." });
+    return res.status(400).send({ message: "Code doesn't exist." });
   }
 
   await req.redis.del(state);
@@ -83,7 +83,7 @@ const loginWithDiscord = async (req, res, next) => {
       const data = {
         discord_id: dUser.id,
         username: `${dUser.username}_${dUser.discriminator}`,
-        avatar: dUser.avatarUrl,
+        avatar: dUser.avatarUrl(),
         email: dUser.email,
         active: true,
         password,

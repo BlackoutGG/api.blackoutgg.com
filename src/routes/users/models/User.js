@@ -20,7 +20,7 @@ class User extends Base {
   static get jsonSchema() {
     return {
       type: "object",
-      required: ["username", "password"],
+      required: ["username", "password", "email"],
       properties: {
         id: { type: "integer" },
         discord_id: { type: "string" },
@@ -29,6 +29,19 @@ class User extends Base {
         password: { type: "string" },
         avatar: { type: "string" },
         active: { type: "boolean" },
+        first_name: { type: "string" },
+        last_name: { type: "string" },
+        location: { type: "string" },
+        birthday: { type: "date" },
+        gender: { type: "string" },
+        description: { type: "string" },
+        login_attempts: { type: "number" },
+        last_activation_email_sent: { type: "date" },
+        last_password_reset_sent: { type: "date" },
+        last_username_change: { type: "date" },
+        last_signed_in: { type: "date" },
+        created_at: { type: "date" },
+        updated_at: { type: "date" },
       },
     };
   }

@@ -1,58 +1,59 @@
 "use strict";
 const User = require("$models/User");
 const Settings = require("$models/Settings");
-const { isFuture, addWeeks, addDays, addHours } = require("date-fns");
-const { body, param, sanitize } = require("express-validator");
+const sanitize = require("sanitize-html");
+const { isFuture, addSeconds, formatDistance } = require("date-fns");
+const { body } = require("express-validator");
 const { transaction } = require("objection");
 const { validate } = require("$util");
 
-const updateUsername = async (req, res, next) => {
-  //   const settings = await Settings.query().first();
+const getSecondsToAdd = (interval, type) => {
+  switch (type) {
+    case "month":
+      return 60 * 60 * 24 * 30 * interval;
+    case "week":
+      return 60 * 60 * 24 * 7 * interval;
+    case "day":
+      return 60 * 60 * 24 * interval;
+    case "hour":
+      return 60 * 60 * interval;
+    default:
+      break;
+  }
+};
 
+const updateUsername = async (req, res, next) => {
   const trx = await User.startTransaction();
 
   try {
-    const user = User.query(trx)
-      .patch({ username: req.body.username })
-      .where({ active: true, id: req.params.id })
-      .returning(["id", "username", "last_username_change"]);
+    const [user, settings] = await Promise.all([
+      User.query(trx)
+        .patch({ username: req.body.username })
+        .where({ active: true, id: req.user.id })
+        .returning(["id", "username", "last_username_change"]),
+      Settings.query().select("time_till_next_username_change").first(),
+    ]);
 
-    // if (user) {
-    //   let date = new Date(),
-    //     type = settings.change_username_interval_type,
-    //     interval = settings.change_username_interval;
+    const split = settings.time_till_next_username_change.split(" ");
 
-    //   switch (type) {
-    //     case "week":
-    //       date = addWeeks(user.last_username_change, interval);
-    //       break;
-    //     case "day":
-    //       date = addDays(user.last_username_change, interval);
-    //       break;
-    //     case "hour":
-    //       date = addHours(user.last_username_change, interval);
-    //       break;
-    //     default:
-    //       date = addWeeks(user.last_username_change, interval);
-    //       break;
-    //   }
+    if (user) {
+      const date = addSeconds(
+        user.last_username_change,
+        getSecondsToAdd(split[0], split[1])
+      );
 
-    //   if (isFuture(date)) {
-    //     await trx.rollback();
-    //     return res
-    //       .status(400)
-    //       .send({ message: "You can only change your username once a week." });
-    //   }
-    // }
+      if (isFuture(date)) {
+        await trx.rollback();
 
-    if (user && isFuture(addWeeks(user.last_username_change, 1))) {
-      await trx.rollback();
-      return res
-        .status(400)
-        .send({ message: "You can only change your username once a week." });
+        const time = formatDistance(new Date(), date);
+
+        return res
+          .status(400)
+          .send({ message: `Time till next usrname change: ${time}` });
+      }
+
+      await trx.commit();
     }
-
-    await trx.commit();
 
     res.status(200).send(user);
   } catch (err) {
@@ -68,11 +69,10 @@ module.exports = {
   middleware: [
     validate([
       body("username")
-        .isString()
+        .isAlphanumeric()
         .escape()
         .trim()
         .customSanitizer((v) => sanitize(v)),
-      param("id").isNumeric().toInt(10),
     ]),
   ],
   handler: updateUsername,

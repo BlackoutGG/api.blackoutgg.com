@@ -20,6 +20,7 @@ exports.up = function (knex) {
         t.integer("login_attempts").defaultTo(0);
         t.date("last_activation_email_sent");
         t.date("last_password_reset_sent");
+        t.date("last_username_change");
         t.date("last_signed_in");
         t.timestamps();
       });
@@ -154,9 +155,8 @@ exports.up = function (knex) {
         t.boolean("show_recruitment_button").defaultTo(true);
         t.boolean("enable_social_authentication").defaultTo(true);
         t.integer("password_reset_request_ttl_in_minutes").defaultTo(10);
-        t.integer("password_reset_resend_timer_in_minutes").defaultTo(10);
         t.integer("user_activation_request_ttl_in_minutes").defaultTo(10);
-        t.integer("user_activation_resend_timer_in_minutes").defaultTo(10);
+        t.string("time_till_next_username_change").defaultTo("1 week");
         t.string("front_page_video_url").defaultTo(
           "https://blackout-gaming.s3.amazonaws.com/video/0001-0876.webm"
         );

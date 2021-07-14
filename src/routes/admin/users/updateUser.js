@@ -3,13 +3,11 @@ const User = require("$models/User");
 const UserSession = require("$models/UserSession");
 const sanitize = require("sanitize-html");
 const guard = require("express-jwt-permissions")();
-const AWS = require("aws-sdk");
 const { body, param } = require("express-validator");
 const { validate } = require("$util");
 const { VIEW_ALL_ADMIN, UPDATE_ALL_USERS } = require("$util/policies");
-const { transaction } = require("objection");
+const { transaction, raw } = require("objection");
 const { isFuture, differenceInSeconds } = require("date-fns");
-const { raw } = require("express");
 
 const validators = validate([
   param("id").isNumeric().toInt(10),
@@ -55,8 +53,6 @@ const updateUser = async (req, res, next) => {
     altered = req.body.altered,
     policies = req.body.policies;
 
-  const r = req.redis;
-
   const options = { relate: true, unrelate: true };
 
   const trx = await User.startTransaction();
@@ -69,7 +65,7 @@ const updateUser = async (req, res, next) => {
 
     if (altered) {
       const sessions = await UserSession.query()
-        .where("user_id", userId)
+        .where("user_id", req.params.id)
         .whereRaw(raw("expires >= CURRENT_TIMESTAMP"))
         .select("refresh_token_id", "expires")
         .orderBy("created_at", "DESC");
@@ -92,7 +88,7 @@ const updateUser = async (req, res, next) => {
 
     await trx.commit();
 
-    res.status(200).send(results);
+    res.status(200).send();
   } catch (err) {
     await trx.rollback();
     console.log(err);

@@ -23,6 +23,12 @@ module.exports = {
         query("value")
           .notEmpty()
           .isString()
+          .custom((v) => {
+            if (!/^\w+$/.test(v)) {
+              return false;
+            }
+            return true;
+          })
           .withMessage("Username must be alphanumeric.")
           .isLength({ min: 3, max: 30 })
           .withMessage("Username must be 3 to 30 in length.")
