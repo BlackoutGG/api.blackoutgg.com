@@ -4,6 +4,7 @@ const { body } = require("express-validator");
 const { validate } = require("$util");
 const { transaction } = require("objection");
 const sanitize = require("sanitize-html");
+const redis = require("$services/redis");
 
 const validators = validate([
   body("id").isNumeric().toInt(10),
@@ -17,11 +18,10 @@ const validators = validate([
 const updateUserEmail = async (req, res, next) => {
   if (!req.user) return res.status(401).send();
 
-  const r = req.redis,
-    id = req.body.id,
+  const id = req.body.id,
     code = req.body.code;
 
-  if (!(await r.exists(`e:${id}`))) {
+  if (!(await redis.exists(`e:${id}`))) {
     return res.status(200).send({
       status: 1,
       message: "Email change request expired or doesn't exist.",
@@ -43,7 +43,7 @@ const updateUserEmail = async (req, res, next) => {
       .patch({ email: info.newEmail })
       .where("email", info.oldEmail);
 
-    await r.del(`e:${id}`);
+    await redis.del(`e:${id}`);
 
     await trx.commit();
   } catch (err) {

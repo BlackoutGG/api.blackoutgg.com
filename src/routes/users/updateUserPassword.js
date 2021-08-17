@@ -3,6 +3,7 @@ const User = require("./models/User");
 const bcrypt = require("bcrypt");
 const sanitize = require("sanitize-html");
 const SALT_ROUNDS = 12;
+const redis = require("$services/redis");
 const { body } = require("express-validator");
 const { validate } = require("$util");
 const { transaction } = require("objection");
@@ -25,11 +26,10 @@ const validators = [
 ];
 
 const updateUserPassword = async (req, res, next) => {
-  const r = req.redis,
-    id = req.body.id,
+  const id = req.body.id,
     code = req.body.code;
 
-  if (!(await r.exists(`pw:${id}`))) {
+  if (!(await redis.exists(`pw:${id}`))) {
     return res.status(200).send({
       status: 1,
       message: "Password reset request expired or doesn't exist.",
@@ -63,8 +63,8 @@ const updateUserPassword = async (req, res, next) => {
       .where("id", id)
       .returning("id");
 
-    await r.del(`pw:${id}`);
-    await r.del(`l_user:${id}`);
+    await redis.del(`pw:${id}`);
+    await redis.del(`l_user:${id}`);
 
     await trx.commit();
 

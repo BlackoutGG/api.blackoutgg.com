@@ -1,5 +1,37 @@
 "use strict";
 const { validationResult } = require("express-validator");
+const jwt = require("jsonwebtoken");
+const phin = require("phin");
+
+class GuildRole {
+  constructor(id, name) {
+    this.id = id;
+    this.name = name;
+  }
+}
+
+const getDiscordRoles = async (redis, id) => {
+  try {
+    const response = await phin({
+      method: "GET",
+      url: `https://discord.com/api/guilds/${id}/roles`,
+      headers: {
+        Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}`,
+      },
+      parse: "json",
+    });
+
+    // const results = response.data.map((role) => new GuildRole(role));
+
+    // await redis.set("discord", JSON.stringify(results), "NX", "EX", 180);
+
+    console.log(response);
+
+    return response;
+  } catch (err) {
+    return Promise.reject(err);
+  }
+};
 
 /**
  * Returns a fetch all query.
@@ -69,7 +101,18 @@ const verifySignature = (label, signature, secret, buf) => {
   };
 };
 
+const verifySocketUser = (token, secret) => {
+  return new Promise((resolve, reject) => {
+    jwt.verify(token, secret, (err, decoded) => {
+      if (err) reject(err);
+      resolve(decoded);
+    });
+  });
+};
+
 module.exports = {
   buildQuery,
   validate,
+  getDiscordRoles,
+  verifySocketUser,
 };

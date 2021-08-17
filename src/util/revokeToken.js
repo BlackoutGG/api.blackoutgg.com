@@ -7,12 +7,13 @@ class RevokeTokenError extends Error {
     this.type = "Revoked";
   }
 }
+const redis = require("$services/redis");
 
 module.exports = async function isRevokeToken(req, payload, done) {
   const jti = payload.refresh_jti;
 
   try {
-    const isBlacklisted = await req.redis.exists(`blacklist:${jti}`);
+    const isBlacklisted = await redis.exists(`blacklist:${jti}`);
 
     // if (isBlacklisted) done(new UnauthorizedError("jwt_revoked"));
     // else done(null);

@@ -13,6 +13,7 @@ const columns = [
   "email",
   "location",
   "birthday",
+  "discord_id",
 ];
 
 const getOwnUserDetails = async function (req, res, next) {

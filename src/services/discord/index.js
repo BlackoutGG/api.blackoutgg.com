@@ -90,7 +90,7 @@ class DiscordClient {
    *
    * @returns {promise<Object>}
    */
-  async getGuildMember(token, guildId, userId) {
+  static async getGuildMember(token, guildId, userId) {
     return new Promise(async (resolve, reject) => {
       if (!token.hasOwnProperty("access_token")) {
         reject(new Error("Missing access_token."));
@@ -103,7 +103,7 @@ class DiscordClient {
           url: `${this._baseUrl}/guilds/${guildId}/members/${userId}`,
           method: "GET",
           headers: {
-            Authorization: `${token.token_type} ${token.access_token}`,
+            Authorization: `Bot ${token}`,
           },
           parse: "json",
         });

@@ -7,6 +7,7 @@ const UserSession = require("$models/UserSession");
 const verifyRecaptcha = require("$services/recaptcha")(
   process.env.RECAPTCHA_SECRET
 );
+const redis = require("$services/redis");
 const sanitize = require("sanitize-html");
 const addHours = require("date-fns/addHours");
 const { nanoid } = require("nanoid");
@@ -50,10 +51,10 @@ const login = async function (req, res, next) {
   }
 
   const key = `l_user:${user.id}`;
-  const keyExists = await req.redis.exists(key);
+  const keyExists = await redis.get(key);
 
   if (user && keyExists) {
-    attempts = JSON.parse(await req.redis.get(key));
+    attempts = JSON.parse(await redis.get(key));
     if (attempts === 5) {
       return res.status(400).send({
         message:
@@ -66,9 +67,9 @@ const login = async function (req, res, next) {
 
   if (!match) {
     if (attempts !== 5 && keyExists) {
-      await req.redis.set(key, attempts + 1, "NX", "KEEPTTL");
+      await redis.set(key, attempts + 1, "NX", "KEEPTTL");
     } else {
-      await req.redis.set(key, attempts + 1, "NX", "EX", 60 * 60 * 24);
+      await redis.set(key, attempts + 1, "NX", "EX", 60 * 60 * 24);
     }
 
     return res.status(422).send({
@@ -123,7 +124,7 @@ const login = async function (req, res, next) {
     expires,
   });
 
-  await req.redis.del(key);
+  await redis.del(key);
 
   res.status(200).send({ access_token, refresh_token });
 };

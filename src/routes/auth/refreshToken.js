@@ -3,6 +3,7 @@ const User = require("$models/User");
 const UserSession = require("$models/UserSession");
 const UnauthorizedError = require("express-jwt/lib/errors/UnauthorizedError");
 const jwt = require("jsonwebtoken");
+const redis = require("$services/redis");
 const uniq = require("lodash.uniq");
 const { nanoid } = require("nanoid");
 const { body } = require("express-validator");
@@ -25,7 +26,7 @@ const refreshToken = async (req, res, next) => {
 
   if (!token) return res.status(400).send({ message: "Token was malformed." });
 
-  if (await req.redis.exists(`blacklist:${token.jti}`)) {
+  if (await redis.exists(`blacklist:${token.jti}`)) {
     return next(
       new UnauthorizedError("jwt_revoked", {
         message: "The token has been revoked.",
@@ -82,7 +83,7 @@ const refreshToken = async (req, res, next) => {
     .patch({ token_id: jti })
     .where("token_id", token.jti);
 
-  await req.redis.del(`blacklist:${session.jti}`);
+  await redis.del(`blacklist:${session.jti}`);
 
   res.status(200).send({ access_token });
 };

@@ -1,11 +1,10 @@
 "use strict";
 const { validate } = require("$util");
 const { header } = require("express-validator");
+const redis = require("$services/redis");
 const AWS = require("aws-sdk");
 const UserSession = require("$models/UserSession");
 const jwt = require("jsonwebtoken");
-
-const docClient = new AWS.DynamoDB.DocumentClient();
 
 const logout = async function (req, res, next) {
   if (req.headers && req.headers.authorization) {
@@ -23,7 +22,7 @@ const logout = async function (req, res, next) {
           // };
           // await docClient.delete(params).promise();
           await UserSession.query().where("token_id", payload.jti).del();
-          await req.redis.del(`blacklist:${payload.jti}`);
+          await redis.del(`blacklist:${payload.jti}`);
         }
       }
     }

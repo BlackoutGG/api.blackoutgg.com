@@ -3,6 +3,7 @@ const User = require("$models/User");
 const UserSession = require("$models/UserSession");
 const sanitize = require("sanitize-html");
 const guard = require("express-jwt-permissions")();
+const redis = require("$services/redis");
 const { body, param } = require("express-validator");
 const { validate } = require("$util");
 const { VIEW_ALL_ADMIN, UPDATE_ALL_USERS } = require("$util/policies");
@@ -82,7 +83,7 @@ const updateUser = async (req, res, next) => {
           return output;
         }, []);
 
-        await req.redis.multi(commands).exec();
+        await redis.multi(commands).exec();
       }
     }
 
@@ -95,46 +96,6 @@ const updateUser = async (req, res, next) => {
     next(err);
   }
 };
-
-// const updateUser = async function (req, res, next) {
-//   console.log(req.body);
-
-//   const remove = req.body.remove || null,
-//     added = req.body.added || null,
-//     details = req.body.details || null;
-
-//   const user = await User.transaction(async (trx) => {
-//     if (details && Object.keys(details).length) {
-//       await User.query(trx).where("id", req.params.id).patch(details).first();
-//     }
-
-//     if (remove && remove.length) {
-//       await UserRole.query(trx)
-//         .delete()
-//         .where("user_id", req.params.id)
-//         .whereIn("role_id", remove);
-//     }
-
-//     if (added && added.length) {
-//       const roles = added.map((role) => ({
-//         user_id: req.params.id,
-//         role_id: role,
-//       }));
-
-//       await UserRole.query(trx).insert(roles).returning("*");
-//     }
-
-//     const results = await User.query(trx)
-//       .where("id", req.params.id)
-//       .withGraphFetched("roles(nameAndId)")
-//       .first()
-//       .columns(columns);
-
-//     return results;
-//   });
-
-//   res.status(200).send({ user });
-// };
 
 module.exports = {
   path: "/:id",

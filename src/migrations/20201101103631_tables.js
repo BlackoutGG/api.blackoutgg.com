@@ -1,10 +1,12 @@
+"use strict";
+
 exports.up = function (knex) {
   return Promise.all([
     knex.schema.hasTable("users").then((exists) => {
       if (exists) return;
       return knex.schema.createTable("users", (t) => {
         t.increments("id").primary();
-        t.string("discord_id").unique();
+        t.bigint("discord_id").unique();
         t.string("email").unique();
         t.string("username").unique();
         t.string("first_name");
@@ -48,6 +50,16 @@ exports.up = function (knex) {
         t.timestamps();
       });
     }),
+    knex.schema.hasTable("role_maps").then((exists) => {
+      if (exists) return;
+      return knex.schema.createTable("role_maps", (t) => {
+        t.integer("role_id")
+          .references("id")
+          .inTable("roles")
+          .onDelete("CASCADE");
+        t.bigint("discord_role_id");
+      });
+    }),
     knex.schema.hasTable("role_policies").then((exists) => {
       if (exists) return;
       return knex.schema.createTable("role_policies", (t) => {
@@ -66,7 +78,6 @@ exports.up = function (knex) {
       return knex.schema.createTable("policies", (t) => {
         t.increments("id").primary();
         t.enum("action", ["view", "add", "update", "delete"]);
-        // t.string("action");
         t.enum("target", ["own", "all"]);
         t.string("resource");
         t.integer("level");
@@ -85,6 +96,7 @@ exports.up = function (knex) {
           .onDelete("CASCADE");
       });
     }),
+
     knex.schema.hasTable("user_policies").then((exists) => {
       if (exists) return;
       return knex.schema.createTable("user_policies", (t) => {
@@ -154,12 +166,16 @@ exports.up = function (knex) {
 
         t.boolean("show_recruitment_button").defaultTo(true);
         t.boolean("enable_social_authentication").defaultTo(true);
+        t.boolean("enable_local_authentication").defaultTo(true);
         t.integer("password_reset_request_ttl_in_minutes").defaultTo(10);
         t.integer("user_activation_request_ttl_in_minutes").defaultTo(10);
         t.string("time_till_next_username_change").defaultTo("1 week");
         t.string("front_page_video_url").defaultTo(
           "https://blackout-gaming.s3.amazonaws.com/video/0001-0876.webm"
         );
+        t.boolean("enable_bot").defaultTo(false);
+        t.string("bot_prefix").defaultTo("!");
+        t.bigint("bot_server_id");
       });
     }),
 
@@ -355,7 +371,7 @@ exports.down = async function (knex) {
       user_forms, user_sessions, user_policies, form_fields, fields, 
       forms, menu_tree, menu, event_participants, 
       event_roles, event_meta, events, categories, 
-      user_roles, role_policies, policies, 
+      user_roles, role_maps, role_policies, policies, 
       users, roles, media, posts, post_types, testimonies, 
       settings, front_page_info`
     );

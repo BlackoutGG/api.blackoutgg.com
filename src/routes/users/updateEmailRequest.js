@@ -5,10 +5,9 @@ const bcrypt = require("bcrypt");
 const sanitize = require("sanitize-html");
 const sendEmail = require("$services/email");
 const addMinutes = require("date-fns/addMinutes");
-const guard = require("express-jwt-permissions")();
+
 const { body, param } = require("express-validator");
 const { validate } = require("$util");
-const { transaction } = require("objection");
 const { nanoid } = require("nanoid");
 
 const middleware = [
@@ -27,10 +26,8 @@ const middleware = [
 ];
 
 const updateEmailRequest = async function (req, res) {
-  const r = req.redis;
-
-  if (await r.exists(`e:${req.user.id}`)) {
-    const json = JSON.parse(await r.get(`pw:${account.req.user.id}`));
+  if (await redis.exists(`e:${req.user.id}`)) {
+    const json = JSON.parse(await redis.get(`pw:${account.req.user.id}`));
 
     const expiry = parseISO(json.expiry);
 
@@ -83,7 +80,7 @@ const updateEmailRequest = async function (req, res) {
 
   const exp = settings.user_email_change_request_ttl * 60;
 
-  await r.set(
+  await redis.set(
     `e:${account.id}`,
     { code, email: req.body.email, expiry: expiryDate },
     "NX",

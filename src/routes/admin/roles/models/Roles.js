@@ -33,7 +33,6 @@ class Role extends Base {
   static get relationMappings() {
     const Users = require("$models/User");
     const Policies = require("$models/Policies");
-
     return {
       users: {
         relation: Base.ManyToManyRelation,

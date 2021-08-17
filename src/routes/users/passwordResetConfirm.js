@@ -1,6 +1,7 @@
 "use strict";
 
 const sanitize = require("sanitize-html");
+const redis = require("$services/redis");
 
 const { body, header } = require("express-validator");
 const { validate } = require("$util");
@@ -11,19 +12,18 @@ const consoleLog = (req, res, next) => {
 };
 
 const passwordResetConfirm = async function (req, res, next) {
-  const r = req.redis,
-    code = req.body.code,
+  const code = req.body.code,
     id = req.body.id;
 
   const resp = { status: 0, password: "" };
 
-  if (!(await r.exists(`pw:${id}`))) {
+  if (!(await redis.exists(`pw:${id}`))) {
     return res
       .status(200)
       .send({ status: 1, message: "Password reset request expired." });
   }
 
-  const json = JSON.parse(await r.get(`pw:${req.body.id}`));
+  const json = JSON.parse(await redis.get(`pw:${req.body.id}`));
 
   if (code !== json.code) {
     return res.status(200).send({ status: 1, message: "Incorrect code." });

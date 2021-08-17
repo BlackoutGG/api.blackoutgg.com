@@ -3,6 +3,7 @@ const User = require("./models/User");
 const bcrypt = require("bcrypt");
 const Settings = require("$models/Settings");
 const sanitize = require("sanitize-html");
+const redis = require("$services/redis");
 const verifyRecaptcha = require("$services/recaptcha")(
   process.env.RECAPTCHA_SECRET
 );
@@ -19,8 +20,7 @@ const {
 } = require("date-fns");
 
 const passwordReset = async function (req, res) {
-  const r = req.redis,
-    type = req.body.type || "reset",
+  const type = req.body.type || "reset",
     password = req.body.password,
     newPassword = req.body.new_password;
 
@@ -40,8 +40,8 @@ const passwordReset = async function (req, res) {
       .first(),
   ]);
 
-  if (await r.exists(`pw:${account.id}`)) {
-    const json = JSON.parse(await r.get(`pw:${account.id}`));
+  if (await redis.exists(`pw:${account.id}`)) {
+    const json = JSON.parse(await redis.get(`pw:${account.id}`));
 
     const expiry = parseISO(json.expiry);
 
@@ -97,7 +97,7 @@ const passwordReset = async function (req, res) {
     code,
   });
 
-  await r.set(`pw:${account.id}`, JSON.stringify(data), "NX", "EX", exp);
+  await redis.set(`pw:${account.id}`, JSON.stringify(data), "NX", "EX", exp);
 
   const resetMessage =
     "If your user account exists, we've dispatched an email with instructions on how to recover your password to the before entered address";

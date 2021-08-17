@@ -5,6 +5,7 @@ const sendEmail = require("$services/email");
 const verifyRecaptcha = require("$services/recaptcha")(
   process.env.RECAPTCHA_SECRET
 );
+const redis = require("$services/redis");
 
 const User = require("./models/User");
 const Settings = require("$models/Settings");
@@ -26,7 +27,6 @@ const insertFn = (creds) => {
 const register = async function (req, res, next) {
   const salt = await bcrypt.genSalt(SALT_ROUNDS);
   const hashed = await bcrypt.hash(req.body.password, salt);
-  const r = req.redis;
 
   const creds = {
     username: req.body.username,
@@ -52,7 +52,7 @@ const register = async function (req, res, next) {
 
       const exp = settings.user_activation_request_ttl_in_minutes * 60;
 
-      await r.set(user.id, code, "NX", "EX", exp);
+      await redis.set(user.id, code, "NX", "EX", exp);
 
       await sendEmail(user.email, "USER_REGISTERATION", {
         url: process.env.BASE_URL + "/activation/",

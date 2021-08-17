@@ -3,6 +3,7 @@ const User = require("./models/User");
 const Settings = require("$models/Settings");
 const sanitize = require("sanitize-html");
 const sendEmail = require("$services/email");
+const redis = require("$services/redis");
 const { nanoid } = require("nanoid");
 
 const { body, param } = require("express-validator");
@@ -11,8 +12,6 @@ const { addMinutes, differenceInSeconds, isFuture } = require("date-fns");
 const { transaction } = require("objection");
 
 const resend = async function (req, res, next) {
-  const r = req.redis;
-
   const [account, settings] = await Promise.all([
     User.query()
       .select("last_activation_email_sent")
@@ -51,7 +50,7 @@ const resend = async function (req, res, next) {
   const expiry = settings.user_activation_request_ttl_in_minutes * 60;
 
   try {
-    await r.set(id, code, "NX", "EX", expiry);
+    await redis.set(id, code, "NX", "EX", expiry);
 
     const user = await User.query(trx)
       .patch("last_activation_email_sent", new Date().toISOString())

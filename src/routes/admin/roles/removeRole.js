@@ -4,6 +4,7 @@ const UserSession = require("$models/UserSession");
 const guard = require("express-jwt-permissions")();
 const isFuture = require("date-fns/isFuture");
 const diffInSeconds = require("date-fns/differenceInSeconds");
+const redis = require("$services/redis");
 const uniqBy = require("lodash.uniqby");
 const { query } = require("express-validator");
 const { validate, buildQuery } = require("$util");
@@ -78,7 +79,7 @@ const removeRole = async function (req, res, next) {
         return output;
       }, []);
 
-      await req.redis.multi(commands).exec();
+      await redis.multi(commands).exec();
     }
 
     await trx.commit();

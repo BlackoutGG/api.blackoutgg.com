@@ -16,11 +16,13 @@ const toExclude = ["models", "helpers"];
 
 const exclude = (dir) => toExclude.some((item) => dir.startsWith(item));
 
+const filter = (path) => !path.endsWith("index.js");
+
 const routes = new fdir()
   .withFullPaths()
   .withMaxDepth(2)
   .exclude(exclude)
-  .filter((path) => !path.endsWith("index.js"))
+  .filter(filter)
   .crawl(__dirname)
   .sync();
 

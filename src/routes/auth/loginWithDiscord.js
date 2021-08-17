@@ -1,8 +1,11 @@
 "use strict";
 const UserSession = require("$models/UserSession");
 const User = require("$models/User");
+const Settings = require("$models/Settings");
+const Roles = require("$models/Roles");
 const jwt = require("jsonwebtoken");
 const DiscordClient = require("$services/discord");
+const redis = require("$services/redis");
 const bcrypt = require("bcrypt");
 const SALT_ROUNDS = 12;
 const uniq = require("lodash/uniq");
@@ -10,31 +13,18 @@ const addHours = require("date-fns/addHours");
 
 const { header, body } = require("express-validator");
 const { nanoid } = require("nanoid");
-const { validate } = require("$util");
+const { validate, getDiscordRoles } = require("$util");
 const { transaction } = require("objection");
 
 const redirect_uri = "http://localhost:3000";
 
-const getGuildMember = async (client, code, guild) => {
-  return new Promise(async (resolve, reject) => {
-    try {
-      const token = await client.getAccess(code);
-      const user = await client.getUser(token);
-      console.log(user.id);
-      const member = await client.getGuildMember(token, guild, user.id);
-      resolve(member);
-    } catch (err) {
-      reject(err);
-    }
-  });
-};
-
-const insertFn = (info) => {
+const insertFn = (info, roles) => {
   return {
     "#id": "newUser",
     ...info,
     last_activation_email_sent: new Date().toISOString(),
-    roles: [{ id: 2 }],
+    // roles: [{ id: 2 }],
+    roles,
   };
 };
 
@@ -45,14 +35,18 @@ const client = new DiscordClient(
 );
 
 const loginWithDiscord = async (req, res, next) => {
-  const code = req.body.code,
-    state = req.body.state;
+  const { code, state } = req.body;
 
-  if (!(await req.redis.exists(state))) {
+  if (!(await redis.exists(state))) {
     return res.status(400).send({ message: "Code doesn't exist." });
   }
 
-  await req.redis.del(state);
+  await redis.del(state);
+
+  const settings = await Settings.query().select([
+    "bot_enabled",
+    "bot_server_id",
+  ]);
 
   const trx = await User.startTransaction();
 
@@ -60,10 +54,12 @@ const loginWithDiscord = async (req, res, next) => {
     const dUser = await client.getCurrentUser(code);
 
     if (!dUser) {
+      await trx.rollback();
       return res.status(500).send({ message: "User doesn't exist." });
     }
 
     if (!dUser.emailVerified) {
+      await trx.rollback();
       return res
         .status(400)
         .send({ message: "User must have a verified email address" });
@@ -80,6 +76,28 @@ const loginWithDiscord = async (req, res, next) => {
       const salt = await bcrypt.genSalt(SALT_ROUNDS);
       const password = await bcrypt.hash(nanoid(50), salt);
 
+      let roles = [{ id: 2 }];
+
+      if (settings.bot_enabled && settings.bot_server_id) {
+        const guildMember = await client.getGuildMember(
+          process.env.DISCORD_BOT_TOKEN,
+          settings.bot_server_id,
+          dUser.id
+        );
+
+        const mapped = await Roles.query()
+          .innerJoin("roles_mapped", () => {
+            this.on("roles.id", "=", "roles_mapped.role_id");
+            this.whereIn(
+              "roles_mapped.discord_role_id",
+              guildMember.roles.map((role) => role.id)
+            );
+          })
+          .select("roles.id as id");
+
+        if (mapped.length) roles = mapped;
+      }
+
       const data = {
         discord_id: dUser.id,
         username: `${dUser.username}_${dUser.discriminator}`,
@@ -90,7 +108,7 @@ const loginWithDiscord = async (req, res, next) => {
       };
 
       user = await User.query(trx)
-        .insertGraph(insertFn(data), {
+        .insertGraph(insertFn(data, roles), {
           relate: true,
           noDelete: true,
         })
@@ -134,14 +152,6 @@ const loginWithDiscord = async (req, res, next) => {
       process.env.JWT_REFRESH_SECRET,
       { expiresIn: "1h" }
     );
-
-    const currentUser = {
-      avatar: user.avatar,
-      username: user.username,
-      roles: data.roles,
-      level,
-      scope: permissions,
-    };
 
     await trx.commit();
 

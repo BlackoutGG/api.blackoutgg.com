@@ -4,6 +4,7 @@ const Roles = require("./models/Roles");
 const UserSession = require("$models/UserSession");
 const guard = require("express-jwt-permissions")();
 const sanitize = require("sanitize-html");
+const redis = require("$services/redis");
 const diffInSeconds = require("date-fns/differenceInSeconds");
 const { param, body } = require("express-validator");
 const { validate } = require("$util");
@@ -82,7 +83,7 @@ const updateRole = async (req, res, next) => {
           return output;
         }, []);
 
-        await req.redis.multi(commands).exec();
+        await redis.multi(commands).exec();
       }
     }
     await trx.commit();

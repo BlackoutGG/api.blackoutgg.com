@@ -10,6 +10,10 @@ const select = [
   "time_till_next_username_change",
   "show_recruitment_button",
   "enable_social_authentication",
+  "enable_local_authentication",
+  "enable_bot",
+  "bot_prefix",
+  "bot_server_id",
   "front_page_video_url",
 ];
 
@@ -31,6 +35,8 @@ const getSettings = async (req, res) => {
     .where("id", 1)
     .select(select)
     .first();
+
+  console.log(_settings);
 
   // console.log(_settings);
 

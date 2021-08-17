@@ -17,6 +17,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@socket.io/redis-adapter": "^7.0.0",
+    "@socket.io/redis-emitter": "^4.1.0",
     "aws-sdk": "^2.931.0",
     "bcrypt": "^5.0.1",
     "cors": "^2.8.5",
@@ -45,7 +47,9 @@
     "pg-range": "^1.1.0",
     "phin": "^3.6.0",
     "rrule": "^2.6.8",
-    "sanitize-html": "^2.4.0"
+    "sanitize-html": "^2.4.0",
+    "socket.io": "^4.1.3",
+    "socketio-auth": "^0.1.1"
   },
   "jest": {
     "testEnvironment": "node",
