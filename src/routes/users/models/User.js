@@ -1,7 +1,8 @@
 "use strict";
-const Base = require("$base");
+const { Model } = require("objection");
+const dateMixin = require("$util/mixins/date")();
 
-class User extends Base {
+class User extends dateMixin(Model) {
   static get tableName() {
     return "users";
   }
@@ -11,108 +12,78 @@ class User extends Base {
       defaultSelects(builder) {
         builder.select("id", "username", "avatar");
       },
+      idNameEmail(builder) {
+        builder.select("id", "username", "email");
+      },
     };
-  }
-
-  getRoles() {
-    return this.roles.map((role) => ({ id: role.id, name: role.name }));
-  }
-
-  getScope() {
-    const roles = this.roles.reduce((result, perm) => {
-      for (let key in perm) {
-        if (!perm.hasOwnProperty(key)) continue;
-        if (perm[key] && typeof perm[key] === "boolean") {
-          result[key] = perm[key];
-        }
-      }
-      return result;
-    }, {});
-
-    const scope = Object.entries(roles).reduce((arr, [key, val]) => {
-      if (typeof val !== "boolean") return;
-
-      if (/^can_/.test(key)) {
-        let args = key.split("_"),
-          perms,
-          type;
-
-        if (val) {
-          if (args.length > 2) {
-            perms = args[1];
-            type = args[2];
-          } else {
-            perms = args[0];
-            type = args[1];
-          }
-
-          arr.push(`${type}:${perms}`);
-        }
-      }
-
-      return arr;
-    }, []);
-
-    return scope;
-    // return this.roles.reduce((result, perm) => {
-    //   result = Object.entries(perm)
-    //     .filter(
-    //       ([key, value]) =>
-    //         typeof value === "boolean" && value && /^can_/.test(key)
-    //     )
-    //     .map(([key, val]) => {
-    //       if (/^can_/.test(key)) {
-    //         let scope = key.split("_"),
-    //           prefix,
-    //           priv;
-
-    //         if (val) {
-    //           if (scope.length > 2) {
-    //             prefix = scope[2];
-    //             priv = scope[1];
-    //           } else {
-    //             prefix = scope[1];
-    //             priv = scope[0];
-    //           }
-    //         }
-
-    //         return `${prefix}:${priv}`;
-    //       }
-    //     });
-
-    //   return result;
-    // }, []);
   }
 
   static get jsonSchema() {
     return {
       type: "object",
-      required: ["username", "password"],
+      required: ["username", "password", "email"],
       properties: {
         id: { type: "integer" },
-        discord_id: { type: "integer" },
         username: { type: "string" },
         email: { type: "string" },
         password: { type: "string" },
         avatar: { type: "string" },
-        is_disabled: { type: "boolean" },
+        active: { type: "boolean" },
+        local: { type: "boolean" },
+        first_name: { type: "string" },
+        last_name: { type: "string" },
+        location: { type: "string" },
+        birthday: { type: "date" },
+        gender: { type: "string" },
+        description: { type: "string" },
+        login_attempts: { type: "number" },
+        last_activation_email_sent: { type: "date" },
+        last_password_reset_sent: { type: "date" },
+        last_username_change: { type: "date" },
+        last_signed_in: { type: "date" },
+        created_at: { type: "date" },
+        updated_at: { type: "date" },
       },
     };
   }
 
   static get relationMappings() {
     const Roles = require("$models/Roles");
+    const UserSession = require("./UserSession");
+    const Policies = require("$models/Policies");
+
     return {
+      policies: {
+        relation: Model.ManyToManyRelation,
+        modelClass: Policies,
+        join: {
+          from: "users.id",
+          through: {
+            from: "user_policies.user_id",
+            to: "user_policies.policy_id",
+          },
+          to: "policies.id",
+        },
+      },
       roles: {
-        relation: Base.ManyToManyRelation,
+        relation: Model.ManyToManyRelation,
         modelClass: Roles,
         join: {
           from: "users.id",
           through: {
             from: "user_roles.user_id",
             to: "user_roles.role_id",
+            extra: ["assigned_by"],
           },
           to: "roles.id",
+        },
+      },
+      session: {
+        relation: Model.HasOneRelation,
+        modelClass: UserSession,
+        join: {
+          from: "users.id",
+          to: "user_sessions.user_id",
         },
       },
     };

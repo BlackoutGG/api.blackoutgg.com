@@ -1,7 +1,8 @@
 "use strict";
-const Base = require("$base");
+const { Model } = require("objection");
+const dateMixin = require("$util/mixins/date")();
 
-class Media extends Base {
+class Media extends dateMixin(Model) {
   static get tableName() {
     return "media";
   }
@@ -9,13 +10,27 @@ class Media extends Base {
   static get jsonSchema() {
     return {
       type: "object",
-      required: ["mimetype", "url", "storage_key", "user_id"],
+      required: ["mimetype", "url", "storage_key", "owner_id"],
       properties: {
         id: { type: "integer" },
         mimetype: { type: "string" },
         url: { type: "string" },
         storage_key: { type: "string" },
-        user_id: { type: "integer" },
+        owner_id: { type: "integer" },
+      },
+    };
+  }
+
+  static get relationMappings() {
+    const User = require("$models/User");
+    return {
+      uploader: {
+        relation: Model.BelongsToOneRelation,
+        modelClass: User,
+        join: {
+          from: "media.user_id",
+          to: "users.id",
+        },
       },
     };
   }

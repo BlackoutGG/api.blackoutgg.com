@@ -1,34 +1,52 @@
 "use strict";
-const requireDirectory = require("require-directory");
-const blacklist = /models/;
-const routes = requireDirectory(module, { exclude: blacklist });
-
+const { fdir } = require("fdir");
 const express = require("express");
+const router = express.Router();
+const routeDir = "/routes";
 
-const routeWrapper = (fn) => (req, res, next) => {
-  Promise.resolve(fn(req, res, next)).catch((err) => {
-    if (process.env === "test" || process.env === "development") {
+const resolve = (route) => (req, res, next) =>
+  Promise.resolve(
+    route(req, res, next).catch((err) => {
       console.log(err);
+      next(err);
+    })
+  );
+
+const toExclude = ["models", "helpers"];
+
+const exclude = (dir) => toExclude.some((item) => dir.startsWith(item));
+
+const filter = (path) => !path.endsWith("index.js");
+
+const routes = new fdir()
+  .withFullPaths()
+  .withMaxDepth(2)
+  .exclude(exclude)
+  .filter(filter)
+  .crawl(__dirname)
+  .sync();
+
+/** ALL ROUTE HANDLERS MUST BE AN ASYNC FUNCTION */
+
+routes.forEach((r) => {
+  const split = r.split(routeDir);
+  const pathWithFilename = split[split.length - 1];
+  const path = pathWithFilename.substr(0, pathWithFilename.lastIndexOf("/"));
+
+  const route = require(r);
+
+  if (route && route.path && route.handler) {
+    const method = route.method.toLowerCase();
+    if (route.middleware && route.middleware.length) {
+      router[method](
+        path.concat(route.path),
+        route.middleware,
+        resolve(route.handler)
+      );
+    } else {
+      router[method](path.concat(route.path), resolve(route.handler));
     }
-    next(err);
-  });
-};
-
-let m = {};
-
-Object.keys(routes).forEach((key) => {
-  m[key] = function () {
-    const router = express.Router();
-    Object.values(routes[key]).forEach((route) => {
-      const method = route.method.toLowerCase();
-      if (route.middleware && route.middleware.length) {
-        router[method](route.path, route.middleware, route.handler);
-      } else {
-        router[method](route.path, route.handler);
-      }
-    });
-    return router;
-  };
+  }
 });
 
-module.exports = m;
+module.exports = router;

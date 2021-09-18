@@ -6,23 +6,34 @@ class Event extends Base {
     return "events";
   }
 
+  // static get virtualAttributes() {
+  //   return ["start_date", "start_time", "end_date", "end_time"];
+  // }
+
+  // get start() {
+  //   return `${this.start_date} ${this.start_time}`;
+  // }
+
+  // get end() {
+  //   return `${this.end_date} ${this.end_time}`;
+  // }
+
   static get jsonSchema() {
     return {
       type: "object",
-      required: ["name", "startDate", "startTime"],
+      required: ["title", "end_time", "start_time"],
+
       properties: {
         id: { type: "integer" },
         category_id: { type: "integer" },
         color: { type: "string" },
-        name: { type: "string " },
-        day: { type: "integer" },
-        month: { type: "integer" },
-        year: { type: "integer" },
+        title: { type: "string " },
+
         description: { type: "string" },
-        startDate: { type: "string" },
-        startTime: { type: "string" },
-        endDate: { type: "string" },
-        endTime: { type: "string " },
+
+        start_time: { type: "string" },
+
+        end_time: { type: "string " },
         rvsp: { type: "boolean" },
         created_at: { type: "string" },
         updated_at: { type: "string" },
@@ -33,6 +44,8 @@ class Event extends Base {
   static get relationMappings() {
     const User = require("$models/User");
     const Category = require("$models/Category");
+    const EventRoles = require("$models/EventRoles");
+    const EventMeta = require("$models/EventMeta");
     return {
       category: {
         relation: Base.HasOneRelation,
@@ -42,6 +55,7 @@ class Event extends Base {
           to: "categories.id",
         },
       },
+
       organizer: {
         relation: Base.HasOneRelation,
         modelClass: User,
@@ -50,16 +64,24 @@ class Event extends Base {
           to: "users.id",
         },
       },
-      participants: {
-        relation: Base.HasManyRelationThrough,
-        modelClass: User,
+      roles: {
+        relation: Base.ManyToManyRelation,
+        modelClass: EventRoles,
+        join: {
+          from: "event.id",
+          through: {
+            from: "event_roles.event_id",
+            to: "event_roles.role_id",
+          },
+          to: "roles.id",
+        },
+      },
+      occurrences: {
+        relation: Base.HasManyRelation,
+        modelClass: EventMeta,
         join: {
           from: "events.id",
-          through: {
-            from: "event_participants.event_id",
-            to: "event_participants.user_id",
-          },
-          to: "users.id",
+          to: "event_meta.event_id",
         },
       },
     };

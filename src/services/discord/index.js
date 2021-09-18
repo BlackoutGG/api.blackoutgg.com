@@ -32,13 +32,14 @@ class DiscordClient {
    * @param {string} code The code we use to retrieve the access token for the user.
    * @returns {promise<Object>}
    */
-  setClientUser(code) {
+  getCurrentUser(code) {
     return new Promise(async (resolve, reject) => {
       try {
         const access = await this.getAccess(code);
         const user = await this.getUser(access);
         resolve(user);
       } catch (err) {
+        reject(err);
         console.log(err);
       }
     });
@@ -91,18 +92,16 @@ class DiscordClient {
    */
   async getGuildMember(token, guildId, userId) {
     return new Promise(async (resolve, reject) => {
-      if (!token.hasOwnProperty("access_token")) {
-        reject(new Error("Missing access_token."));
+      if (!token) {
+        reject(new Error("Missing BOT token."));
       }
-      if (!token.hasOwnProperty("token_type"))
-        reject(new Error("Missing token type."));
 
       try {
         const resp = await phin({
           url: `${this._baseUrl}/guilds/${guildId}/members/${userId}`,
           method: "GET",
           headers: {
-            Authorization: `${token.token_type} ${token.access_token}`,
+            Authorization: `Bot ${token}`,
           },
           parse: "json",
         });

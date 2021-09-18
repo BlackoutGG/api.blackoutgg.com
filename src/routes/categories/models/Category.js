@@ -1,7 +1,8 @@
 "use strict";
-const Base = require("$base");
+const { Model } = require("objection");
+const dateMixin = require("$util/mixins/date")();
 
-class Category extends Base {
+class Category extends dateMixin(Model) {
   static get tableName() {
     return "categories";
   }
@@ -10,6 +11,9 @@ class Category extends Base {
     return {
       defaultSelects(builder) {
         builder.select("id", "name");
+      },
+      selectBanner(builder) {
+        builder.select("name");
       },
     };
   }
@@ -25,6 +29,34 @@ class Category extends Base {
         page_header: { type: "integer" },
         created_at: { type: "string" },
         updated_at: { type: "string" },
+      },
+    };
+  }
+
+  static get relationMappings() {
+    const Form = require("$models/Form");
+    return {
+      // forms: {
+      //   relation: Model.ManyToManyRelation,
+      //   modelClass: Form,
+      //   join: {
+      //     from: "categories.id",
+      //     through: {
+      //       from: "form_category.category_id",
+      //       to: "form_category.form_id",
+      //     },
+
+      //     to: "forms.id",
+      //   },
+      // },
+
+      forms: {
+        relation: Model.HasOneRelation,
+        modelClass: Form,
+        join: {
+          from: "categories.id",
+          to: "forms.category_id",
+        },
       },
     };
   }

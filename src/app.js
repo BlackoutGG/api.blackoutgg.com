@@ -3,56 +3,10 @@
 const express = require("express");
 const app = express();
 const cors = require("cors");
-const expressJwt = require("express-jwt");
 const aws = require("aws-sdk");
-const routes = require("./routes");
-
-/*** SETUP REDIS  ***/
-const Redis = require("ioredis");
-const redis = new Redis();
-
-const apiVersion = "/api";
-
-if (
-  process.env.NODE_ENV === "debug" ||
-  process.env.NODE_ENV === "development"
-) {
-  const pino = require("express-pino-logger")();
-  app.use(pino);
-}
-
-/*** SETUP CORS ***/
-app.use(
-  cors({
-    origin: "*",
-    exposedHeaders: ["Content-Range", "Content-Length", "Authorization"],
-  })
-);
-
-/*** SETUP AUTHENTICATION FOR ROUTES ***/
-app.use(
-  expressJwt({
-    secret: process.env.JWT_SECRET,
-  }).unless({
-    path: [
-      "/",
-      `${apiVersion}/auth/login`,
-      `${apiVersion}/auth/discord/state`,
-      `${apiVersion}/auth/discord`,
-      `${apiVersion}/users/register`,
-    ],
-  })
-);
-
-/*** SETUP BODY PARSER ***/
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
-
-/*** INJECT REDIS INTO RESPONSE ***/
-app.use(function (req, res, next) {
-  req.redis = redis;
-  next();
-});
+const expressJwt = require("express-jwt");
+const pino = require("express-pino-logger")();
+const Settings = require("$models/Settings");
 
 /*** SETUP S3 CONFIG ***/
 aws.config.update({
@@ -61,21 +15,94 @@ aws.config.update({
   region: process.env.AWS_REGION,
 });
 
-/*** SETUP INDEX ROUTE ***/
-app.get("/", (req, res) => {
-  res.status(200).send("HELLO WORLD");
-});
+/** SETUP PG TO USE RANGE */
+const pg = require("pg");
+require("pg-range").install(pg);
 
-/*** SETUP KNEX AND OBJECTION ***/
-require("./util/setupDB")();
+/*** SETUP REDIS  ***/
+// const Redis = require("ioredis");
+// const redis = new Redis();
 
-/*** SETUP ROUTES ***/
-Object.entries(routes).forEach(([ns, route]) => {
-  app.use(`${apiVersion}/${ns}`, route());
-});
+const apiVersion = "/api";
 
-/*** SETUP ERROR HANDLING ***/
-const errorHandler = require("./middleware/errors");
-app.use(errorHandler);
+const bootstrapApp = async () => {
+  if (
+    process.env.NODE_ENV === "debug" ||
+    process.env.NODE_ENV === "development"
+  ) {
+    app.use(pino);
+  }
 
-module.exports = app;
+  /*** SETUP CORS ***/
+  app.use(
+    cors({
+      origin: "*",
+      exposedHeaders: ["Content-Range", "Content-Length", "Authorization"],
+    })
+  );
+
+  /*** INJECT REDIS INTO RESPONSE ***/
+  // app.use((req, res, next) => {
+  //   req.redis = redis;
+  //   next();
+  // });
+
+  /*** SETUP KNEX AND OBJECTION ***/
+  require("./util/setupDB")();
+
+  /*** SETUP AUTHENTICATION FOR ROUTES ***/
+  app.use(
+    expressJwt({
+      secret: process.env.JWT_SECRET,
+      isRevoked: require("$util/revokeToken.js"),
+    }).unless({
+      path: [
+        "/",
+        `${apiVersion}/auth/login`,
+        `${apiVersion}/auth/refresh`,
+        `${apiVersion}/auth/discord`,
+        `${apiVersion}/auth/logout`,
+        `${apiVersion}/users/register`,
+        `${apiVersion}/users/activation`,
+        `${apiVersion}/users/password-reset`,
+        `${apiVersion}/users/password-reset-confirm`,
+        `${apiVersion}/users/resend/activation`,
+        `${apiVersion}/social/discord/link`,
+        `${apiVersion}/users/update-password`,
+        `${apiVersion}/settings`,
+      ],
+    })
+  );
+
+  /*** SETUP BODY PARSER ***/
+  app.use(express.json());
+  app.use(express.urlencoded({ extended: true }));
+
+  /*** PARSE NESTED FILTERS */
+  app.use((req, res, next) => {
+    if (req.query.filters && Object.keys(req.query.filters)) {
+      req.query.filters = JSON.parse(req.query.filters);
+    }
+    next();
+  });
+
+  /*** SETUP INDEX ROUTE ***/
+  app.get("/", (req, res) => {
+    res.status(200).send("HELLO WORLD");
+  });
+
+  /** SETUP ROUTES */
+  app.use(apiVersion, require("./routes"));
+
+  /** START BOT */
+  const { createBot } = require("./bot");
+  const settings = await Settings.query().select("enable_bot").first();
+  createBot(settings.enable_bot);
+
+  /*** SETUP ERROR HANDLING ***/
+  app.use(require("./middleware/errors"));
+
+  return app;
+};
+
+module.exports = bootstrapApp;

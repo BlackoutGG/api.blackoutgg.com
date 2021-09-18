@@ -1,0 +1,26 @@
+version: "3"
+services:
+  db:
+    image: postgres:13
+    volumes:
+      - db-data:/var/lib/postgres/data
+    networks:
+      - backend
+    env_file: ".env"
+    ports:
+      - 5432:5432
+    restart: unless-stopped
+
+  redis:
+    image: redis:6.0.7
+    ports:
+      - 6379:6379
+    networks:
+      - backend
+    restart: unless-stopped
+
+networks:
+  backend:
+
+volumes:
+  db-data:

@@ -1,0 +1,17 @@
+module.exports = [
+  "events.id as event_id",
+  "occurrences.group_id as group_id",
+  "occurrences.id as id",
+  "all_day",
+  "title",
+  "color",
+  "interval",
+  "start_time",
+  "end_time",
+  "events.category_id",
+  "description",
+  "occurrences.start_date as start_date",
+  "occurrences.end_date as end_date",
+  "rvsp",
+  "category.name as category",
+];

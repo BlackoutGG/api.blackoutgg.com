@@ -78,7 +78,7 @@ class User {
   get discriminator() {
     return this._discriminator;
   }
-  get emailId() {
+  get email() {
     return this._emailId;
   }
   get emailVerified() {

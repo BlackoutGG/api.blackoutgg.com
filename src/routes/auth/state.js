@@ -1,24 +1,17 @@
 "use strict";
-const randomString = require("crypto-random-string");
 const { header } = require("express-validator");
+const { nanoid } = require("nanoid");
+const redis = require("$services/redis");
 
-const discordState = async function (req, res) {
-  const redis = req.redis;
-  const sid = req.query._sid;
-  const nonce = randomString({ length: 30 });
-
-  try {
-    await redis.set(nonce, nonce, "EX", 180);
-    res.status(200).send(nonce);
-  } catch (err) {
-    console.log(err);
-    next(new Error(err));
-  }
+const createDiscordState = async function (req, res, next) {
+  const nonce = nanoid(32);
+  await redis.set(nonce, nonce, "EX", 180);
+  res.status(200).send(nonce);
 };
 
 module.exports = {
-  path: "/discord/state",
+  path: "/discord",
   method: "GET",
-  middleware: [header("authorization").isEmpty()],
-  handler: discordState,
+  // middleware: [header("authorization").isEmpty()],
+  handler: createDiscordState,
 };

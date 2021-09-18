@@ -19,16 +19,23 @@ const types = new Map([
 // In this example `res` is an express response object.
 function errorHandler(err, req, res, next) {
   if (err.name === "UnauthorizedError") {
+    if (err.code === "permission_denied") {
+      return res.status(403).send({
+        message: err.message,
+        type: "Unauthorized",
+      });
+    }
+
     return res.status(401).send({
       message: err.message,
       type: "Unauthorized",
     });
   }
 
-  if (err.code === "permission_denied") {
-    return res.status(403).send({
+  if (err.name === "RevokeTokenError") {
+    return res.status(401).send({
       message: err.message,
-      type: "Forbidden",
+      type: "Revoked",
     });
   }
 
