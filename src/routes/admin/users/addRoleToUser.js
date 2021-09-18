@@ -3,6 +3,7 @@ const UserRole = require("$models/UserRole");
 const UserSession = require("$models/UserSession");
 const isFuture = require("date-fns/isFuture");
 const diffInSeconds = require("date-fns/differenceInSeconds");
+const getUserSessions = require("$util/getUserSessions");
 const guard = require("express-jwt-permissions")();
 const redis = require("$services/redis");
 const { param, body } = require("express-validator");
@@ -30,30 +31,33 @@ const addRoleToUser = async function (req, res, next) {
       .insert({
         user_id: userId,
         role_id: roleId,
+        assigned_by: "site",
       })
       .withGraphFetched("role(nameAndId)")
       .returning("*");
 
-    const sessions = await UserSession.query()
-      .where("user_id", userId)
-      .whereRaw(raw("expires >= CURRENT_TIMESTAMP"))
-      .select("refresh_token_id", "expires")
-      .orderBy("created_at", "DESC");
+    const sessions = await getUserSessions(userId);
+    if (sessions) await redis.multi(sessions).exec();
+    // const sessions = await UserSession.query()
+    //   .where("user_id", userId)
+    //   .whereRaw(raw("expires >= CURRENT_TIMESTAMP"))
+    //   .select("refresh_token_id", "expires")
+    //   .orderBy("created_at", "DESC");
 
-    if (sessions && sessions.length) {
-      const commands = sessions.reduce((output, s) => {
-        const date = s.expires;
-        const id = s.refresh_token_id;
-        const key = `blacklist:${id}`;
-        if (isFuture(date)) {
-          const diff = diffInSeconds(date, new Date());
-          output.push(["set", key, id, "NX", "EX", diff]);
-        }
-        return output;
-      }, []);
+    // if (sessions && sessions.length) {
+    //   const commands = sessions.reduce((output, s) => {
+    //     const date = s.expires;
+    //     const id = s.refresh_token_id;
+    //     const key = `blacklist:${id}`;
+    //     if (isFuture(date)) {
+    //       const diff = diffInSeconds(date, new Date());
+    //       output.push(["set", key, id, "NX", "EX", diff]);
+    //     }
+    //     return output;
+    //   }, []);
 
-      await redis.multi(commands).exec();
-    }
+    //   await redis.multi(commands).exec();
+    // }
 
     await trx.commit();
 

@@ -90,13 +90,11 @@ class DiscordClient {
    *
    * @returns {promise<Object>}
    */
-  static async getGuildMember(token, guildId, userId) {
+  async getGuildMember(token, guildId, userId) {
     return new Promise(async (resolve, reject) => {
-      if (!token.hasOwnProperty("access_token")) {
-        reject(new Error("Missing access_token."));
+      if (!token) {
+        reject(new Error("Missing BOT token."));
       }
-      if (!token.hasOwnProperty("token_type"))
-        reject(new Error("Missing token type."));
 
       try {
         const resp = await phin({

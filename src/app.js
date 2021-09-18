@@ -67,6 +67,7 @@ const bootstrapApp = async () => {
         `${apiVersion}/users/password-reset`,
         `${apiVersion}/users/password-reset-confirm`,
         `${apiVersion}/users/resend/activation`,
+        `${apiVersion}/social/discord/link`,
         `${apiVersion}/users/update-password`,
         `${apiVersion}/settings`,
       ],
@@ -96,11 +97,7 @@ const bootstrapApp = async () => {
   /** START BOT */
   const { createBot } = require("./bot");
   const settings = await Settings.query().select("enable_bot").first();
-  createBot(
-    settings.enable_bot,
-    process.env.DISCORD_BOT_TOKEN,
-    process.env.DISCORD_WATCHED_ROLES
-  );
+  createBot(settings.enable_bot);
 
   /*** SETUP ERROR HANDLING ***/
   app.use(require("./middleware/errors"));

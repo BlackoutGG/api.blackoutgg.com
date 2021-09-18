@@ -1,7 +1,8 @@
 "use strict";
-const Base = require("$base");
+const { Model } = require("objection");
+const dateMixin = require("$util/mixins/date")();
 
-class Category extends Base {
+class Category extends dateMixin(Model) {
   static get tableName() {
     return "categories";
   }
@@ -36,7 +37,7 @@ class Category extends Base {
     const Form = require("$models/Form");
     return {
       // forms: {
-      //   relation: Base.ManyToManyRelation,
+      //   relation: Model.ManyToManyRelation,
       //   modelClass: Form,
       //   join: {
       //     from: "categories.id",
@@ -50,7 +51,7 @@ class Category extends Base {
       // },
 
       forms: {
-        relation: Base.HasOneRelation,
+        relation: Model.HasOneRelation,
         modelClass: Form,
         join: {
           from: "categories.id",

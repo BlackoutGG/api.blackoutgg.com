@@ -3,14 +3,30 @@ const { validationResult } = require("express-validator");
 const jwt = require("jsonwebtoken");
 const phin = require("phin");
 
-class GuildRole {
-  constructor(id, name) {
-    this.id = id;
-    this.name = name;
-  }
-}
+const _formatDiscordRoles = (roles) => {
+  return roles.map((role) => ({
+    discord_role_id: role.id,
+    name: role.name,
+  }));
+};
 
-const getDiscordRoles = async (redis, id) => {
+const _isMatch = (item) => (item2) =>
+  item.discord_role_id === item2.discord_role_id;
+
+const checkIfRolesExist = (newRoles, currentRoles) =>
+  newRoles.reduce((output, role) => {
+    const match = currentRoles.findIndex(_isMatch(role));
+
+    if (match === -1) output.push(role);
+    return output;
+  }, []);
+
+/**
+ * Fetches discord roles from server; catches and returns results.
+ * @param {string|number} id
+ */
+
+const getDiscordRoles = async (id) => {
   try {
     const response = await phin({
       method: "GET",
@@ -21,13 +37,9 @@ const getDiscordRoles = async (redis, id) => {
       parse: "json",
     });
 
-    // const results = response.data.map((role) => new GuildRole(role));
+    const results = _formatDiscordRoles(response.body);
 
-    // await redis.set("discord", JSON.stringify(results), "NX", "EX", 180);
-
-    console.log(response);
-
-    return response;
+    return results;
   } catch (err) {
     return Promise.reject(err);
   }
@@ -115,4 +127,5 @@ module.exports = {
   validate,
   getDiscordRoles,
   verifySocketUser,
+  checkIfRolesExist,
 };

@@ -1,5 +1,5 @@
 "use strict";
-const Roles = require("./models/Roles");
+const Roles = require("../admin/roles/models/Roles");
 const guard = require("express-jwt-permissions")();
 const { query } = require("express-validator");
 const { validate } = require("$util");
@@ -14,7 +14,7 @@ const validateRoleName = async function (req, res, next) {
 };
 
 module.exports = {
-  path: "/validate/name",
+  path: "/role",
   method: "GET",
   middleware: [
     guard.check(["view:roles", "update:roles"]),

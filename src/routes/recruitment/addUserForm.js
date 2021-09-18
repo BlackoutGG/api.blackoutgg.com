@@ -53,9 +53,10 @@ const addForm = async function (req, res, next) {
       .first();
 
     if (userAlreadySubmitted) {
+      const message =
+        "You've already submitted an application for this category. Please wait for review and a response";
       return res.status(422).send({
-        message:
-          "You've already submitted an application for this category. Please way for a response.",
+        message,
       });
     }
 

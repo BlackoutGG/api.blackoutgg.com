@@ -6,7 +6,7 @@ exports.up = function (knex) {
       if (exists) return;
       return knex.schema.createTable("users", (t) => {
         t.increments("id").primary();
-        t.bigint("discord_id").unique();
+        t.string("discord_id").nullable();
         t.string("email").unique();
         t.string("username").unique();
         t.string("first_name");
@@ -17,8 +17,8 @@ exports.up = function (knex) {
         t.text("description");
         t.string("password");
         t.string("avatar");
-        t.index("discord_id");
         t.boolean("active").defaultTo(false);
+        t.boolean("local").defaultTo(false);
         t.integer("login_attempts").defaultTo(0);
         t.date("last_activation_email_sent");
         t.date("last_password_reset_sent");
@@ -30,8 +30,9 @@ exports.up = function (knex) {
     knex.schema.hasTable("user_sessions").then((exists) => {
       if (exists) return;
       return knex.schema.createTable("user_sessions", (t) => {
-        t.increments("id").primary();
-        t.integer("user_id").references("users.id");
+        // t.increments("id").primary();
+        t.uuid("id").primary();
+        t.integer("user_id").references("users.id").onDelete("CASCADE");
         t.string("token_id");
         t.string("refresh_token_id");
         t.timestamp("expires");
@@ -53,11 +54,23 @@ exports.up = function (knex) {
     knex.schema.hasTable("role_maps").then((exists) => {
       if (exists) return;
       return knex.schema.createTable("role_maps", (t) => {
+        t.increments("id").primary();
         t.integer("role_id")
           .references("id")
           .inTable("roles")
           .onDelete("CASCADE");
-        t.bigint("discord_role_id");
+        t.integer("native_discord_role_id")
+          .references("id")
+          .inTable("discord_roles")
+          .onDelete("CASCADE");
+      });
+    }),
+    knex.schema.hasTable("discord_roles").then((exists) => {
+      if (exists) return;
+      return knex.schema.createTable("discord_roles", (t) => {
+        t.increments("id").primary();
+        t.string("name");
+        t.string("discord_role_id");
       });
     }),
     knex.schema.hasTable("role_policies").then((exists) => {
@@ -94,6 +107,7 @@ exports.up = function (knex) {
           .references("roles.id")
           .onUpdate("CASCADE")
           .onDelete("CASCADE");
+        t.enum("assigned_by", ["site", "discord"]).defaultTo("site");
       });
     }),
 
@@ -169,13 +183,15 @@ exports.up = function (knex) {
         t.boolean("enable_local_authentication").defaultTo(true);
         t.integer("password_reset_request_ttl_in_minutes").defaultTo(10);
         t.integer("user_activation_request_ttl_in_minutes").defaultTo(10);
+        t.integer("user_deletion_request_ttl_in_minutes").defaultTo(3);
         t.string("time_till_next_username_change").defaultTo("1 week");
         t.string("front_page_video_url").defaultTo(
           "https://blackout-gaming.s3.amazonaws.com/video/0001-0876.webm"
         );
         t.boolean("enable_bot").defaultTo(false);
         t.string("bot_prefix").defaultTo("!");
-        t.bigint("bot_server_id");
+        t.string("bot_server_id").defaultTo("549246767577825283");
+        t.string("bot_recruitment_channel_id").defaultTo("883085542051438592");
       });
     }),
 
@@ -371,7 +387,7 @@ exports.down = async function (knex) {
       user_forms, user_sessions, user_policies, form_fields, fields, 
       forms, menu_tree, menu, event_participants, 
       event_roles, event_meta, events, categories, 
-      user_roles, role_maps, role_policies, policies, 
+      user_roles, role_maps, discord_roles, role_policies, policies, 
       users, roles, media, posts, post_types, testimonies, 
       settings, front_page_info`
     );

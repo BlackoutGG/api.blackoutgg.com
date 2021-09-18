@@ -35,7 +35,7 @@ routes.forEach((r) => {
 
   const route = require(r);
 
-  if (route) {
+  if (route && route.path && route.handler) {
     const method = route.method.toLowerCase();
     if (route.middleware && route.middleware.length) {
       router[method](

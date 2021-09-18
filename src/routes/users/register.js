@@ -19,6 +19,7 @@ const insertFn = (creds) => {
   return {
     "#id": "newUser",
     ...creds,
+    local: true,
     last_activation_email_sent: new Date().toISOString(),
     roles: [{ id: 3 }],
   };

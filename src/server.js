@@ -30,107 +30,109 @@ const bootstrapApp = require("./app");
 const http = require("http");
 const redis = require("$services/redis");
 const sub = redis.duplicate();
-const socketAuth = require("socketio-auth");
 const { Server } = require("socket.io");
 const { createAdapter } = require("@socket.io/redis-adapter");
 const { verifySocketUser } = require("$util");
 
 const startServer = async function () {
   const server = http.createServer(await bootstrapApp());
-  const io = new Server(server);
+  const io = new Server(server, {
+    cors: {
+      origins: ["*"],
+    },
+  });
 
   io.adapter(createAdapter(redis, sub));
 
-  io.use(async (socket, next) => {
-    const token = socket.handshake.auth.token;
+  const indexAdapter = io.of("/index").adapter;
 
-    try {
-      const verified = await verifySocketUser(
-        token,
-        process.env.JWT_REFRESH_SECRET
-      );
+  io.of("/index")
+    .use(async (socket, next) => {
+      const token = socket.handshake.auth.token || socket.handshake.query.token;
+      try {
+        const verified = await verifySocketUser(
+          token,
+          process.env.JWT_REFRESH_SECRET
+        );
 
-      if (!verified) {
-        const error = new Error("UNAUTHORIZED");
-        error.data = { content: "Please retry later." };
-        return next(error);
+        if (!verified) {
+          socket.leave(`user:${verified.id}`);
+          const error = new Error("UNAUTHORIZED");
+          error.data = { content: "Please retry later." };
+          return next(error);
+        }
+
+        socket.user = verified;
+        socket.auth = true;
+      } catch (err) {
+        return next(err);
       }
 
-      socket.user = verified;
-      socket.auth = true;
+      next();
+    })
+    .on("connection", async (socket) => {
+      console.log("Connected:", socket.id);
 
-      await redis.set(`users${verified.id}`, socket.id, "NX", "EX", 30);
-    } catch (err) {
-      next(err);
-    }
+      let verified = null;
 
-    socket.conn.on("packet", async (packet) => {
-      if (socket.auth && packet.type === "ping") {
-        await redis.set(`users${verified.id}`, socket.id, "NX", "EX", 30);
+      if (socket.handshake.auth.token || socket.handshake.query.token) {
+        const token =
+          socket.handshake.auth.token || socket.handshake.query.token;
+
+        try {
+          verified = await verifySocketUser(
+            token,
+            process.env.JWT_REFRESH_SECRET
+          );
+
+          if (!verified) {
+            const error = new Error("UNAUTHORIZED");
+            error.data = { content: "Please retry later." };
+            return next(error);
+          }
+
+          if (await redis.exists(`users:${verified.id}`)) {
+            socket.join(`user:${verified.id}`);
+          } else {
+            await redis.set(`users:${verified.id}`, verified.id, "EX", 30);
+            socket.join(`user:${verified.id}`);
+          }
+
+          socket.user = verified;
+          socket.auth = true;
+
+          socket.join(`user:${verified.id}`);
+        } catch (err) {
+          return next(err);
+        }
+      } else {
+        return next(new Error("Handshake missing property token."));
       }
+
+      socket.conn.on("packet", async (packet) => {
+        if (socket.auth && packet.type === "pong") {
+          await redis.set(`users:${verified.id}`, verified.id, "EX", 30);
+        }
+      });
+
+      socket.conn.on("disconnect", async () => {
+        console.log("Disconnected");
+        if (socket.user) {
+          await redis.del(`users:${verified.id}`);
+        }
+      });
     });
 
-    socket.conn.on("disconnect", async (_socket) => {
-      if (socket.user) {
-        await redis.del(`users:${verified.id}`);
-        _socket.auth = false;
-        _socket.user = null;
-      }
-    });
-
-    next();
+  indexAdapter.on("create-room", (room) => {
+    console.log(`room ${room} was created.`);
   });
 
-  io.listen(8080);
-
-  // socketAuth(io, {
-  //   authenticate: async (socket, data, callback) => {
-  //     const { token } = data;
-
-  //     try {
-  //       const { id, username } = await verifySocketUser(
-  //         token,
-  //         process.env.JWT_REFRESH_SECRET
-  //       );
-
-  //       const canConnect = await redis.set(
-  //         `users:${id}`,
-  //         socket.id,
-  //         "NX",
-  //         "EX",
-  //         30
-  //       );
-
-  //       if (!canConnect) {
-  //         return callback({ message: "ALREADY_LOGGED_IN" });
-  //       }
-
-  //       const userData = { id, username };
-
-  //       socket.user = userData;
-
-  //       return callback(null, true);
-  //     } catch (err) {
-  //       console.log(`Socket ${socket.id} unauthorized`);
-  //       return callback({ message: "UNAUTHORIZED" });
-  //     }
-  //   },
-  //   postAuthenticate: async (socket) => {
-  //     socket.conn.on("packet", async (packet) => {
-  //       if (socket.auth && packet.type === "ping") {
-  //         redis.set(`users:${id}`, socket.id, "NX", "EX", 30);
-  //       }
-  //     });
-  //   },
-  //   disconnect: async (socket) => {
-  //     if (socket.user) {
-  //       await redis.del(`users:${socket.user.id}`);
-  //     }
-  //   },
-  // });
+  indexAdapter.on("join-room", (room, id) =>
+    console.log(`socket ${id} has joined room ${room}`)
+  );
 
   server.listen(process.env.PORT || 3000, (err) => {
-    console.log(`Server running at ${process.env.PORT}...`);
+    console.log("\u2713", `Server running at ${process.env.PORT}...`);
   });
 
   const { client } = require("./bot");

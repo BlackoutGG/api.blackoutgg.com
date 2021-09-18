@@ -3,6 +3,7 @@ const UserRole = require("$models/UserRole");
 const UserSession = require("$models/UserSession");
 const isFuture = require("date-fns/isFuture");
 const diffInSeconds = require("date-fns/differenceInSeconds");
+const getUserSessions = require("$util/getUserSessions");
 const guard = require("express-jwt-permissions")();
 const redis = require("$services/redis");
 const { param, query } = require("express-validator");
@@ -24,26 +25,29 @@ const removeUserRole = async function (req, res, next) {
       .throwIfNotFound()
       .delete();
 
-    const sessions = await UserSession.query()
-      .where("user_id", userId)
-      .whereRaw(raw("expires >= CURRENT_TIMESTAMP"))
-      .select("refresh_token_id", "expires")
-      .orderBy("created_at", "DESC");
+    const sessions = await getUserSessions(userId);
+    if (sessions) await redis.multi(sessions).exec();
 
-    if (sessions && sessions.length) {
-      const commands = sessions.reduce((output, s) => {
-        const date = s.expires;
-        const id = s.refresh_token_id;
-        const key = `blacklist:${id}`;
-        if (isFuture(date)) {
-          const diff = diffInSeconds(date, new Date());
-          output.push(["set", key, id, "NX", "EX", diff]);
-        }
-        return output;
-      }, []);
+    // const sessions = await UserSession.query()
+    //   .where("user_id", userId)
+    //   .whereRaw(raw("expires >= CURRENT_TIMESTAMP"))
+    //   .select("refresh_token_id", "expires")
+    //   .orderBy("created_at", "DESC");
 
-      await redis.multi(commands).exec();
-    }
+    // if (sessions && sessions.length) {
+    //   const commands = sessions.reduce((output, s) => {
+    //     const date = s.expires;
+    //     const id = s.refresh_token_id;
+    //     const key = `blacklist:${id}`;
+    //     if (isFuture(date)) {
+    //       const diff = diffInSeconds(date, new Date());
+    //       output.push(["set", key, id, "NX", "EX", diff]);
+    //     }
+    //     return output;
+    //   }, []);
+
+    //   await redis.multi(commands).exec();
+    // }
 
     await trx.commit();
 

@@ -1,5 +1,5 @@
 "use strict";
-const redis = require("ioredis");
+const redis = require("$services/redis");
 module.exports = {
   name: "roleUpdated",
   async execute(role) {

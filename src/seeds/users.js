@@ -87,6 +87,8 @@ class User extends Model {
         password: { type: "string" },
         avatar: { type: "string" },
         is_disabled: { type: "boolean" },
+        active: { type: "boolean" },
+        local: { type: "boolean" },
       },
     };
   }
@@ -131,6 +133,8 @@ const generateUsers = async (num) => {
       avatar: faker.image.avatar(),
       first_name: faker.name.firstName(),
       last_name: faker.name.lastName(),
+      local: true,
+      active: true,
       roles: userRoles,
       created_at: date,
       updated_at: date,
@@ -142,6 +146,8 @@ const generateUsers = async (num) => {
     email: "mmccauleyjr@rogers.com",
     password: hashed,
     avatar: faker.image.avatar(),
+    local: true,
+    active: true,
     roles: [{ id: 1 }],
     created_at: date,
     updated_at: date,

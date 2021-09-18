@@ -38,6 +38,12 @@ const graphFn = (role) => {
     });
   }
 
+  if (discord_roles && discord_roles.length) {
+    Object.assign(data, {
+      discord_roles: maps.map((discord_role_id) => ({ discord_role_id })),
+    });
+  }
+
   return data;
 };
 

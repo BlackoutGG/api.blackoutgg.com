@@ -24,8 +24,6 @@ const passwordReset = async function (req, res) {
     password = req.body.password,
     newPassword = req.body.new_password;
 
-  console.log(req.body);
-
   const [account, settings] = await Promise.all([
     User.query()
       .where({ email: req.body.email })

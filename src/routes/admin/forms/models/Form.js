@@ -1,5 +1,5 @@
 "use strict";
-const dateMixin = require("$util/dateMixin");
+const dateMixin = require("$util/mixins/date")();
 const { Model } = require("objection");
 
 class Form extends dateMixin(Model) {

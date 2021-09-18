@@ -1,7 +1,8 @@
 "use strict";
-const Base = require("$base");
+const { Model } = require("objection");
+const dateMixin = require("$util/mixins/date")();
 
-class Role extends Base {
+class Role extends dateMixin(Model) {
   static get tableName() {
     return "roles";
   }
@@ -33,9 +34,10 @@ class Role extends Base {
   static get relationMappings() {
     const Users = require("$models/User");
     const Policies = require("$models/Policies");
+    const DiscordRole = require("$models/DiscordRole");
     return {
       users: {
-        relation: Base.ManyToManyRelation,
+        relation: Model.ManyToManyRelation,
         modelClass: Users,
         join: {
           from: "roles.id",
@@ -47,8 +49,21 @@ class Role extends Base {
         },
       },
 
+      discord_roles: {
+        relation: Model.ManyToManyRelation,
+        modelClass: DiscordRole,
+        join: {
+          from: "roles.id",
+          through: {
+            from: "role_maps.role_id",
+            to: "role_maps.native_discord_role_id",
+          },
+          to: "discord_roles.id",
+        },
+      },
+
       policies: {
-        relation: Base.ManyToManyRelation,
+        relation: Model.ManyToManyRelation,
         modelClass: Policies,
         join: {
           from: "roles.id",

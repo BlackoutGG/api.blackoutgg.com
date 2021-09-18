@@ -1,9 +1,11 @@
 "use strict";
-const redis = require("ioredis");
+const DiscordRole = require("$models/DiscordRole");
+const redis = require("$services/redis");
 module.exports = {
   name: "roleDeleted",
   async execute(role) {
-    console.log(role);
+    const { _id } = role;
     await redis.del("discord");
+    await DiscordRole.query().where("discord_role_id", _id).del();
   },
 };

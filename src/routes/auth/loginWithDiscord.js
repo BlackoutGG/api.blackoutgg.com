@@ -8,12 +8,11 @@ const DiscordClient = require("$services/discord");
 const redis = require("$services/redis");
 const bcrypt = require("bcrypt");
 const SALT_ROUNDS = 12;
-const uniq = require("lodash/uniq");
-const addHours = require("date-fns/addHours");
-
-const { header, body } = require("express-validator");
+const uniqBy = require("lodash/uniqBy");
+const generateTokenData = require("$util/generateTokenData");
+const { body } = require("express-validator");
 const { nanoid } = require("nanoid");
-const { validate, getDiscordRoles } = require("$util");
+const { validate } = require("$util");
 const { transaction } = require("objection");
 
 const redirect_uri = "http://localhost:3000";
@@ -37,6 +36,10 @@ const client = new DiscordClient(
 const loginWithDiscord = async (req, res, next) => {
   const { code, state } = req.body;
 
+  if (!code) {
+    return res.status(400).send({ message: "Missing code." });
+  }
+
   if (!(await redis.exists(state))) {
     return res.status(400).send({ message: "Code doesn't exist." });
   }
@@ -44,7 +47,7 @@ const loginWithDiscord = async (req, res, next) => {
   await redis.del(state);
 
   const settings = await Settings.query().select([
-    "bot_enabled",
+    "enable_bot",
     "bot_server_id",
   ]);
 
@@ -68,7 +71,7 @@ const loginWithDiscord = async (req, res, next) => {
     let user = await User.query()
       .where("discord_id", dUser.id)
       .where("active", true)
-      .select("id", "username", "avatar")
+      .select("id", "username", "avatar", "discord_id")
       .withGraphFetched("[roles.policies, policies]")
       .first();
 
@@ -76,26 +79,34 @@ const loginWithDiscord = async (req, res, next) => {
       const salt = await bcrypt.genSalt(SALT_ROUNDS);
       const password = await bcrypt.hash(nanoid(50), salt);
 
-      let roles = [{ id: 2 }];
+      let roles = [{ id: 2, assigned_by: "site" }];
 
-      if (settings.bot_enabled && settings.bot_server_id) {
+      if (settings.enable_bot && settings.bot_server_id) {
         const guildMember = await client.getGuildMember(
           process.env.DISCORD_BOT_TOKEN,
           settings.bot_server_id,
           dUser.id
         );
 
-        const mapped = await Roles.query()
-          .innerJoin("roles_mapped", () => {
-            this.on("roles.id", "=", "roles_mapped.role_id");
-            this.whereIn(
-              "roles_mapped.discord_role_id",
-              guildMember.roles.map((role) => role.id)
-            );
-          })
-          .select("roles.id as id");
+        const discordAssignedRoles = await Roles.query()
+          .joinRelated("discord_roles")
+          .select("roles.id as id")
+          .whereIn("discord_role_id", guildMember._roles);
 
-        if (mapped.length) roles = mapped;
+        console.log(discordAssignedRoles);
+
+        if (discordAssignedRoles && discordAssignedRoles.length) {
+          /** grab the role ids assigned by discord, filter out any duplicate ids using uniqBy */
+          roles = uniqBy(
+            roles.concat(
+              discordAssignedRoles.map(({ id }) => ({
+                id,
+                assigned_by: "discord",
+              }))
+            ),
+            "id"
+          );
+        }
       }
 
       const data = {
@@ -110,57 +121,28 @@ const loginWithDiscord = async (req, res, next) => {
       user = await User.query(trx)
         .insertGraph(insertFn(data, roles), {
           relate: true,
+          unrelate: false,
           noDelete: true,
         })
+        .onConflict("username")
         .withGraphFetched("[roles.policies, policies]");
     }
 
-    const rolePolicies = user.roles.flatMap(({ policies }) =>
-      policies.map(({ action, target, resource }) => {
-        return `${action}:${target}:${resource}`;
-      })
-    );
+    const tokenData = generateTokenData(user);
 
-    const userPolicies = user.policies.map(
-      ({ action, target, resource }) => `${action}:${target}:${resource}`
-    );
-
-    const permissions = uniq([...userPolicies, ...rolePolicies]);
-
-    const level = Math.min(user.roles.map(({ level }) => level));
-
-    const access_jti = nanoid();
-    const refresh_jti = nanoid();
-    const expires = addHours(new Date(), 1);
-
-    const data = {
-      jti: access_jti,
-      refresh_jti,
-      id: user.id,
-      username: user.username,
-      roles: user.roles.map(({ name }) => name),
-      level,
-      permissions,
-    };
-
-    const access_token = jwt.sign(data, process.env.JWT_SECRET, {
+    const access_token = jwt.sign(tokenData, process.env.JWT_SECRET, {
       expiresIn: process.env.JWT_TOKEN_DURATION,
     });
 
     const refresh_token = jwt.sign(
-      { jti: refresh_jti, id: data.id },
+      { jti: tokenData.refresh_jti, id: tokenData.id },
       process.env.JWT_REFRESH_SECRET,
       { expiresIn: "1h" }
     );
 
-    await trx.commit();
+    await UserSession.createSession(user, tokenData, trx);
 
-    await UserSession.query().insert({
-      token_id: access_jti,
-      refresh_token_id: refresh_jti,
-      user_id: user.id,
-      expires,
-    });
+    await trx.commit();
 
     res.status(200).send({ access_token, refresh_token });
   } catch (err) {

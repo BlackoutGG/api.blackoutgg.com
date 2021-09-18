@@ -1,5 +1,5 @@
 "use strict";
-const User = require("./models/User");
+const User = require("$models/User");
 const guard = require("express-jwt-permissions")();
 const sanitize = require("sanitize-html");
 const { query } = require("express-validator");
@@ -15,7 +15,7 @@ const validateUsername = async function (req, res, next) {
 };
 
 module.exports = {
-  path: "/validate/username",
+  path: "/username",
   method: "GET",
   middleware: [
     validate(

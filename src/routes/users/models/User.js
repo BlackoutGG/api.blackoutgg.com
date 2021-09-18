@@ -1,7 +1,8 @@
 "use strict";
-const Base = require("$base");
+const { Model } = require("objection");
+const dateMixin = require("$util/mixins/date")();
 
-class User extends Base {
+class User extends dateMixin(Model) {
   static get tableName() {
     return "users";
   }
@@ -23,12 +24,12 @@ class User extends Base {
       required: ["username", "password", "email"],
       properties: {
         id: { type: "integer" },
-        discord_id: { type: "string" },
         username: { type: "string" },
         email: { type: "string" },
         password: { type: "string" },
         avatar: { type: "string" },
         active: { type: "boolean" },
+        local: { type: "boolean" },
         first_name: { type: "string" },
         last_name: { type: "string" },
         location: { type: "string" },
@@ -53,7 +54,7 @@ class User extends Base {
 
     return {
       policies: {
-        relation: Base.ManyToManyRelation,
+        relation: Model.ManyToManyRelation,
         modelClass: Policies,
         join: {
           from: "users.id",
@@ -65,19 +66,20 @@ class User extends Base {
         },
       },
       roles: {
-        relation: Base.ManyToManyRelation,
+        relation: Model.ManyToManyRelation,
         modelClass: Roles,
         join: {
           from: "users.id",
           through: {
             from: "user_roles.user_id",
             to: "user_roles.role_id",
+            extra: ["assigned_by"],
           },
           to: "roles.id",
         },
       },
       session: {
-        relation: Base.HasOneRelation,
+        relation: Model.HasOneRelation,
         modelClass: UserSession,
         join: {
           from: "users.id",

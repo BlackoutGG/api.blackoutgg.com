@@ -2,10 +2,9 @@
 const User = require("$models/User");
 const UserSession = require("$models/UserSession");
 const UnauthorizedError = require("express-jwt/lib/errors/UnauthorizedError");
+const generateTokenData = require("$util/generateTokenData");
 const jwt = require("jsonwebtoken");
 const redis = require("$services/redis");
-const uniq = require("lodash.uniq");
-const { nanoid } = require("nanoid");
 const { body } = require("express-validator");
 const { validate } = require("$util");
 const { raw } = require("objection");
@@ -18,6 +17,8 @@ const validators = validate([
     return true;
   }),
 ]);
+
+const select = ["users.id", "users.username", "users.discord_id"];
 
 const refreshToken = async (req, res, next) => {
   const { refresh_token } = req.body;
@@ -38,7 +39,7 @@ const refreshToken = async (req, res, next) => {
     .joinRelated("session")
     .where("session.refresh_token_id", token.jti)
     .where(raw("expires >= CURRENT_TIMESTAMP"))
-    .select("users.id", "users.username", "token_id")
+    .select(select)
     .withGraphFetched("[roles.policies, policies]")
     .first();
 
@@ -50,40 +51,19 @@ const refreshToken = async (req, res, next) => {
     );
   }
 
-  const rolePolicies = session.roles.flatMap(({ policies }) =>
-    policies.map(({ action, target, resource }) => {
-      return `${action}:${target}:${resource}`;
-    })
-  );
+  const tokenData = generateTokenData(session);
 
-  const userPolicies = session.policies.map(
-    ({ action, target, resource }) => `${action}:${target}:${resource}`
-  );
-
-  const permissions = uniq([...userPolicies, ...rolePolicies]);
-
-  const level = Math.min(session.roles.map(({ level }) => level));
-
-  const jti = nanoid();
-
-  const data = {
-    jti,
-    id: session.id,
-    username: session.username,
-    roles: session.roles.map(({ name }) => name),
-    level,
-    permissions,
-  };
-
-  const access_token = jwt.sign(data, process.env.JWT_SECRET, {
+  const access_token = jwt.sign(tokenData, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_TOKEN_DURATION,
   });
 
+  /** UPDATE THE SESSION DATA WITH THE NEW ACCESS TOKEN JTI */
+
   await UserSession.query()
-    .patch({ token_id: jti })
+    .patch({ token_id: tokenData.jti })
     .where("token_id", token.jti);
 
-  await redis.del(`blacklist:${session.jti}`);
+  // await redis.del(`blacklist:${session.jti}`);
 
   res.status(200).send({ access_token });
 };

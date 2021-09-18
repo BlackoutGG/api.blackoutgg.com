@@ -2,14 +2,13 @@
 const User = require("./models/User");
 const Settings = require("$models/Settings");
 const sanitize = require("sanitize-html");
+const redis = require("$services/redis");
 
 const { body, header } = require("express-validator");
 const { validate } = require("$util");
 const { differenceInSeconds, addMinutes, subSeconds } = require("date-fns");
 
 const activateAccount = async function (req, res) {
-  const r = req.redis;
-
   const [account, settings] = await Promise.all([
     User.query()
       .where("id", req.body.id)
@@ -41,10 +40,10 @@ const activateAccount = async function (req, res) {
     });
   }
 
-  if (await r.exists(req.body.id)) {
+  if (await redis.exists(req.body.id)) {
     const code = await r.get(req.body.id);
     if (req.body.code === code) {
-      await r.del(req.body.id);
+      await redis.del(req.body.id);
       await User.query().patch({ active: true }).where("id", req.body.id);
       return res.status(200).send({
         resend: false,

@@ -5,11 +5,11 @@ const guard = require("express-jwt-permissions")();
 const isFuture = require("date-fns/isFuture");
 const diffInSeconds = require("date-fns/differenceInSeconds");
 const redis = require("$services/redis");
-const uniqBy = require("lodash.uniqby");
 const { query } = require("express-validator");
 const { validate, buildQuery } = require("$util");
 const { transaction, raw } = require("objection");
 const { VIEW_ALL_ADMIN, DELETE_ALL_ROLES } = require("$util/policies");
+const getUserSessionsByRoleID = require("$util/getUserSessionsByRoleID");
 
 const middleware = [
   guard.check([VIEW_ALL_ADMIN, DELETE_ALL_ROLES]),
@@ -36,19 +36,13 @@ const removeRole = async function (req, res, next) {
     //     .send({ message: "A number of roles were not illegible for removal." });
     // }
 
-    const roles = await buildQuery(
-      Roles.query(),
-      req.body.page,
-      req.body.limit
-    );
-
-    const sessions = await UserSession.query()
-      .joinRelated("user.roles")
-      .whereIn("user:roles.id", req.query.ids)
-      .whereRaw(raw("expires >= CURRENT_TIMESTAMP"))
-      .select(["user_sessions.refresh_token_id", "expires"])
-      .groupBy("user_sessions.created_at")
-      .orderBy("user_sessions.created_at", "DESC");
+    // const sessions = await UserSession.query()
+    //   .joinRelated("user.roles")
+    //   .whereIn("user:roles.id", req.query.ids)
+    //   .whereRaw(raw("expires >= CURRENT_TIMESTAMP"))
+    //   .select(["user_sessions.refresh_token_id", "expires"])
+    //   .groupBy("user_sessions.created_at")
+    //   .orderBy("user_sessions.created_at", "DESC");
 
     // const sessions = uniqBy(
     //   await UserSession.query()
@@ -62,33 +56,37 @@ const removeRole = async function (req, res, next) {
     // );
     // .distinctOn("user_sessions.refresh_token_id")
 
-    console.log(sessions);
+    // if (sessions && sessions.length) {
+    //   console.log(sessions);
 
-    if (sessions && sessions.length) {
-      console.log(sessions);
+    //   const commands = sessions.reduce((output, s) => {
+    //     const timestamp = s.expires;
 
-      const commands = sessions.reduce((output, s) => {
-        const timestamp = s.expires;
+    //     if (isFuture(timestamp)) {
+    //       const diff = diffInSeconds(timestamp, new Date());
+    //       const id = s.refresh_token_id;
+    //       const key = `blacklist:${id}`;
+    //       output.push(["set", key, id, "NX", "EX", diff]);
+    //     }
+    //     return output;
+    //   }, []);
 
-        if (isFuture(timestamp)) {
-          const diff = diffInSeconds(timestamp, new Date());
-          const id = s.refresh_token_id;
-          const key = `blacklist:${id}`;
-          output.push(["set", key, id, "NX", "EX", diff]);
-        }
-        return output;
-      }, []);
-
-      await redis.multi(commands).exec();
-    }
+    //   await redis.multi(commands).exec();
+    // }
 
     await trx.commit();
-    res.status(200).send(roles);
   } catch (err) {
     console.log(err);
     await trx.rollback();
     next(err);
   }
+
+  const sessions = await getUserSessionsByRoleID(req.query.ids);
+  if (sessions && sessions.length) await redis.multi(sessions).exec();
+
+  const roles = await buildQuery(Roles.query(), req.body.page, req.body.limit);
+
+  res.status(200).send(roles);
 };
 
 module.exports = {

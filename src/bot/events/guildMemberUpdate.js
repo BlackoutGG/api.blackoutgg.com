@@ -46,8 +46,8 @@ module.exports = {
     // if (!user) return;
 
     // const roles = await Roles.query()
-    //   .withGraphJoined("roles_mapped")
-    //   .whereIn("roles_mapped.discord_role_id", m.roles)
+    //   .withGraphJoined("role_maps")
+    //   .whereIn("role_maps.discord_role_id", m.roles)
     //   .select("role_id as id");
 
     // const roles = await Roles.query()

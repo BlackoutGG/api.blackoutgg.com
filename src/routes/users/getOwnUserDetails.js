@@ -1,6 +1,6 @@
 "use strict";
 const User = require("./models/User");
-const UserRole = require("./models/UserRole");
+
 const { header } = require("express-validator");
 
 const columns = [
@@ -14,6 +14,7 @@ const columns = [
   "location",
   "birthday",
   "discord_id",
+  "local",
 ];
 
 const getOwnUserDetails = async function (req, res, next) {

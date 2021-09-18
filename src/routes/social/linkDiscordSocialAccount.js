@@ -1,16 +1,17 @@
 "use strict";
 const User = require("$models/User");
 const Settings = require("$models/Settings");
+const Roles = require("$models/Roles");
 const DiscordClient = require("$services/discord");
+const redis = require("$services/redis");
+const emitter = require("$services/redis/emitter");
 const uniqBy = require("lodash.uniqby");
 const sanitize = require("sanitize-html");
 const { body } = require("express-validator");
 const { validate } = require("$util");
 const { transaction } = require("objection");
-const redis = require("$services/redis");
-const emitter = require("$services/redis/emitter");
 
-const redirect_uri = "http://localhost:5000/user/discord/link";
+const redirect_uri = "http://localhost:3000/social/discord";
 
 const client = new DiscordClient(
   process.env.DISCORD_CLIENT_ID,
@@ -20,20 +21,21 @@ const client = new DiscordClient(
 
 const linkDiscordSocialAccount = async (req, res, next) => {
   const code = req.body.code,
-    s = req.body.state.split(":");
+    state = req.body.state;
 
-  const id = s[0],
-    state = s[1];
-
-  if (!(await req.redis.exists(state))) {
+  if (!code) {
     return res.status(400).send({ message: "Code doesn't exist." });
   }
 
-  await req.redis.del(s[1]);
+  if (!(await redis.exists(`link:${state}`))) {
+    return res.status(400).send({ message: "State is invalid." });
+  }
+
+  await redis.del(`link:${state}`);
 
   const [user, settings] = await Promise.all([
-    User.query().whereNull("discord_id").withGraphFetched("roles").first(),
-    Settings.query().select(["bot_enabled", "bot_server_id"]).first(),
+    User.query().whereNull("discord_id").first(),
+    Settings.query().select(["enable_bot", "bot_server_id"]).first(),
   ]);
 
   if (!user) {
@@ -42,9 +44,7 @@ const linkDiscordSocialAccount = async (req, res, next) => {
       .send({ message: "User already has a discord account linked." });
   }
 
-  const roles = user.roles.map((role) => ({ id: role.id }));
-
-  const socketID = await redis.get(`users:${id}`);
+  // const roles = user.roles.map((role) => ({ id: role.id }));
 
   const trx = await User.startTransaction();
 
@@ -53,7 +53,7 @@ const linkDiscordSocialAccount = async (req, res, next) => {
 
     if (!dUser) {
       await trx.rollback();
-      return res.status(500).send({ message: "User doesn't exist." });
+      return res.status(404).send({ message: "Discord user doesn't exist." });
     }
 
     if (!dUser.emailVerified) {
@@ -63,50 +63,50 @@ const linkDiscordSocialAccount = async (req, res, next) => {
         .send({ message: "User must have a verified email address" });
     }
 
-    const options = { relate: true, unrelate: true };
+    const options = { relate: true, unrelate: false, noDelete: true };
 
-    const queryData = { id, discord_id: dUser.id, roles };
+    // const queryData = { id, discord_id: dUser.id, roles };
 
-    if (settings.bot_enabled && settings.bot_server_id) {
+    const queryData = { id: parseInt(req.user.id, 10), discord_id: dUser.id };
+
+    if (settings.enable_bot && settings.bot_server_id) {
       const guildMember = await client.getGuildMember(
         process.env.DISCORD_BOT_TOKEN,
         settings.bot_server_id,
         dUser.id
       );
 
-      const mapped = await Roles.query()
-        .innerJoin("roles_mapped", () => {
-          this.on("roles.id", "=", "roles_mapped.role_id");
-          this.whereIn(
-            "roles_mapped.discord_role_id",
-            guildMember.roles.map((role) => role.id)
-          );
-        })
-        .select("roles.id as id");
+      const roles = await Roles.query()
+        .joinRelated("discord_roles")
+        .select("roles.id as id")
+        .whereIn("discord_role_id", guildMember._roles);
 
-      if (mapped && mapped.length) {
-        queryData.roles = uniqBy([...roles, ...mapped], "id");
-        // Object.assign(queryData, {
-        //   roles: uniqBy([...roles, ...mapped], "id"),
-        // });
+      console.log(roles);
+
+      if (roles && roles.length) {
+        // queryData.roles = uniqBy([...roles, ...mapped], "id");
+        Object.assign(queryData, {
+          roles: roles.map(({ id }) => ({ id, assigned_by: "discord" })),
+        });
       }
     }
 
     await User.query(trx).upsertGraph(queryData, options);
     await trx.commit();
 
-    emitter.to(socketID).emit("linked");
+    emitter.of("/index").to(`user:${req.user.id}`).emit("linked", "linked");
 
-    res.status(200).send();
+    res.status(200).send("OK");
   } catch (err) {
+    console.log(err);
     await trx.rollback();
-    emitter.to(socketID).emit("error", err.message);
+    // if (id) emitter.to(`user:${userId}`).emit("error", err.message);
     next(err);
   }
 };
 
 module.exports = {
-  path: "/discord/link",
+  path: "/discord",
   method: "POST",
   middleware: [
     body("state")

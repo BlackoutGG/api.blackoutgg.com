@@ -1,7 +1,8 @@
 "use strict";
-const Base = require("$base");
+const { Model } = require("objection");
+const dateMixin = require("$util/mixins/date")();
 
-class Media extends Base {
+class Media extends dateMixin(Model) {
   static get tableName() {
     return "media";
   }
@@ -24,7 +25,7 @@ class Media extends Base {
     const User = require("$models/User");
     return {
       uploader: {
-        relation: Base.BelongsToOneRelation,
+        relation: Model.BelongsToOneRelation,
         modelClass: User,
         join: {
           from: "media.user_id",

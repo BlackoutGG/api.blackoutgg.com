@@ -1,7 +1,8 @@
 "use strict";
-const Base = require("$base");
+const { Model } = require("objection");
+const dateMixin = require("$util/mixins/date")();
 
-class UserFormField extends Base {
+class UserFormField extends dateMixin(Model) {
   static get tableName() {
     return "user_form_fields";
   }
@@ -32,7 +33,7 @@ class UserFormField extends Base {
     const Field = require("$models/Field");
     return {
       form: {
-        relation: Base.BelongsToOneRelation,
+        relation: Model.BelongsToOneRelation,
         modelClass: UserForm,
         join: {
           from: "user_form_fields.form_id",
@@ -40,7 +41,7 @@ class UserFormField extends Base {
         },
       },
       field: {
-        relation: Base.BelongsToOneRelation,
+        relation: Model.BelongsToOneRelation,
         modelClass: Field,
         join: {
           from: "user_form_fields.field_id",
