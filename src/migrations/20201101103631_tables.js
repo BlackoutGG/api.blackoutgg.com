@@ -19,11 +19,12 @@ exports.up = function (knex) {
         t.string("avatar");
         t.boolean("active").defaultTo(false);
         t.boolean("local").defaultTo(false);
+        t.boolean("is_deletable").defaultTo(true);
         t.integer("login_attempts").defaultTo(0);
-        t.date("last_activation_email_sent");
-        t.date("last_password_reset_sent");
-        t.date("last_username_change");
-        t.date("last_signed_in");
+        t.timestamp("last_activation_email_sent");
+        t.timestamp("last_password_reset_sent");
+        t.timestamp("last_username_change");
+        t.timestamp("last_signed_in");
         t.timestamps();
       });
     }),
@@ -45,7 +46,6 @@ exports.up = function (knex) {
         t.increments("id").primary();
         t.string("name").unique();
         t.integer("level").defaultTo(5);
-        t.index("level");
         t.boolean("is_deletable").default(true);
         t.boolean("is_removable").default(true);
         t.timestamps();
@@ -181,6 +181,9 @@ exports.up = function (knex) {
         t.boolean("show_recruitment_button").defaultTo(true);
         t.boolean("enable_social_authentication").defaultTo(true);
         t.boolean("enable_local_authentication").defaultTo(true);
+        t.boolean("enable_email_request_throttling").defaultTo(true);
+        t.boolean("require_account_verification").defaultTo(true);
+        t.boolean("allow_users_to_delete_account").defaultTo(false);
         t.integer("password_reset_request_ttl_in_minutes").defaultTo(10);
         t.integer("user_activation_request_ttl_in_minutes").defaultTo(10);
         t.integer("user_deletion_request_ttl_in_minutes").defaultTo(3);
@@ -276,6 +279,7 @@ exports.up = function (knex) {
         t.increments("id").primary();
         t.string("name");
         t.boolean("enable_recruitment").defaultTo(false);
+        t.boolean("is_deletable").defaultTo(true);
         t.unique("name");
         t.timestamps();
       });
@@ -297,9 +301,14 @@ exports.up = function (knex) {
           .references("categories.id")
           .onUpdate("CASCADE")
           .onDelete("CASCADE");
+        t.integer("creator_id")
+          .references("users.id")
+          .onUpdate("CASCADE")
+          .onDelete("CASCADE");
         t.string("name");
         t.text("description");
         t.boolean("status").defaultTo(false);
+        t.boolean("is_deletable").defaultTo(true);
         t.timestamps();
       });
     }),
@@ -363,17 +372,21 @@ exports.up = function (knex) {
         t.text("body");
         t.text("excerpt");
         t.boolean("has_excerpt").defaultTo(false);
+        t.boolean("is_deletable").defaultTo(true);
         t.timestamps();
       });
     }),
     knex.schema.hasTable("media").then((exists) => {
       if (exists) return;
       return knex.schema.createTable("media", (t) => {
-        t.increments("id").primary();
+        t.uuid("id").primary();
         t.string("mimetype");
         t.string("url");
         t.string("storage_key");
-        t.integer("owner_id").references("users.id");
+        t.integer("owner_id")
+          .references("users.id")
+          .onDelete("CASCADE")
+          .onUpdate("CASCADE");
         t.timestamps();
       });
     }),

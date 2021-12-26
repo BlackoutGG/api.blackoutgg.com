@@ -1,7 +1,7 @@
 "use strict";
 const User = require("$models/User");
-const Policies = require("$models/Policies");
 const guard = require("express-jwt-permissions")();
+const getCache = require("$util/getCache");
 const { param } = require("express-validator");
 const { validate } = require("$util");
 const { VIEW_ALL_ADMIN, VIEW_ALL_USERS } = require("$util/policies");
@@ -17,18 +17,17 @@ const columns = [
 ];
 
 const getSingleUser = async function (req, res, next) {
-  const user = User.query()
-    .where("id", req.params.id)
-    .withGraphFetched("[roles(nameAndId), policies]")
-    .columns(columns)
-    .first()
-    .throwIfNotFound();
+  const user = await getCache(
+    `user_${req.params.id}`,
+    User.query()
+      .where("id", req.params.id)
+      .withGraphFetched("[roles(nameAndId), policies]")
+      .select(columns)
+      .first()
+      .throwIfNotFound()
+  );
 
-  const _policies = await Policies.query().where("level", ">=", req.user.level);
-
-  const [u, p] = await Promise.all([user, _policies]);
-
-  res.status(200).send({ user: u, basePolicies: p });
+  res.status(200).send(user);
 };
 
 module.exports = {

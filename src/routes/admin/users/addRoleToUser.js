@@ -1,15 +1,12 @@
 "use strict";
 const UserRole = require("$models/UserRole");
-const UserSession = require("$models/UserSession");
-const isFuture = require("date-fns/isFuture");
-const diffInSeconds = require("date-fns/differenceInSeconds");
 const getUserSessions = require("$util/getUserSessions");
 const guard = require("express-jwt-permissions")();
 const redis = require("$services/redis");
 const { param, body } = require("express-validator");
 const { validate } = require("$util");
 const { VIEW_ALL_ADMIN, UPDATE_ALL_USERS } = require("$util/policies");
-const { transaction, raw } = require("objection");
+const { transaction } = require("objection");
 
 const addRoleToUser = async function (req, res, next) {
   const userId = req.params.id,
@@ -37,7 +34,7 @@ const addRoleToUser = async function (req, res, next) {
       .returning("*");
 
     const sessions = await getUserSessions(userId);
-    if (sessions) await redis.multi(sessions).exec();
+    if (sessions && sessions.length) await redis.multi(sessions).exec();
     // const sessions = await UserSession.query()
     //   .where("user_id", userId)
     //   .whereRaw(raw("expires >= CURRENT_TIMESTAMP"))

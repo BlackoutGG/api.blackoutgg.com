@@ -1,11 +1,12 @@
 "use strict";
-const Form = require("./models/Form");
+const Form = require("$models/Form");
 
 const guard = require("express-jwt-permissions")();
 const sanitize = require("sanitize-html");
 const { body } = require("express-validator");
 const { buildQuery, validate } = require("$util");
 const { VIEW_ALL_ADMIN, ADD_ALL_FORMS } = require("$util/policies");
+const { transaction } = require("objection");
 
 const validators = validate([
   body("form.category_id").isNumeric(),
@@ -23,18 +24,19 @@ const validators = validate([
   // body("fields.*.type").isAlphanumeric().trim().escape(),
   // body("fields.*.optional").isBoolean(),
   body("fields.*.value")
-    .isAlphanumeric()
+    .isString()
     .trim()
     .escape()
     .customSanitizer((v) => sanitize(v)),
-  body("page").optional().isNumeric(),
-  body("limit").optional().isNumeric(),
-  body("orderBy").optional().isString().trim().escape(),
-  body("sortBy").optional().isString().trim().escape(),
+  body("nextCursor").optional().isString().escape().trim(),
+  // body("page").optional().isNumeric(),
+  // body("limit").optional().isNumeric(),
+  // body("orderBy").optional().isString().trim().escape(),
+  // body("sortBy").optional().isString().trim().escape(),
 ]);
 
-const insertFn = (form, fields) => {
-  const result = {};
+const insertFn = (id, form, fields) => {
+  const result = { creator_id: id };
 
   if (form && Object.keys(form).length) {
     Object.assign(result, { "#id": "form" }, form);
@@ -55,28 +57,49 @@ const insertFn = (form, fields) => {
   return result;
 };
 
+const select = [
+  "forms.id",
+  "forms.name",
+  "forms.status",
+  "forms.is_deletable",
+  "forms.category_id",
+  "created_by.username as creator",
+  "forms.created_at",
+  "forms.updated_at",
+];
+
 const addForm = async function (req, res, next) {
-  const { form, fields, filters } = req.body;
+  const { form, fields, filters, nextCursor } = req.body;
 
-  const insert = insertFn(form, fields);
+  const insert = insertFn(req.user.id, form, fields);
 
-  const forms = await Form.transaction(async (trx) => {
-    await Form.query(trx).insertGraph(insert).returning("*");
+  const trx = await Form.startTransaction();
 
-    const result = await buildQuery(
-      Form.query(trx).withGraphFetched("category"),
-      req.body.page,
-      req.body.limit,
-      null,
-      null,
-      filters
-    );
+  try {
+    await Form.query(trx).insertGraph(insert);
 
-    return result;
-  });
+    // const query = Form.query()
+    //   .orderBy("id")
+    //   .orderBy("created_at", "desc")
+    //   .where("creator_id", req.user.id);
 
-  console.log(forms);
-  res.status(200).send({ forms });
+    const query = Form.query()
+      .joinRelated("created_by(onlyUsername)")
+      .select(select)
+      .orderBy("id");
+
+    const forms = await query.clone().cursorPage(nextCursor);
+
+    // const forms = await query.clone().cursorPage();
+
+    await trx.commit();
+
+    console.log(forms);
+    res.status(200).send(forms);
+  } catch (err) {
+    console.log(err);
+    await trx.rollback();
+  }
 };
 
 module.exports = {

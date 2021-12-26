@@ -9,7 +9,7 @@ const { raw } = require("objection");
  * @param {*} trx The optional transaction object
  */
 
-module.exports = async function getUserSessionsForRevoke(id, trx) {
+module.exports = async function getUserSessions(id, trx) {
   let commands = null;
   let query = trx ? UserSession.query(trx) : UserSession.query();
   query =

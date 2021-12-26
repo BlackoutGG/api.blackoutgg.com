@@ -70,7 +70,7 @@ function errorHandler(err, req, res, next) {
         });
         break;
       default:
-        res.status(400).send({
+        res.status(500).send({
           message: err.message,
           type: "UnknownValidationError",
           data: {},

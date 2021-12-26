@@ -1,6 +1,8 @@
 const aws = require("aws-sdk");
 
 module.exports = async function (address, template, templateData) {
+  console.log(address);
+
   const params = {
     Destination: {
       ToAddresses: [address],

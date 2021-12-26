@@ -1,9 +1,7 @@
 "use strict";
 
 const { Model } = require("objection");
-
-const config = require("$root/knexfile.js");
-const knex = require("knex")(config.development);
+const knex = require("$root/knex");
 
 module.exports = function () {
   Model.knex(knex);

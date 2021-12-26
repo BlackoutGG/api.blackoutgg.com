@@ -5,7 +5,6 @@ const Roles = require("$models/Roles");
 const DiscordClient = require("$services/discord");
 const redis = require("$services/redis");
 const emitter = require("$services/redis/emitter");
-const uniqBy = require("lodash.uniqby");
 const sanitize = require("sanitize-html");
 const { body } = require("express-validator");
 const { validate } = require("$util");
@@ -44,8 +43,6 @@ const linkDiscordSocialAccount = async (req, res, next) => {
       .send({ message: "User already has a discord account linked." });
   }
 
-  // const roles = user.roles.map((role) => ({ id: role.id }));
-
   const trx = await User.startTransaction();
 
   try {
@@ -63,9 +60,18 @@ const linkDiscordSocialAccount = async (req, res, next) => {
         .send({ message: "User must have a verified email address" });
     }
 
-    const options = { relate: true, unrelate: false, noDelete: true };
+    const userAlreadyExists = await User.query()
+      .where("discord_id", dUser.id)
+      .first();
 
-    // const queryData = { id, discord_id: dUser.id, roles };
+    if (userAlreadyExists) {
+      return emitter
+        .of("/index")
+        .to(`user:${req.user.id}`)
+        .emit("conflict", "Account with this discord identity already exists.");
+    }
+
+    const options = { relate: true, unrelate: false, noDelete: true };
 
     const queryData = { id: parseInt(req.user.id, 10), discord_id: dUser.id };
 
@@ -81,10 +87,7 @@ const linkDiscordSocialAccount = async (req, res, next) => {
         .select("roles.id as id")
         .whereIn("discord_role_id", guildMember._roles);
 
-      console.log(roles);
-
       if (roles && roles.length) {
-        // queryData.roles = uniqBy([...roles, ...mapped], "id");
         Object.assign(queryData, {
           roles: roles.map(({ id }) => ({ id, assigned_by: "discord" })),
         });
@@ -94,13 +97,12 @@ const linkDiscordSocialAccount = async (req, res, next) => {
     await User.query(trx).upsertGraph(queryData, options);
     await trx.commit();
 
-    emitter.of("/index").to(`user:${req.user.id}`).emit("linked", "linked");
+    emitter.of("/index").to(`user:${req.user.id}`).emit("linked");
 
     res.status(200).send("OK");
   } catch (err) {
     console.log(err);
     await trx.rollback();
-    // if (id) emitter.to(`user:${userId}`).emit("error", err.message);
     next(err);
   }
 };
@@ -109,16 +111,18 @@ module.exports = {
   path: "/discord",
   method: "POST",
   middleware: [
-    body("state")
-      .isString()
-      .escape()
-      .trim()
-      .customSanitizer((v) => sanitize(v)),
-    body("code")
-      .isString()
-      .escape()
-      .trim()
-      .customSanitizer((v) => sanitize(v)),
+    validate([
+      body("state")
+        .isString()
+        .escape()
+        .trim()
+        .customSanitizer((v) => sanitize(v)),
+      body("code")
+        .isString()
+        .escape()
+        .trim()
+        .customSanitizer((v) => sanitize(v)),
+    ]),
   ],
   handler: linkDiscordSocialAccount,
 };

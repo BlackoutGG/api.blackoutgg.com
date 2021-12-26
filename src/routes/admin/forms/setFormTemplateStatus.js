@@ -1,45 +1,10 @@
 "use strict";
-const Form = require("./models/Form");
+const Form = require("$models/Form");
 const guard = require("express-jwt-permissions")();
 const { body, param } = require("express-validator");
 const { validate } = require("$util");
 const { VIEW_ALL_ADMIN, UPDATE_ALL_FORMS } = require("$util/policies");
-
-// const setFormStatus = async function (req, res, next) {
-//   try {
-//     const form = await Form.transaction(async (trx) => {
-//       await Form.query(trx)
-//         .patch({ status: false })
-//         .where("status", true)
-//         .whereExists(
-//           Form.relatedQuery("category").where(
-//             "category.id",
-//             req.body.category_id
-//           )
-//         );
-
-//       const query = await Form.query(trx)
-//         .withGraphFetched("category")
-//         .patch({ status: !req.body.status })
-//         .where("forms.id", req.params.id)
-//         .first()
-//         .returning(["forms.id", "forms.status"]);
-
-//       const result = {
-//         id: query.id,
-//         status: query.status,
-//         category_id: query.category.id,
-//       };
-
-//       return result;
-//     });
-
-//     res.status(200).send({ form });
-//   } catch (err) {
-//     console.log(err);
-//     next(err);
-//   }
-// };
+const redis = require("$services/redis");
 
 const setFormStatus = async function (req, res, next) {
   const check = await Form.query()
@@ -57,6 +22,9 @@ const setFormStatus = async function (req, res, next) {
       .where("id", check.id)
       .first()
       .returning(["id", "category_id", "status"]);
+
+    await redis.del(`form_${req.params.id}`);
+    await redis.del("recruit_categories");
 
     return result;
   });

@@ -1,7 +1,6 @@
 "use strict";
-const Roles = require("./models/Roles");
+const Roles = require("$models/Roles");
 const guard = require("express-jwt-permissions")();
-const pick = require("lodash").pick;
 const { body } = require("express-validator");
 const { validate, buildQuery } = require("$util");
 const { VIEW_ALL_ADMIN, ADD_ALL_ROLES } = require("$util/policies");

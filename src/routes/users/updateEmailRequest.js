@@ -1,5 +1,5 @@
 "use strict";
-const User = require("./models/User");
+const User = require("$models/User");
 const Settings = require("$models/Settings");
 const bcrypt = require("bcrypt");
 const sanitize = require("sanitize-html");

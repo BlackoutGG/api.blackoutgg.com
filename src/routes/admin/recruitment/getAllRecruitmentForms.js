@@ -2,7 +2,11 @@
 const UserForm = require("$models/UserForm");
 const Category = require("$models/Category");
 const guard = require("express-jwt-permissions")();
-const { buildQuery, validate } = require("$util");
+const filterQuery = require("$util/filterQuery");
+const getCache = require("$util/getCache");
+
+const { query } = require("express-validator");
+const { validate } = require("$util");
 const { VIEW_ALL_ADMIN, VIEW_ALL_FORMS } = require("$util/policies");
 
 const select = [
@@ -15,27 +19,52 @@ const select = [
   "form:category.name as category_name",
 ];
 
+const validators = validate([
+  query("isInitial").optional().isBoolean().default(false),
+  query("nextCursor").optional().isString().escape().trim(),
+]);
+
 const getAllRecruitmentForm = async (req, res, next) => {
-  const filters = req.query.filters || null;
+  const filters = req.query.filters || null,
+    isInitial = req.query.isInitial,
+    nextCursor = req.query.nextCursor;
 
-  const formQuery = UserForm.query()
-    .joinRelated("form.[category]")
-    .withGraphFetched("applicant(defaultSelects)")
-    .select(select);
+  const formQuery = filterQuery(
+    UserForm.query()
+      .joinRelated("form.[category]")
+      .withGraphFetched("applicant(defaultSelects)")
+      .select(select),
+    filters
+  );
 
-  const categoryQuery = Category.query().where("recruitment", true);
+  let response = {};
+  let forms;
 
-  const [forms, categories] = await Promise.all([
-    buildQuery(formQuery, req.query.page, req.query.limit, null, null, filters),
-    categoryQuery,
-  ]);
+  if (isInitial) {
+    Object.assign(response, {
+      categories: await getCache(
+        "categories",
+        Category.query()
+          .where("enable_recruitment", true)
+          .select(["id", "name"])
+      ),
+    });
+  }
 
-  res.status(200).send({ forms, categories });
+  if (nextCursor) {
+    forms = await formQuery.clone().cursorPage(nextCursor);
+  } else {
+    forms = await formQuery.clone().cursorPage();
+  }
+
+  Object.assign(response, { forms });
+
+  res.status(200).send(response);
 };
 
 module.exports = {
   path: "/",
   method: "GET",
-  middleware: [guard.check([VIEW_ALL_ADMIN, VIEW_ALL_FORMS])],
+  middleware: [guard.check([VIEW_ALL_ADMIN, VIEW_ALL_FORMS]), validators],
   handler: getAllRecruitmentForm,
 };

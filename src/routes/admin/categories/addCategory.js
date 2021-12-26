@@ -2,8 +2,10 @@
 const Category = require("$models/Category");
 const guard = require("express-jwt-permissions")();
 const sanitize = require("sanitize-html");
+const redis = require("$services/redis");
 const { body } = require("express-validator");
-const { validate, buildQuery } = require("$util");
+const { validate } = require("$util");
+const { transaction } = require("objection");
 
 const validators = validate([
   body("name")
@@ -11,21 +13,32 @@ const validators = validate([
     .escape()
     .trim()
     .customSanitizer((v) => sanitize(v)),
-  body("page").isNumeric(),
-  body("limit").isNumeric(),
+  body("nextCursor").isString().escape().trim(),
 ]);
 
 const addCategory = async function (req, res, next) {
-  const categories = await Category.transaction(async (trx) => {
+  let query = Category.query().orderBy("id").orderBy("name"),
+    nextCursor = req.body.nextCursor;
+
+  const trx = await Category.startTransaction();
+
+  try {
     await Category.query(trx).insert({ name: req.body.name });
-    const results = await buildQuery(
-      Category.query(trx),
-      req.body.page,
-      req.body.limit
-    );
-    return results;
-  });
-  res.status(200).send({ categories });
+    await redis.del("categories");
+    await trx.commit();
+  } catch (err) {
+    await trx.rollback();
+    next(err);
+  }
+
+  let categories;
+  if (nextCursor) {
+    categories = await query.clone().cursorPage(nextCursor);
+  } else {
+    categories = await query.clone().cursorPage();
+  }
+
+  res.status(200).send(categories);
 };
 
 module.exports = {

@@ -1,5 +1,5 @@
 "use strict";
-const User = require("./models/User");
+const User = require("$models/User");
 const { body } = require("express-validator");
 const { validate } = require("$util");
 const { transaction } = require("objection");

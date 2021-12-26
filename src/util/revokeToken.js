@@ -1,12 +1,4 @@
 "use strict";
-const UnauthorizedError = require("express-jwt/lib/errors/UnauthorizedError");
-class RevokeTokenError extends Error {
-  constructor(message) {
-    super(message);
-    this.name = "RevokeTokenError";
-    this.type = "Revoked";
-  }
-}
 const redis = require("$services/redis");
 
 module.exports = async function isRevokeToken(req, payload, done) {
@@ -15,15 +7,7 @@ module.exports = async function isRevokeToken(req, payload, done) {
   try {
     const isBlacklisted = await redis.exists(`blacklist:${jti}`);
 
-    // if (isBlacklisted) done(new UnauthorizedError("jwt_revoked"));
-    // else done(null);
-
     done(null, isBlacklisted);
-
-    // done(
-    //   isBlacklisted ? new RevokeTokenError("jwt_revoked") : null,
-    //   isBlacklisted
-    // );
   } catch (err) {
     done(err);
   }

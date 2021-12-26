@@ -8,7 +8,6 @@ const DiscordClient = require("$services/discord");
 const redis = require("$services/redis");
 const bcrypt = require("bcrypt");
 const SALT_ROUNDS = 12;
-const uniqBy = require("lodash/uniqBy");
 const generateTokenData = require("$util/generateTokenData");
 const { body } = require("express-validator");
 const { nanoid } = require("nanoid");
@@ -16,16 +15,6 @@ const { validate } = require("$util");
 const { transaction } = require("objection");
 
 const redirect_uri = "http://localhost:3000";
-
-const insertFn = (info, roles) => {
-  return {
-    "#id": "newUser",
-    ...info,
-    last_activation_email_sent: new Date().toISOString(),
-    // roles: [{ id: 2 }],
-    roles,
-  };
-};
 
 const client = new DiscordClient(
   process.env.DISCORD_CLIENT_ID,
@@ -46,10 +35,9 @@ const loginWithDiscord = async (req, res, next) => {
 
   await redis.del(state);
 
-  const settings = await Settings.query().select([
-    "enable_bot",
-    "bot_server_id",
-  ]);
+  const settings = await Settings.query()
+    .select(["enable_bot", "bot_server_id"])
+    .first();
 
   const trx = await User.startTransaction();
 
@@ -97,19 +85,20 @@ const loginWithDiscord = async (req, res, next) => {
 
         if (discordAssignedRoles && discordAssignedRoles.length) {
           /** grab the role ids assigned by discord, filter out any duplicate ids using uniqBy */
-          roles = uniqBy(
-            roles.concat(
-              discordAssignedRoles.map(({ id }) => ({
-                id,
-                assigned_by: "discord",
-              }))
-            ),
-            "id"
-          );
+          roles = [
+            ...roles,
+            ...discordAssignedRoles.map(({ id }) => ({
+              id,
+              assigned_by: "discord",
+            })),
+          ];
+
+          console.log(roles);
         }
       }
 
       const data = {
+        local: false,
         discord_id: dUser.id,
         username: `${dUser.username}_${dUser.discriminator}`,
         avatar: dUser.avatarUrl(),
@@ -118,14 +107,7 @@ const loginWithDiscord = async (req, res, next) => {
         password,
       };
 
-      user = await User.query(trx)
-        .insertGraph(insertFn(data, roles), {
-          relate: true,
-          unrelate: false,
-          noDelete: true,
-        })
-        .onConflict("username")
-        .withGraphFetched("[roles.policies, policies]");
+      user = await User.createUser(data, roles, trx);
     }
 
     const tokenData = generateTokenData(user);
@@ -137,7 +119,7 @@ const loginWithDiscord = async (req, res, next) => {
     const refresh_token = jwt.sign(
       { jti: tokenData.refresh_jti, id: tokenData.id },
       process.env.JWT_REFRESH_SECRET,
-      { expiresIn: "1h" }
+      { expiresIn: process.env.JWT_REFRESH_TOKEN_DURATION }
     );
 
     await UserSession.createSession(user, tokenData, trx);

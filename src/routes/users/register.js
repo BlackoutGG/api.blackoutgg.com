@@ -7,23 +7,13 @@ const verifyRecaptcha = require("$services/recaptcha")(
 );
 const redis = require("$services/redis");
 
-const User = require("./models/User");
+const User = require("$models/User");
 const Settings = require("$models/Settings");
 
 const { body, header } = require("express-validator");
 const { validate } = require("$util");
 const { transaction } = require("objection");
 const { nanoid } = require("nanoid");
-
-const insertFn = (creds) => {
-  return {
-    "#id": "newUser",
-    ...creds,
-    local: true,
-    last_activation_email_sent: new Date().toISOString(),
-    roles: [{ id: 3 }],
-  };
-};
 
 const register = async function (req, res, next) {
   const salt = await bcrypt.genSalt(SALT_ROUNDS);
@@ -33,15 +23,14 @@ const register = async function (req, res, next) {
     username: req.body.username,
     email: req.body.email,
     password: hashed,
+    local: true,
   };
 
   const trx = await User.startTransaction();
 
   try {
     const [user, settings] = await Promise.all([
-      User.query(trx)
-        .insertGraph(insertFn(creds, { relate: true }))
-        .returning("*"),
+      User.createUser(creds, [{ id: 3 }], trx),
       Settings.query()
         .where("id", 1)
         .select("user_activation_request_ttl_in_minutes")
@@ -56,7 +45,7 @@ const register = async function (req, res, next) {
       await redis.set(user.id, code, "NX", "EX", exp);
 
       await sendEmail(user.email, "USER_REGISTERATION", {
-        url: process.env.BASE_URL + "/activation/",
+        url: process.env.BASE_URL + "activation",
         id: user.id,
         code,
       });
@@ -76,10 +65,10 @@ module.exports = {
   path: "/register",
   method: "POST",
   middleware: [
-    // (req, res, next) => {
-    //   console.log(req.body, req.headers);
-    //   next();
-    // },
+    (req, res, next) => {
+      console.log(req.body, req.headers);
+      next();
+    },
 
     validate([
       header("Authorization").isEmpty(),

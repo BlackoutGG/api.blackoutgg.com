@@ -1,13 +1,12 @@
 "use strict";
-const Form = require("./models/Form");
-const Field = require("./models/Field");
+const Form = require("$models/Form");
+const Field = require("$models/Field");
 const sanitize = require("sanitize-html");
 const guard = require("express-jwt-permissions")();
+const redis = require("$services/redis");
 const { body, param } = require("express-validator");
 const { validate } = require("$util");
 const { VIEW_ALL_ADMIN, UPDATE_ALL_FORMS } = require("$util/policies");
-
-const pick = require("lodash/pick");
 
 const validators = validate([
   param("id").isNumeric().toInt(10),
@@ -90,7 +89,7 @@ const upsert = (id, details, added, update) => {
   return result;
 };
 
-const editForm = async function (req, res, next) {
+const updateForm = async function (req, res, next) {
   const { details, added, update, remove } = req.body;
 
   const up = upsert(req.params.id, details, added, update);
@@ -114,6 +113,8 @@ const editForm = async function (req, res, next) {
       }
     }
 
+    await redis.del(`form_${req.params.id}`);
+
     // return pick(result, [
     //   "name",
     //   "status",
@@ -136,5 +137,5 @@ module.exports = {
     guard.check([VIEW_ALL_ADMIN, UPDATE_ALL_FORMS]),
     validators,
   ],
-  handler: editForm,
+  handler: updateForm,
 };

@@ -2,7 +2,6 @@
 const faker = require("faker");
 const bcrypt = require("bcrypt");
 const SALT = 12;
-const date = new Date().toISOString();
 const uniqBy = require("lodash/uniqBy");
 
 const { Model } = require("objection");
@@ -126,31 +125,35 @@ const generateUsers = async (num) => {
 
     const userRoles = uniqBy(roles, "id");
 
+    const date = faker.date.between("2021-12-01", "2021-12-29");
+
     users.push({
       username: faker.internet.userName(),
       password: hashed,
       email: faker.internet.email(),
-      avatar: faker.image.avatar(),
+      avatar: faker.internet.avatar(),
       first_name: faker.name.firstName(),
       last_name: faker.name.lastName(),
       local: true,
-      active: true,
+      active: faker.datatype.boolean(),
       roles: userRoles,
       created_at: date,
       updated_at: date,
     });
   }
 
+  const adminDate = new Date().toISOString();
+
   users.push({
     username: "Helix",
     email: "mmccauleyjr@rogers.com",
     password: hashed,
-    avatar: faker.image.avatar(),
+    avatar: faker.internet.avatar(),
     local: true,
     active: true,
     roles: [{ id: 1 }],
-    created_at: date,
-    updated_at: date,
+    created_at: adminDate,
+    updated_at: adminDate,
   });
 
   return users;

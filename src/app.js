@@ -2,6 +2,7 @@
 /*** DEPENDENCIES ***/
 const express = require("express");
 const app = express();
+const helmet = require("helmet");
 const cors = require("cors");
 const aws = require("aws-sdk");
 const expressJwt = require("express-jwt");
@@ -19,10 +20,6 @@ aws.config.update({
 const pg = require("pg");
 require("pg-range").install(pg);
 
-/*** SETUP REDIS  ***/
-// const Redis = require("ioredis");
-// const redis = new Redis();
-
 const apiVersion = "/api";
 
 const bootstrapApp = async () => {
@@ -33,6 +30,9 @@ const bootstrapApp = async () => {
     app.use(pino);
   }
 
+  /** SETUP HELMET */
+  app.use(helmet());
+
   /*** SETUP CORS ***/
   app.use(
     cors({
@@ -40,12 +40,6 @@ const bootstrapApp = async () => {
       exposedHeaders: ["Content-Range", "Content-Length", "Authorization"],
     })
   );
-
-  /*** INJECT REDIS INTO RESPONSE ***/
-  // app.use((req, res, next) => {
-  //   req.redis = redis;
-  //   next();
-  // });
 
   /*** SETUP KNEX AND OBJECTION ***/
   require("./util/setupDB")();
@@ -55,6 +49,7 @@ const bootstrapApp = async () => {
     expressJwt({
       secret: process.env.JWT_SECRET,
       isRevoked: require("$util/revokeToken.js"),
+      algorithms: ["HS256"],
     }).unless({
       path: [
         "/",

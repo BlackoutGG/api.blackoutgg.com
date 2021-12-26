@@ -1,5 +1,5 @@
 const faker = require("faker");
-
+const uuid = require("uuid4");
 const created_at = new Date().toISOString();
 
 const generateMedia = (num) => {
@@ -7,10 +7,11 @@ const generateMedia = (num) => {
   for (let i = 0; i < num; i++) {
     let url = faker.image.imageUrl();
     results.push({
+      id: uuid(),
       url,
       storage_key: url.substr(url.lastIndexOf("/") + 1, url.length - 1),
       mimetype: "image/",
-      user_id: faker.random.number({ min: 1, max: 76 }),
+      owner_id: faker.datatype.number({ min: 1, max: 76 }),
       created_at: created_at,
       updated_at: created_at,
     });

@@ -1,37 +1,58 @@
 "use strict";
 const User = require("$models/User");
 const Roles = require("$models/Roles");
+const Policies = require("$models/Policies");
+const filterQuery = require("$util/filterQuery");
 const guard = require("express-jwt-permissions")();
 const { query } = require("express-validator");
-const { buildQuery, validate } = require("$util");
+const { validate } = require("$util");
 const { VIEW_ALL_ADMIN, VIEW_ALL_USERS } = require("$util/policies");
 
-const columns = ["id", "avatar", "username", "email", "active", "created_at"];
+const columns = [
+  "users.id",
+  "avatar",
+  "username",
+  "email",
+  "active",
+  "created_at",
+];
 
-const getAllUsersForAdmin = async function (req, res, next) {
-  console.log(req.query);
+const getAllUsers = async function (req, res, next) {
+  const filters = req.query.filters || null,
+    nextCursor = req.query.nextCursor,
+    isInitial = req.query.isInitial;
 
-  const filters = req.query.filters || null;
+  const userQuery = filterQuery(
+    User.query()
+      .withGraphJoined("roles(nameAndId)")
+      .orderBy("users.id")
+      .select(columns)
+      .limit(50),
+    filters
+  );
 
-  let query = User.query()
-    .withGraphFetched("roles(nameAndId)")
-    .orderBy("id")
-    .select(columns);
+  let response = {};
+  let query;
 
-  if (filters && Object.keys(filters).length) {
-    query = query.whereExists(
-      User.relatedQuery("roles").whereIn("id", filters.id)
-    );
+  if (isInitial) {
+    const policyQuery = Policies.query().where("level", ">=", req.user.level);
+    const roleQuery = Roles.query()
+      .select("id", "name")
+      .where("level", ">=", req.user.level);
+
+    const [policies, roles] = await Promise.all([policyQuery, roleQuery]);
+
+    Object.assign(response, { policies, roles });
   }
 
-  const [users, roles] = await Promise.all([
-    buildQuery(query, req.query.page, req.query.limit),
-    req.query.roles
-      ? Roles.query().select("id", "name").where("level", ">=", req.user.level)
-      : Promise.resolve(null),
-  ]);
+  if (nextCursor) query = await userQuery.clone().cursorPage(nextCursor);
+  else query = await userQuery.clone().cursorPage();
 
-  res.status(200).send({ users, roles });
+  console.log(query);
+
+  Object.assign(response, { users: query });
+
+  res.status(200).send(response);
 };
 
 module.exports = {
@@ -40,9 +61,10 @@ module.exports = {
   middleware: [
     guard.check([VIEW_ALL_ADMIN, VIEW_ALL_USERS]),
     validate([
-      query("page").optional().isNumeric(),
+      query("nextCursor").optional().isString().escape().trim(),
+      query("isInitial").isBoolean().default(false),
       query("limit").optional().isNumeric(),
     ]),
   ],
-  handler: getAllUsersForAdmin,
+  handler: getAllUsers,
 };

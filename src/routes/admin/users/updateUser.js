@@ -1,16 +1,15 @@
 "use strict";
 const User = require("$models/User");
-const UserSession = require("$models/UserSession");
 const sanitize = require("sanitize-html");
 const getUserSessions = require("$util/getUserSessions");
 const guard = require("express-jwt-permissions")();
 const redis = require("$services/redis");
 const emitter = require("$services/redis/emitter");
+const pick = require("lodash.pick");
 const { body, param } = require("express-validator");
 const { validate } = require("$util");
 const { VIEW_ALL_ADMIN, UPDATE_ALL_USERS } = require("$util/policies");
-const { transaction, raw } = require("objection");
-const { isFuture, differenceInSeconds } = require("date-fns");
+const { transaction } = require("objection");
 
 const validators = validate([
   param("id").isNumeric().toInt(10),
@@ -60,8 +59,10 @@ const updateUser = async (req, res, next) => {
 
   const trx = await User.startTransaction();
 
+  let updated;
+
   try {
-    await User.query(trx).upsertGraph(
+    updated = await User.query(trx).upsertGraph(
       graphFn(req.params.id, details, roles, policies),
       options
     );
@@ -79,29 +80,18 @@ const updateUser = async (req, res, next) => {
       .of("/index")
       .to(`user:${req.params.id}`)
       .emit("account-change", true);
-    // const sessions = await UserSession.query()
-    //   .where("user_id", req.params.id)
-    //   .whereRaw(raw("expires >= CURRENT_TIMESTAMP"))
-    //   .select("refresh_token_id", "expires")
-    //   .orderBy("created_at", "DESC");
-    // if (sessions && sessions.length) {
-    //   const commands = sessions.reduce((output, s) => {
-    //     const date = s.expires;
-    //     const id = s.refresh_token_id;
-    //     const key = `blacklist:${id}`;
-    //     if (isFuture(date)) {
-    //       const diff = differenceInSeconds(date, new Date());
-    //       output.push(["set", key, id, "NX", "EX", diff]);
-    //     }
-    //     return output;
-    //   }, []);
-    //   await redis.multi(commands).exec();
-    //   emitter
-    //     .of("/index")
-    //     .to(`user:${req.params.id}`)
-    //     .emit("account-change", true);
-    // }
   }
+
+  const user = await User.query()
+    .withGraphFetched("roles(nameAndId)")
+    .select(columns)
+    .where("id", updated.id)
+    .first();
+
+  await redis.del(`user_${req.params.id}`);
+  await redis.del(`me_${req.params.id}`);
+
+  res.status(200).send(user);
 };
 
 module.exports = {

@@ -1,6 +1,5 @@
 "use strict";
 const jwt = require("jsonwebtoken");
-const uniq = require("lodash.uniq");
 const bcrypt = require("bcrypt");
 const User = require("$models/User");
 const UserSession = require("$models/UserSession");
@@ -9,16 +8,9 @@ const verifyRecaptcha = require("$services/recaptcha")(
 );
 const redis = require("$services/redis");
 const sanitize = require("sanitize-html");
-const addHours = require("date-fns/addHours");
 const generateTokenData = require("$util/generateTokenData");
-const { nanoid } = require("nanoid");
 const { validate } = require("$util");
 const { body, header } = require("express-validator");
-
-const consoleLogout = (req, res, next) => {
-  console.log(req.body);
-  next();
-};
 
 const validators = validate([
   header("Authorization").isEmpty(),
@@ -33,7 +25,9 @@ const validators = validate([
     .trim()
     .escape()
     .customSanitizer((v) => sanitize(v)),
-  body("gresponse").notEmpty(),
+  body("gresponse")
+    .notEmpty()
+    .customSanitizer((v) => sanitize(v)),
 ]);
 
 const select = ["id", "discord_id", "username", "avatar", "password"];
@@ -42,9 +36,10 @@ const login = async function (req, res, next) {
   let attempts = 0;
 
   const user = await User.query()
-    .where({ email: req.body.email })
+    .where({ email: req.body.email, active: true })
     .select(select)
     .withGraphFetched("[roles.policies, policies]")
+    .throwIfNotFound()
     .first();
 
   if (!user) {
@@ -104,6 +99,13 @@ const login = async function (req, res, next) {
 module.exports = {
   path: "/login",
   method: "POST",
-  middleware: [validators, verifyRecaptcha],
+  middleware: [
+    (req, res, next) => {
+      console.log(req.body);
+      next();
+    },
+    validators,
+    verifyRecaptcha,
+  ],
   handler: login,
 };

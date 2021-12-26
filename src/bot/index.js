@@ -11,6 +11,10 @@ const createBot = function (isEnabled = true) {
       .readdirSync(path.join(__dirname, "events"))
       .filter((file) => file.endsWith(".js"));
 
+    if (client.Status === 5) {
+      console.log("Discord bot disconnecting....");
+    }
+
     for (const file of eventFiles) {
       const event = require(`./events/${file}`);
       if (event.once) {

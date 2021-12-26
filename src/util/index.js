@@ -113,7 +113,7 @@ const verifySignature = (label, signature, secret, buf) => {
   };
 };
 
-const verifySocketUser = (token, secret) => {
+const verifyToken = (token, secret) => {
   return new Promise((resolve, reject) => {
     jwt.verify(token, secret, (err, decoded) => {
       if (err) reject(err);
@@ -126,6 +126,6 @@ module.exports = {
   buildQuery,
   validate,
   getDiscordRoles,
-  verifySocketUser,
+  verifyToken,
   checkIfRolesExist,
 };

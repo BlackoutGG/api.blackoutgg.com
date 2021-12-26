@@ -11,6 +11,7 @@ module.exports = (options) => {
       $beforeInsert(context) {
         super.$beforeInsert(context);
         this[options.createdAtField] = date;
+        this[options.updatedAtField] = date;
       }
       $beforeUpdate(context) {
         super.$beforeUpdate(context);

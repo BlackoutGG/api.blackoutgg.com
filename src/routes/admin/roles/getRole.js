@@ -3,7 +3,7 @@ const Roles = require("$models/Roles");
 const DiscordRole = require("$models/DiscordRole");
 const Policies = require("$models/Policies");
 const Settings = require("$models/Settings");
-const redis = require("$services/redis");
+const getCache = require("$util/getCache");
 
 const guard = require("express-jwt-permissions")();
 const { param } = require("express-validator");
@@ -35,28 +35,31 @@ const select = [
 ];
 
 const getRole = async function (req, res) {
-  const settings = await Settings.query().select(["enable_bot"]).first();
+  const settings = await Settings.query()
+    .select(["enable_bot", "bot_server_id"])
+    .first();
 
   let discord = null;
 
-  if (settings.enable_bot) {
-    if (await redis.exists("discord")) {
-      discord = JSON.parse(await redis.get("discord"));
-    } else {
-      discord = await DiscordRole.query();
-      await redis.set("discord", JSON.stringify(discord), "NX", "EX", 120);
-    }
+  if (settings.enable_bot && settings.bot_server_id) {
+    discord = await getCache("discord", DiscordRole.query());
   }
 
-  const roles = Roles.query()
+  const roleQuery = Roles.query()
     .where("id", req.params.id)
+    .select(select)
     .withGraphFetched("[policies, discord_roles]")
     .first()
     .throwIfNotFound();
 
-  const policies = Policies.query().where("level", ">=", req.user.level);
+  // const cached = await getCached("policies", Policies.query());
 
-  const [role, selectable] = await Promise.all([roles, policies]);
+  // const policies = cached.filter(({ level }) => level === req.user.level);
+
+  const [role, selectable] = await Promise.all([
+    getCache(`role_${req.params.id}`, roleQuery),
+    Policies.query().where("level", ">=", req.user.level),
+  ]);
 
   res.status(200).send({
     role,

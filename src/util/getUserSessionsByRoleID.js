@@ -4,13 +4,13 @@ const { isFuture, differenceInSeconds } = require("date-fns");
 const { raw } = require("objection");
 
 /**
- * Blacklists user tokens that have been revoked.
+ * Creates array of potentially blacklisted user tokens that need to be revoked.
  * @param {*} id The id referencing the user role
  * @param {*} trx The optional transaction object
  */
 
-module.exports = async function getUserSessionsOnRoleChange(id, trx) {
-  let commands = null;
+module.exports = async function getUserBlacklistByRoleID(id, trx) {
+  let blacklist = null;
   let query = trx
     ? UserSession.query(trx).joinRelated("user.roles")
     : UserSession.query().joinRelated("user.roles");
@@ -23,10 +23,10 @@ module.exports = async function getUserSessionsOnRoleChange(id, trx) {
   const userSessions = await query
     .whereRaw(raw("expires >= CURRENT_TIMESTAMP"))
     .select("user_sessions.refresh_token_id", "expires")
-    .orderBy("user.sessions.created_at", "DESC");
+    .orderBy("user_sessions.created_at", "DESC");
 
   if (userSessions && userSessions.length) {
-    commands = userSessions.reduce((output, s) => {
+    blacklist = userSessions.reduce((output, s) => {
       const date = s.expires;
       const id = s.refresh_token_id;
       const key = `blacklist:${id}`;
@@ -38,5 +38,5 @@ module.exports = async function getUserSessionsOnRoleChange(id, trx) {
     }, []);
   }
 
-  return commands;
+  return blacklist;
 };

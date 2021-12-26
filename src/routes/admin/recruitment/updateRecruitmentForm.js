@@ -5,6 +5,7 @@ const guard = require("express-jwt-permissions")();
 const { param, body } = require("express-validator");
 const { validate } = require("$util");
 const { VIEW_ALL_ADMIN, UPDATE_ALL_FORMS } = require("$util/policies");
+const { transaction } = require("objection");
 
 const validators = validate([
   param("id").isNumeric().toInt(10),
@@ -22,28 +23,27 @@ const select = [
 ];
 
 const updateRecruitmentForm = async (req, res, next) => {
+  const trx = await UserForm.startTransaction();
+
   try {
-    const form = await UserForm.transaction(async (trx) => {
-      await UserForm.query(trx)
-        .patch(req.body.details)
-        .where("id", req.params.id);
+    await UserForm.query(trx)
+      .patch(req.body.details)
+      .where("id", req.params.id);
 
-      const result = await UserForm.query(trx)
-        .joinRelated("form.[category]")
-        .withGraphFetched("applicant(defaultSelects)")
-        .where("user_forms.id", req.params.id)
-        .select(select)
-        .first();
+    const result = await UserForm.query()
+      .joinRelated("form.[category]")
+      .withGraphFetched("applicant(defaultSelects)")
+      .where("user_forms.id", req.params.id)
+      .select(select)
+      .first();
 
-      if (req.body.details.status === "accepted") {
-        /** PATCH GUEST(id: 3) TO MEMBER (id: 2) */
-        await UserRole.query(trx)
-          .patch({ role_id: 2 })
-          .where("user_id", result.applicant.id)
-          .where("role_id", 3);
-      }
-      return result;
-    });
+    if (req.body.details.status === "accepted") {
+      /** PATCH GUEST(id: 3) TO MEMBER (id: 2) */
+      await UserRole.query(trx)
+        .patch({ role_id: 2 })
+        .where("user_id", result.applicant.id)
+        .where("role_id", 3);
+    }
 
     console.log(form);
 

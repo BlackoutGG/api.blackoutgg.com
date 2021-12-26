@@ -2,6 +2,7 @@
 const User = require("$models/User");
 const Settings = require("$models/Settings");
 const sanitize = require("sanitize-html");
+const redis = require("$services/redis");
 const { isFuture, addSeconds, formatDistance } = require("date-fns");
 const { body } = require("express-validator");
 const { transaction } = require("objection");
@@ -34,12 +35,12 @@ const updateUsername = async (req, res, next) => {
       Settings.query().select("time_till_next_username_change").first(),
     ]);
 
-    const split = settings.time_till_next_username_change.split(" ");
+    const [interval, type] = settings.time_till_next_username_change.split(" ");
 
     if (user) {
       const date = addSeconds(
         user.last_username_change,
-        getSecondsToAdd(split[0], split[1])
+        getSecondsToAdd(interval, type)
       );
 
       if (isFuture(date)) {
@@ -49,11 +50,13 @@ const updateUsername = async (req, res, next) => {
 
         return res
           .status(400)
-          .send({ message: `Time till next usrname change: ${time}` });
+          .send({ message: `Time till next username change: ${time}` });
       }
 
       await trx.commit();
     }
+
+    await redis.del(`me_${req.user.id}`);
 
     res.status(200).send(user);
   } catch (err) {

@@ -9,20 +9,34 @@ const { DELETE_OWN_MEDIA } = require("$util/policies");
 const validators = validate([query("keys.*").isString()]);
 
 const removeMedia = async (req, res, next) => {
-  const s3 = await deleteFiles(process.env.AWS_BUCKET_NAME, req.query.keys);
-  if (s3.Errors.length || !s3.Deleted.length) {
-    return res
-      .status(500)
-      .send({ message: "Encountered an internal problem." });
+  try {
+    const s3 = await deleteFiles(process.env.AWS_BUCKET_NAME, req.query.keys);
+    if (s3.Errors.length || !s3.Deleted.length) {
+      return res
+        .status(500)
+        .send({ message: "Encountered an internal problem." });
+    }
+  } catch (err) {
+    console.log(err);
+    return next(err);
   }
-  const results = await Media.query()
+
+  const itemsRemoved = await Media.query()
     .delete()
     .whereIn("storage_key", req.query.keys)
     .where("owner_id", req.user.id)
     .returning(["id"]);
 
-  const ids = results.map(({ id }) => id);
-  return res.status(200).send({ ids });
+  const query = Media.query()
+    .where("owner_id", req.user.id)
+    .orderBy("created_at")
+    .orderBy("id")
+    .limit(itemsRemoved.length);
+
+  const media = await query.clone().cursorPage(req.query.next);
+
+  const deleted = results.map(({ id }) => id);
+  return res.status(200).send({ deleted, media });
 };
 
 module.exports = {

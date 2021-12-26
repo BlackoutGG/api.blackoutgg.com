@@ -1,5 +1,5 @@
 "use strict";
-const Roles = require("../admin/roles/models/Roles");
+const Roles = require("$models/Roles");
 const guard = require("express-jwt-permissions")();
 const { query } = require("express-validator");
 const { validate } = require("$util");

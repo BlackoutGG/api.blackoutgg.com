@@ -1,34 +1,38 @@
 "use strict";
-const Form = require("./models/Form");
+const Form = require("$models/Form");
 
 const guard = require("express-jwt-permissions")();
+const redis = require("$services/redis");
 const { query } = require("express-validator");
-const { buildQuery, validate } = require("$util");
+const { validate } = require("$util");
 const { VIEW_ALL_ADMIN, DELETE_ALL_FORMS } = require("$util/policies");
+const { transaction } = require("objection");
 
 const removeForm = async function (req, res, next) {
-  const filters = req.query.filters || null;
-
-  const results = await Form.transaction(async (trx) => {
+  try {
     const deleted = await Form.query(trx)
       .whereIn("id", req.query.ids)
       .del()
-      .first()
       .returning("id");
 
-    const query = Form.query(trx).withGraphFetched("category(defaultSelects)");
+    const pipeline = redis.pipeline();
 
-    const forms = await buildQuery(
-      query,
-      req.query.page,
-      req.query.limit,
-      null,
-      null,
-      filters
-    );
+    req.query.ids.forEach((id) => pipeline.del(`form_${id}`));
 
-    return { forms, deleted };
-  });
+    pipeline.exec();
+    await trx.commit();
+
+    res.status(200).send(deleted);
+  } catch (err) {
+    await trx.rollback();
+    next(err);
+  }
+
+  const deleted = await Form.query(trx)
+    .whereIn("id", req.query.ids)
+    .del()
+    .first()
+    .returning("id");
 
   res.status(200).send(results);
 };

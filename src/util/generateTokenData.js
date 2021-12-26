@@ -21,7 +21,8 @@ module.exports = function generateTokenData(user) {
     ({ action, target, resource }) => `${action}:${target}:${resource}`
   );
   const permissions = uniq([...userPolicies, ...rolePolicies]);
-  const level = Math.min(user.roles.map(({ level }) => level));
+  const level = Math.min(...user.roles.map(({ level }) => level));
+
   const access_jti = nanoid();
   const refresh_jti = nanoid();
 
