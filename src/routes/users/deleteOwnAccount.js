@@ -36,13 +36,9 @@ const compare = async (user, v) => {
 };
 
 const deleteOwnAccountRequest = async (req, res, next) => {
-  if (req.params.code) return next();
-
-  const passCode = nanoid(20);
-
   const settings = await Settings.query()
     .select([
-      "user_deletion_request_ttl_in_minutes",
+      "universal_request_ttl_in_minutes",
       "allow_users_to_delete_account",
     ])
     .first();
@@ -51,7 +47,13 @@ const deleteOwnAccountRequest = async (req, res, next) => {
     return res.status(403).send("You cannot perform this action.");
   }
 
-  const userDeletionRequestTTL = settings.user_deletion_request_ttl_in_minutes;
+  if (req.params.code) {
+    return next();
+  }
+
+  const passCode = nanoid(20);
+
+  const userDeletionRequestTTL = settings.universal_request_ttl_in_minutes;
 
   const currentRequest = await redis.get(`delete:${req.user.id}`);
 
@@ -95,6 +97,8 @@ const deleteOwnAccountRequest = async (req, res, next) => {
 };
 
 const deleteOwnAccountConfirm = async (req, res, next) => {
+  console.log(code);
+
   const settings = await Settings.query()
     .select("allow_users_to_delete_account")
     .first();

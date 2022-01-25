@@ -4,6 +4,9 @@ const sanitize = require("sanitize-html");
 const guard = require("express-jwt-permissions")();
 const { body } = require("express-validator");
 const { validate } = require("$util");
+const { VIEW_ALL_ADMIN, ADD_OWN_POSTS } = require("$util/policies");
+
+const guards = guard.check([VIEW_ALL_ADMIN, ADD_OWN_POSTS]);
 
 const validators = validate([
   body("testimony.*")
@@ -14,7 +17,7 @@ const validators = validate([
     .customSanitizer((v) => sanitize(v)),
 ]);
 
-const middleware = [guard.check("update:frontpage"), validators];
+const middleware = [guards, validators];
 
 const addTestimony = async function (req, res) {
   const testimony = await Testimony.transaction(async (trx) => {

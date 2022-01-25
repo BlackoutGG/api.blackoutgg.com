@@ -1,8 +1,5 @@
 "use strict";
-const UserRole = require("$models/UserRole");
-const UserSession = require("$models/UserSession");
-const isFuture = require("date-fns/isFuture");
-const diffInSeconds = require("date-fns/differenceInSeconds");
+const User = require("$models/User");
 const getUserSessions = require("$util/getUserSessions");
 const guard = require("express-jwt-permissions")();
 const redis = require("$services/redis");
@@ -15,43 +12,21 @@ const removeUserRole = async function (req, res, next) {
   const userId = req.params.id,
     roleId = req.query.roleId;
 
-  const trx = await UserRole.startTransaction();
+  const trx = await User.startTransaction();
 
   try {
-    const details = await UserRole.query(trx)
-      .where({ user_id: userId, role_id: roleId })
-      .returning(["user_id", "role_id"])
-      .first()
-      .throwIfNotFound()
-      .delete();
+    await User.relatedQuery("roles", trx)
+      .for(userId)
+      .unrelate()
+      .where("id", roleId)
+      .throwIfNotFound();
 
     const sessions = await getUserSessions(userId);
     if (sessions) await redis.multi(sessions).exec();
-
-    // const sessions = await UserSession.query()
-    //   .where("user_id", userId)
-    //   .whereRaw(raw("expires >= CURRENT_TIMESTAMP"))
-    //   .select("refresh_token_id", "expires")
-    //   .orderBy("created_at", "DESC");
-
-    // if (sessions && sessions.length) {
-    //   const commands = sessions.reduce((output, s) => {
-    //     const date = s.expires;
-    //     const id = s.refresh_token_id;
-    //     const key = `blacklist:${id}`;
-    //     if (isFuture(date)) {
-    //       const diff = diffInSeconds(date, new Date());
-    //       output.push(["set", key, id, "NX", "EX", diff]);
-    //     }
-    //     return output;
-    //   }, []);
-
-    //   await redis.multi(commands).exec();
-    // }
-
     await trx.commit();
-
-    res.status(200).send(details);
+    await redis.del(`user_${userId}`);
+    await redis.del(`me_${userId}`);
+    res.status(200).send({ user_id: userId, role_id: roleId });
   } catch (err) {
     await trx.rollback();
     console.log(err);

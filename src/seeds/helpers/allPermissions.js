@@ -13,6 +13,7 @@ module.exports = [
     resource: "categories",
     level: 2,
   },
+  { action: "view", target: "all", resource: "tags", level: 2 },
   {
     /** 3 */
     action: "view",
@@ -72,6 +73,7 @@ module.exports = [
     resource: "categories",
     level: 3,
   },
+  { action: "add", target: "all", resource: "tags", level: 2 },
   {
     /** 11 */
     action: "add",
@@ -124,6 +126,7 @@ module.exports = [
     resource: "categories",
     level: 3,
   },
+  { action: "update", target: "all", resource: "tags", level: 2 },
   {
     /** 18 */
     action: "update",
@@ -176,6 +179,7 @@ module.exports = [
     resource: "categories",
     level: 3,
   },
+  { action: "delete", target: "all", resource: "tags", level: 2 },
   {
     /** 25 */
     action: "delete",

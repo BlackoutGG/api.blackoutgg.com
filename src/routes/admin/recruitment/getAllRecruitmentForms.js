@@ -43,7 +43,7 @@ const getAllRecruitmentForm = async (req, res, next) => {
   if (isInitial) {
     Object.assign(response, {
       categories: await getCache(
-        "categories",
+        "form_categories",
         Category.query()
           .where("enable_recruitment", true)
           .select(["id", "name"])

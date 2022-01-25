@@ -6,6 +6,7 @@ const VIEW_ALL_FORMS = "view:all:forms";
 const VIEW_ALL_EVENTS = "view:all:events";
 const VIEW_ALL_MEDIA = "view:all:media";
 const VIEW_ALL_SETTINGS = "view:all:settings";
+const VIEW_ALL_TAGS = "view:all:tags";
 
 const ADD_ALL_USERS = "add:all:users";
 const ADD_ALL_ROLES = "add:all:roles";
@@ -13,6 +14,7 @@ const ADD_ALL_CATEGORIES = "add:all:categories";
 const ADD_ALL_FORMS = "add:all:forms";
 const ADD_ALL_EVENTS = "add:all:events";
 const ADD_ALL_MEDIA = "add:all:media";
+const ADD_ALL_TAGS = "add:all:tags";
 
 const UPDATE_ALL_USERS = "update:all:users";
 const UPDATE_ALL_ROLES = "update:all:roles";
@@ -21,6 +23,7 @@ const UPDATE_ALL_FORMS = "update:all:forms";
 const UPDATE_ALL_EVENTS = "update:all:events";
 const UPDATE_ALL_MEDIA = "update:all:media";
 const UPDATE_ALL_SETTINGS = "update:all:settings";
+const UPDATE_ALL_TAGS = "update:all:tags";
 
 const DELETE_ALL_USERS = "delete:all:users";
 const DELETE_ALL_ROLES = "delete:all:roles";
@@ -28,6 +31,7 @@ const DELETE_ALL_CATEGORIES = "delete:all:categories";
 const DELETE_ALL_FORMS = "delete:all:forms";
 const DELETE_ALL_EVENTS = "delete:all:events";
 const DELETE_ALL_MEDIA = "delete:all:media";
+const DELETE_ALL_TAGS = "delete:all:tags";
 
 /** OWN */
 const VIEW_OWN_FORMS = "view:own:forms";
@@ -55,12 +59,14 @@ module.exports = {
   VIEW_ALL_EVENTS,
   VIEW_ALL_MEDIA,
   VIEW_ALL_SETTINGS,
+  VIEW_ALL_TAGS,
   ADD_ALL_USERS,
   ADD_ALL_ROLES,
   ADD_ALL_CATEGORIES,
   ADD_ALL_FORMS,
   ADD_ALL_EVENTS,
   ADD_ALL_MEDIA,
+  ADD_ALL_TAGS,
   UPDATE_ALL_USERS,
   UPDATE_ALL_ROLES,
   UPDATE_ALL_CATEGORIES,
@@ -68,12 +74,14 @@ module.exports = {
   UPDATE_ALL_EVENTS,
   UPDATE_ALL_MEDIA,
   UPDATE_ALL_SETTINGS,
+  UPDATE_ALL_TAGS,
   DELETE_ALL_USERS,
   DELETE_ALL_ROLES,
   DELETE_ALL_CATEGORIES,
   DELETE_ALL_FORMS,
   DELETE_ALL_EVENTS,
   DELETE_ALL_MEDIA,
+  DELETE_ALL_TAGS,
   VIEW_OWN_FORMS,
   VIEW_OWN_EVENTS,
   VIEW_OWN_MEDIA,

@@ -37,14 +37,15 @@ routes.forEach((r) => {
 
   if (route && route.path && route.handler) {
     const method = route.method.toLowerCase();
+    const routePath = path.concat(route.path);
+    const handler =
+      Array.isArray(route.handler) && route.handler.length
+        ? route.handler.map((_route) => resolve(_route))
+        : resolve(route.handler);
     if (route.middleware && route.middleware.length) {
-      router[method](
-        path.concat(route.path),
-        route.middleware,
-        resolve(route.handler)
-      );
+      router[method](routePath, route.middleware, handler);
     } else {
-      router[method](path.concat(route.path), resolve(route.handler));
+      router[method](routePath, handler);
     }
   }
 });

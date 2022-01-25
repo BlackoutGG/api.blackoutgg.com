@@ -31,7 +31,7 @@ module.exports = function generateTokenData(user) {
     refresh_jti: refresh_jti,
     id: user.id,
     discord_id: user.discord_id,
-    userame: user.username,
+    username: user.username,
     roles,
     level,
     permissions,

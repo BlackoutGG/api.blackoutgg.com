@@ -5,14 +5,14 @@ const getUserSessions = require("$util/getUserSessions");
 const guard = require("express-jwt-permissions")();
 const redis = require("$services/redis");
 const emitter = require("$services/redis/emitter");
-const pick = require("lodash.pick");
 const { body, param } = require("express-validator");
-const { validate } = require("$util");
+const { validate, shouldRevokeToken } = require("$util");
 const { VIEW_ALL_ADMIN, UPDATE_ALL_USERS } = require("$util/policies");
 const { transaction } = require("objection");
 
 const validators = validate([
   param("id").isNumeric().toInt(10),
+  body("active").optional().isBoolean(),
   body("details.username")
     .optional()
     .isAlphanumeric()
@@ -21,7 +21,11 @@ const validators = validate([
     .customSanitizer((v) => sanitize(v)),
   body("details.email").optional().isEmail().normalizeEmail().escape(),
   body("details.avatar").optional().isString().trim(),
-  body("altered").isBoolean(),
+  body("altered").optional().default(false).isBoolean(),
+  body("addRoles.*").optional().isNumeric(),
+  body("addPolicies.*").optional().isNumeric(),
+  body("removeRoles.*").optional().isNumeric(),
+  body("removePolicies.*").optional().isNumeric(),
 ]);
 
 const columns = [
@@ -29,6 +33,7 @@ const columns = [
   "username",
   "email",
   "avatar",
+  "active",
   "created_at",
   "updated_at",
 ];
@@ -50,22 +55,20 @@ const graphFn = (id, details, roles, policies) => {
 };
 
 const updateUser = async (req, res, next) => {
-  const details = req.body.details,
-    roles = req.body.roles,
-    altered = req.body.altered,
-    policies = req.body.policies;
-
-  const options = { relate: true, unrelate: true };
-
   const trx = await User.startTransaction();
 
-  let updated;
-
   try {
-    updated = await User.query(trx).upsertGraph(
-      graphFn(req.params.id, details, roles, policies),
-      options
-    );
+    await User.updateUser(req.params.id, req.body, trx);
+
+    if (shouldRevokeToken(req)) {
+      const sessions = await getUserSessions(req.params.id);
+      if (sessions) await redis.multi(commands).exec();
+      emitter
+        .of("/index")
+        .to(`user:${req.params.id}`)
+        .emit("account-change", true);
+    }
+
     await trx.commit();
   } catch (err) {
     await trx.rollback();
@@ -73,23 +76,16 @@ const updateUser = async (req, res, next) => {
     next(err);
   }
 
-  if (altered) {
-    const sessions = await getUserSessions(req.params.id);
-    if (sessions) await redis.multi(commands).exec();
-    emitter
-      .of("/index")
-      .to(`user:${req.params.id}`)
-      .emit("account-change", true);
-  }
-
   const user = await User.query()
-    .withGraphFetched("roles(nameAndId)")
+    .withGraphFetched("[roles(nameAndId)]")
     .select(columns)
-    .where("id", updated.id)
+    .where("id", req.params.id)
     .first();
 
   await redis.del(`user_${req.params.id}`);
   await redis.del(`me_${req.params.id}`);
+
+  console.log(user);
 
   res.status(200).send(user);
 };

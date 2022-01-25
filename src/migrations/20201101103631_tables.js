@@ -31,10 +31,9 @@ exports.up = function (knex) {
     knex.schema.hasTable("user_sessions").then((exists) => {
       if (exists) return;
       return knex.schema.createTable("user_sessions", (t) => {
-        // t.increments("id").primary();
         t.uuid("id").primary();
         t.integer("user_id").references("users.id").onDelete("CASCADE");
-        t.string("token_id");
+        // t.string("token_id");
         t.string("refresh_token_id");
         t.timestamp("expires");
         t.timestamps();
@@ -161,6 +160,7 @@ exports.up = function (knex) {
     knex.schema.hasTable("testimonies").then((exists) => {
       if (exists) return;
       return knex.schema.createTable("testimonies", (t) => {
+        // t.uuid("id").defaultTo(knex.raw("gen_random_uuid()")).primary();
         t.increments("id").primary();
         t.integer("order");
         t.string("author");
@@ -177,16 +177,20 @@ exports.up = function (knex) {
         t.boolean("show_video").defaultTo(true);
         t.boolean("show_video_on_mobile").defaultTo(true);
         t.boolean("show_testimonies").defaultTo(true);
-
+        t.boolean("enable_account_media_sharing").defaultTo(true);
         t.boolean("show_recruitment_button").defaultTo(true);
+        t.boolean("enable_user_authentication").defaultTo(true);
+        t.boolean("enable_user_registration").defaultTo(true);
         t.boolean("enable_social_authentication").defaultTo(true);
         t.boolean("enable_local_authentication").defaultTo(true);
         t.boolean("enable_email_request_throttling").defaultTo(true);
         t.boolean("require_account_verification").defaultTo(true);
         t.boolean("allow_users_to_delete_account").defaultTo(false);
-        t.integer("password_reset_request_ttl_in_minutes").defaultTo(10);
-        t.integer("user_activation_request_ttl_in_minutes").defaultTo(10);
-        t.integer("user_deletion_request_ttl_in_minutes").defaultTo(3);
+        t.integer("universal_request_ttl_in_minutes").defaultTo(10);
+        t.integer("number_of_login_attempts").defaultTo(5);
+        // t.integer("password_reset_request_ttl_in_minutes").defaultTo(10);
+        // t.integer("user_activation_request_ttl_in_minutes").defaultTo(10);
+        // t.integer("user_deletion_request_ttl_in_minutes").defaultTo(3);
         t.string("time_till_next_username_change").defaultTo("1 week");
         t.string("front_page_video_url").defaultTo(
           "https://blackout-gaming.s3.amazonaws.com/video/0001-0876.webm"
@@ -277,10 +281,21 @@ exports.up = function (knex) {
       if (exists) return;
       return knex.schema.createTable("categories", (t) => {
         t.increments("id").primary();
-        t.string("name");
+        t.string("name").unique();
+        t.string("image").nullable();
         t.boolean("enable_recruitment").defaultTo(false);
         t.boolean("is_deletable").defaultTo(true);
-        t.unique("name");
+        t.timestamps();
+      });
+    }),
+    knex.schema.hasTable("tags").then((exists) => {
+      if (exists) return;
+      return knex.schema.createTable("tags", (t) => {
+        t.increments("id").primary();
+        // t.uuid("id").defaultTo(knex.raw("gen_random_uuid()")).primary();
+        t.string("name").unique();
+        t.string("color");
+        t.boolean("is_deletable").defaultTo(true);
         t.timestamps();
       });
     }),
@@ -369,7 +384,7 @@ exports.up = function (knex) {
         t.string("slug");
         t.string("title");
         t.string("featured_image");
-        t.text("body");
+        t.jsonb("data");
         t.text("excerpt");
         t.boolean("has_excerpt").defaultTo(false);
         t.boolean("is_deletable").defaultTo(true);
@@ -390,18 +405,25 @@ exports.up = function (knex) {
         t.timestamps();
       });
     }),
+    knex.schema.hasTable("media_share").then((exists) => {
+      if (exists) return;
+      return knex.schema.createTable("media_share", (t) => {
+        t.uuid("media_id").references("media.id").onDelete("CASCADE");
+        t.integer("user_id").references("users.id").onUpdate("CASCADE");
+      });
+    }),
   ]);
 };
 
 exports.down = async function (knex) {
   try {
     await knex.raw(
-      `DROP TABLE IF EXISTS user_form_fields, 
+      `DROP TABLE IF EXISTS media_share, user_form_fields,
       user_forms, user_sessions, user_policies, form_fields, fields, 
       forms, menu_tree, menu, event_participants, 
       event_roles, event_meta, events, categories, 
-      user_roles, role_maps, discord_roles, role_policies, policies, 
-      users, roles, media, posts, post_types, testimonies, 
+      user_roles, role_maps, discord_roles, role_policies, policies, post_types,
+      users, roles, media, posts, testimonies, tags,
       settings, front_page_info`
     );
   } catch (err) {

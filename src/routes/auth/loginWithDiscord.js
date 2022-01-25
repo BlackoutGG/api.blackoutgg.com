@@ -116,10 +116,17 @@ const loginWithDiscord = async (req, res, next) => {
       expiresIn: process.env.JWT_TOKEN_DURATION,
     });
 
+    const refreshData = {
+      jti: tokenData.refresh_jti,
+      id: tokenData.id,
+    };
+
     const refresh_token = jwt.sign(
-      { jti: tokenData.refresh_jti, id: tokenData.id },
+      refreshData,
       process.env.JWT_REFRESH_SECRET,
-      { expiresIn: process.env.JWT_REFRESH_TOKEN_DURATION }
+      {
+        expiresIn: process.env.JWT_REFRESH_TOKEN_DURATION,
+      }
     );
 
     await UserSession.createSession(user, tokenData, trx);

@@ -1,6 +1,7 @@
 "use strict";
 const UserForm = require("$models/UserForm");
 const UserRole = require("$models/UserRole");
+const redis = require("$services/redis");
 const guard = require("express-jwt-permissions")();
 const { param, body } = require("express-validator");
 const { validate } = require("$util");
@@ -30,7 +31,7 @@ const updateRecruitmentForm = async (req, res, next) => {
       .patch(req.body.details)
       .where("id", req.params.id);
 
-    const result = await UserForm.query()
+    const form = await UserForm.query()
       .joinRelated("form.[category]")
       .withGraphFetched("applicant(defaultSelects)")
       .where("user_forms.id", req.params.id)
@@ -41,13 +42,13 @@ const updateRecruitmentForm = async (req, res, next) => {
       /** PATCH GUEST(id: 3) TO MEMBER (id: 2) */
       await UserRole.query(trx)
         .patch({ role_id: 2 })
-        .where("user_id", result.applicant.id)
+        .where("user_id", form.applicant.id)
         .where("role_id", 3);
     }
 
-    console.log(form);
+    await redis.del(`r_form_${form.category.id}`);
 
-    res.status(200).send({ form });
+    res.status(200).send(form);
   } catch (err) {
     console.log(err);
     next(err);

@@ -1,17 +1,17 @@
-const faker = require("faker");
+const blaver = require("blaver");
 const uuid = require("uuid4");
 const created_at = new Date().toISOString();
 
 const generateMedia = (num) => {
   const results = [];
   for (let i = 0; i < num; i++) {
-    let url = faker.image.imageUrl();
+    let url = blaver.image.imageUrl();
     results.push({
       id: uuid(),
       url,
       storage_key: url.substr(url.lastIndexOf("/") + 1, url.length - 1),
       mimetype: "image/",
-      owner_id: faker.datatype.number({ min: 1, max: 76 }),
+      owner_id: blaver.datatype.number({ min: 1, max: 76 }),
       created_at: created_at,
       updated_at: created_at,
     });

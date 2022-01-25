@@ -28,7 +28,7 @@ const getAllRoles = async function (req, res, next) {
   const roleQuery = Roles.query()
     .select(
       select,
-      Roles.$relatedQuery("users")
+      Roles.relatedQuery("users")
         .count("users.id")
         .as("members")
         .whereColumn("roles.id", "user_roles.role_id")
@@ -43,7 +43,7 @@ const getAllRoles = async function (req, res, next) {
   /**Grab policies on the first page request per client */
   if (isInitial) {
     const cached = await getCache("policies", Policies.query());
-    const policies = cached.filter(({ level }) => level === req.user.level);
+    const policies = cached.filter(({ level }) => level >= req.user.level);
 
     if (settings.enable_bot) {
       Object.assign(response, {

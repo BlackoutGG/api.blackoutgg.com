@@ -35,7 +35,7 @@ const activateAccount = async function (req, res) {
     });
   }
 
-  if (account && account.active) {
+  if (account.active) {
     return res.status(200).send({
       resend: false,
       startTimer: false,

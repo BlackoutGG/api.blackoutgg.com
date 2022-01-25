@@ -61,8 +61,20 @@ class User extends cursor(dateMixin(Model)) {
     const Roles = require("$models/Roles");
     const UserSession = require("./UserSession");
     const Policies = require("$models/Policies");
-
+    const Media = require("$models/Media");
     return {
+      shared_media: {
+        relation: Model.ManyToManyRelation,
+        modelClass: Media,
+        join: {
+          from: "users.id",
+          through: {
+            from: "media_share.user_id",
+            to: "media_share.media_id",
+          },
+          to: "media.id",
+        },
+      },
       policies: {
         relation: Model.ManyToManyRelation,
         modelClass: Policies,
@@ -112,35 +124,47 @@ class User extends cursor(dateMixin(Model)) {
   static async createUser(
     credentials,
     roles = [{ id: 3 }],
+    policies,
     trx,
     relate = true,
     unrelate = false
   ) {
     try {
-      if (roles && Array.isArray(roles)) {
-        if (!roles.every((obj) => obj.hasOwnProperty("id"))) {
-          const error = new Error();
-          error.message =
-            "Roles must be an array of objects containing the property 'id'";
-          error.statusCode = 500;
-          throw error;
-        }
-
-        roles = uniqBy(roles, "id");
-      }
       const date = new Date().toISOString();
 
       const data = Object.assign(
-        { last_activation_email_sent: date, roles },
+        { last_activation_email_sent: date },
         credentials
       );
 
+      // if (Array.isArray(roles) && roles.length) {
+      //   if (!roles.every((obj) => obj.hasOwnProperty("id"))) {
+      //     const error = new Error();
+      //     error.message =
+      //       "Roles must be an array of objects containing the property 'id'";
+      //     error.statusCode = 500;
+      //     throw error;
+      //   }
+
+      //   roles = uniqBy(roles.map, "id");
+      // }
+
+      if (roles && roles.length) {
+        Object.assign(data, { roles: uniqBy(roles.map((id) => ({ id }))) });
+      }
+
+      if (policies && policies.length) {
+        Object.assign(data, { policies: policies.map((id) => ({ id })) });
+      }
+
       let query = trx ? this.query(trx) : this.query();
 
-      return query
-        .insertGraph(data, { relate, unrelate, noDelete: true })
-        .onConflict("email")
-        .withGraphFetched("[roles.policies, policies]");
+      return (
+        query
+          .insertGraph(data, { relate, unrelate, noDelete: true })
+          // .onConflict("email")
+          .withGraphFetched("[roles.policies, policies]")
+      );
     } catch (err) {
       return Promise.reject(err);
     }
@@ -153,15 +177,19 @@ class User extends cursor(dateMixin(Model)) {
     let queries = [];
 
     if (data.details && Object.keys(data.details).length) {
+      console.log("adding details");
       queries.push(query.patch(data.details).where("id", id));
     }
 
     if (data.addRoles && data.addRoles.length) {
+      console.log("add roles...");
       const relate = relational("roles").for(id).relate(data.addRoles);
       queries.push(relate);
     }
 
     if (data.removeRoles && data.removeRoles.length) {
+      console.log(data);
+      console.log("removing roles...");
       const unrelate = relational("roles")
         .for(id)
         .unrelate()
@@ -171,11 +199,13 @@ class User extends cursor(dateMixin(Model)) {
     }
 
     if (data.addPolicies && data.addPolicies.length) {
+      console.log("adding policies");
       const relate = relational("policies").for(id).relate(data.addPolicies);
       queries.push(relate);
     }
 
     if (data.removePolicies && data.removePolicies.length) {
+      console.log("removing policies");
       const unrelate = relational("policies")
         .for(id)
         .unrelate()

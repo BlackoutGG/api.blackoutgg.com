@@ -1,5 +1,6 @@
 "use strict";
 const redis = require("$services/redis");
+const { verifyToken } = require("$util");
 
 module.exports = async function authentiateSocketClient(socket) {
   let verified = null;
@@ -8,11 +9,13 @@ module.exports = async function authentiateSocketClient(socket) {
     const token = socket.handshake.auth.token || socket.handshake.query.token;
 
     try {
-      verified = await verifySocketUser(token, process.env.JWT_REFRESH_SECRET);
+      verified = await verifyToken(token, process.env.JWT_REFRESH_SECRET);
 
       if (!verified) {
         const error = new Error("UNAUTHORIZED");
         error.data = { content: "Please retry later." };
+        console.log("disconnecting socket.");
+
         socket.disconnect(true);
       }
 
@@ -28,6 +31,7 @@ module.exports = async function authentiateSocketClient(socket) {
 
       socket.join(`user:${verified.id}`);
     } catch (err) {
+      console.log(socket.handshake.auth.token);
       socket.disconnect(true);
     }
   } else {

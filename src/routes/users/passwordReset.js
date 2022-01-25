@@ -8,7 +8,7 @@ const verifyRecaptcha = require("$services/recaptcha")(
   process.env.RECAPTCHA_SECRET
 );
 const sendEmail = require("$services/email");
-const { body, header } = require("express-validator");
+const { body, param } = require("express-validator");
 const { validate } = require("$util");
 const { nanoid } = require("nanoid");
 const {
@@ -19,10 +19,10 @@ const {
   formatDistanceStrict,
 } = require("date-fns");
 
-const passwordReset = async function (req, res) {
-  const type = req.body.type || "reset",
-    password = req.body.password,
-    newPassword = req.body.new_password;
+const passwordResetRequest = async function (req, res, next) {
+  if (req.params.code) return next();
+
+  const password = req.body.password;
 
   const [account, settings] = await Promise.all([
     User.query()
@@ -31,10 +31,7 @@ const passwordReset = async function (req, res) {
       .first(),
     Settings.query()
       .where("id", 1)
-      .select([
-        "password_reset_request_ttl_in_minutes",
-        "password_reset_resend_timer_in_minutes",
-      ])
+      .select(["universal_request_ttl_in_minutes"])
       .first(),
   ]);
 
@@ -62,19 +59,15 @@ const passwordReset = async function (req, res) {
       .send({ success: false, status: 1, message: "User doesn't exist." });
   }
 
-  // if (account && !account.active) {
-  //   return res.status(404).send("User account is not active");
-  // }
-
   const code = nanoid(32);
   const date = new Date().toISOString();
 
   const expiryDate = addMinutes(
     new Date(),
-    settings.password_reset_request_ttl_in_minutes
+    settings.universal_request_ttl_in_minutes
   );
 
-  const exp = settings.password_reset_request_ttl_in_minutes * 60;
+  const exp = settings.universal_request_ttl_in_minutes * 60;
 
   const data = {
     code,
@@ -82,34 +75,48 @@ const passwordReset = async function (req, res) {
     expiry: expiryDate,
   };
 
-  if (type === "change") {
+  if (req.user) {
     if (!(await bcrypt.compare(password, account.password))) {
       return res.status(400).send("Incorrect password.");
     }
-    Object.assign(data, { password: newPassword });
+    // Object.assign(data, { password: newPassword });
   }
 
   await sendEmail(account.email, "PASSWORD_RESET", {
-    url: process.env.BASE_URL + "password-reset/",
+    url: process.env.BASE_URL + `password-reset/${code}`,
     id: account.id,
-    code,
   });
 
   await redis.set(`pw:${account.id}`, JSON.stringify(data), "NX", "EX", exp);
 
-  const resetMessage =
-    "If your user account exists, we've dispatched an email with instructions on how to recover your password to the before entered address";
-  const changeMessage =
-    "We've dispatched an email with instructions on verifiying your password change.";
+  res.status(200).send({ status: 1, success: true });
+};
 
-  res.status(200).send({
-    status: 1,
-    message: type === "change" ? changeMessage : resetMessage,
-  });
+const passwordResetConfirm = async function (req, res, next) {
+  const code = req.params.code || null,
+    id = req.body.id;
+
+  if (!(await redis.exists(`pw:${id}`))) {
+    return res
+      .status(200)
+      .send({ status: 1, message: "Password reset request expired." });
+  }
+
+  if (!code) {
+    return res.status(400).send({ message: "Code missing." });
+  }
+
+  const json = JSON.parse(await redis.get(`pw:${req.body.id}`));
+
+  if (code !== json.code) {
+    return res.status(200).send({ status: 1, message: "Incorrect code." });
+  }
+
+  res.status(200).send({ status: 0 });
 };
 
 module.exports = {
-  path: "/password-reset",
+  path: "/password-reset/:code?",
   method: "POST",
   middleware: [
     (req, res, next) => {
@@ -117,7 +124,20 @@ module.exports = {
       next();
     },
     validate([
+      body("id")
+        .optional()
+        .isString()
+        .trim()
+        .escape()
+        .customSanitizer((v) => sanitize(v)),
+      param("code")
+        .optional()
+        .isString()
+        .escape()
+        .trim()
+        .customSanitizer((v) => sanitize(v)),
       body("email")
+        .optional()
         .isEmail()
         .customSanitizer((v) => sanitize(v)),
       body("password")
@@ -135,9 +155,12 @@ module.exports = {
       body("gresponse").optional().isString().escape().trim(),
     ]),
     (req, res, next) => {
-      if (req.body.type === "reset") verifyRecaptcha(req, res, next);
-      else next();
+      if (!req.user && !req.params.code) {
+        verifyRecaptcha(req, res, next);
+      } else {
+        next();
+      }
     },
   ],
-  handler: passwordReset,
+  handler: [passwordResetRequest, passwordResetConfirm],
 };

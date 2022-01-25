@@ -33,14 +33,14 @@ const register = async function (req, res, next) {
       User.createUser(creds, [{ id: 3 }], trx),
       Settings.query()
         .where("id", 1)
-        .select("user_activation_request_ttl_in_minutes")
+        .select("universal_request_ttl_in_minutes")
         .first(),
     ]);
 
     if (user) {
       const code = nanoid(32);
 
-      const exp = settings.user_activation_request_ttl_in_minutes * 60;
+      const exp = settings.universal_request_ttl_in_minutes * 60;
 
       await redis.set(user.id, code, "NX", "EX", exp);
 

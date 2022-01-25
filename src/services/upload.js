@@ -22,6 +22,7 @@ const fileFilter = function (req, file, cb) {
  */
 const uploadFiles = function (opts) {
   const dest = opts && opts.dest ? opts.dest : "upload/";
+  const overwrite = opts.overwrite || false;
 
   const storage = multerS3({
     s3: s3,
@@ -32,7 +33,9 @@ const uploadFiles = function (opts) {
     },
     key(req, file, cb) {
       const ext = path.extname(file.originalname).toLowerCase();
-      const name = dest + nanoid() + ext;
+      const name = !overwrite
+        ? dest + nanoid() + ext
+        : dest + opts.filename + ext;
       cb(null, name);
     },
   });

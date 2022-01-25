@@ -1,5 +1,6 @@
 "use strict";
 const Form = require("$models/Form");
+const Category = require("$models/Category");
 const getCache = require("$util/getCache");
 const guard = require("express-jwt-permissions")();
 const sanitize = require("sanitize-html");
@@ -29,7 +30,7 @@ const getAllFormTemplates = async function (req, res, next) {
   if (isInitial) {
     Object.assign(response, {
       categories: await getCache(
-        "categories",
+        "form_categories",
         Category.query()
           .where("enable_recruitment", true)
           .select(["id", "name"])

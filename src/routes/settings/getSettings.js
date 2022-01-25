@@ -1,14 +1,17 @@
 "use strict";
 const Settings = require("$models/Settings");
-const Policies = require("$models/Policies");
 const select = [
   "show_video",
   "show_video_on_mobile",
   "show_testimonies",
-  "password_reset_request_ttl_in_minutes",
-  "user_activation_request_ttl_in_minutes",
+  "allow_users_to_delete_account",
+  "enable_account_media_sharing",
+  // "password_reset_request_ttl_in_minutes",
+  // "user_activation_request_ttl_in_minutes",
+  "universal_request_ttl_in_minutes",
   "time_till_next_username_change",
   "show_recruitment_button",
+  "enable_user_authentication",
   "enable_social_authentication",
   "enable_local_authentication",
   "enable_bot",

@@ -5,6 +5,18 @@ const guard = require("express-jwt-permissions")();
 const { body, param } = require("express-validator");
 const { validate } = require("$util");
 
+const {
+  VIEW_ALL_ADMIN,
+  UPDATE_ALL_POSTS,
+  UPDATE_OWN_POSTS,
+} = require("$util/policies");
+
+const guards = guard.check([
+  VIEW_ALL_ADMIN,
+  [UPDATE_ALL_POSTS],
+  [UPDATE_OWN_POSTS],
+]);
+
 const validators = validate([
   body("testimony.*")
     .notEmpty()
@@ -15,7 +27,7 @@ const validators = validate([
   param("id").isNumeric().toInt(10),
 ]);
 
-const middleware = [guard.check("update:frontpage"), validators];
+const middleware = [guards, validators];
 
 const patchTestimony = async function (req, res) {
   const testimony = await Testimony.query()

@@ -35,28 +35,10 @@ const addRoleToUser = async function (req, res, next) {
 
     const sessions = await getUserSessions(userId);
     if (sessions && sessions.length) await redis.multi(sessions).exec();
-    // const sessions = await UserSession.query()
-    //   .where("user_id", userId)
-    //   .whereRaw(raw("expires >= CURRENT_TIMESTAMP"))
-    //   .select("refresh_token_id", "expires")
-    //   .orderBy("created_at", "DESC");
-
-    // if (sessions && sessions.length) {
-    //   const commands = sessions.reduce((output, s) => {
-    //     const date = s.expires;
-    //     const id = s.refresh_token_id;
-    //     const key = `blacklist:${id}`;
-    //     if (isFuture(date)) {
-    //       const diff = diffInSeconds(date, new Date());
-    //       output.push(["set", key, id, "NX", "EX", diff]);
-    //     }
-    //     return output;
-    //   }, []);
-
-    //   await redis.multi(commands).exec();
-    // }
 
     await trx.commit();
+    await redis.del(`user_${userId}`);
+    await redis.del(`me_${userId}`);
 
     const payload = {
       user_id: user.user_id,

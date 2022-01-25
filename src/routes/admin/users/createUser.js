@@ -24,8 +24,6 @@ const validators = validate([
   body("active").isBoolean(),
   body("roles.*").optional().isNumeric(),
   body("policies.*").optional().isNumeric(),
-  body("page").optional().isNumeric(),
-  body("limit").optional().isNumeric(),
 ]);
 
 const consoleLog = (req, res, next) => {
@@ -54,12 +52,7 @@ const insertFn = (credentials, roles, policies) => {
 const createUser = async function (req, res, next) {
   const filters = req.body.filters;
 
-  const email = req.body.email,
-    page = req.body.page,
-    limit = req.body.limit,
-    active = req.body.active,
-    policies = req.body.policies,
-    roles = req.body.roles;
+  const { email, active, policies, roles } = req.body;
 
   const salt = await bcrypt.genSalt(SALT_ROUNDS);
   const password = await bcrypt.hash(req.body.password, salt);

@@ -1,49 +1,40 @@
 "use strict";
-const Category = require("$models/Category");
+const Tag = require("$models/Tag");
 const guard = require("express-jwt-permissions")();
 const sanitize = require("sanitize-html");
-const redis = require("$services/redis");
 const { body, param } = require("express-validator");
 const { validate } = require("$util");
 const { transaction } = require("objection");
-const { VIEW_ALL_ADMIN } = require("$util/policies");
+const { VIEW_ALL_ADMIN, UPDATE_ALL_TAGS } = require("$util/policies");
 
 const validators = validate([
-  body("name")
-    .optional()
-    .isAlphanumeric()
-    .escape()
-    .trim()
-    .customSanitizer((v) => sanitize(v)),
-  body("image")
+  body("details.name")
     .optional()
     .isString()
     .escape()
     .trim()
     .customSanitizer((v) => sanitize(v)),
-  body("enable_recruitment").optional().isBoolean(),
+  body("details.color")
+    .optional()
+    .isString()
+    .escape()
+    .trim()
+    .customSanitizer((v) => sanitize(v)),
   param("id").isNumeric().toInt(10),
 ]);
 
-const editCategory = async function (req, res, next) {
-  const trx = await Category.startTransaction();
+const editTag = async function (req, res, next) {
+  const trx = await Tag.startTransaction();
 
   try {
-    const category = await Category.query(trx)
+    const tag = await Tag.query(trx)
       .patch(req.body.details)
       .where("id", req.params.id)
       .first()
       .returning("id", "name", "updated_at");
 
-    const pipeline = redis.pipeline();
-    pipeline.del(`r_form_${req.params.id}`);
-    pipeline.del("categories");
-    pipeline.del("recruit_categories");
-    pipeline.del("form_categories");
-
-    pipeline.exec();
     await trx.commit();
-    res.status(200).send(category);
+    res.status(200).send(tag);
   } catch (err) {
     console.error(err);
 
@@ -55,6 +46,6 @@ const editCategory = async function (req, res, next) {
 module.exports = {
   path: "/:id",
   method: "PATCH",
-  middleware: [guard.check(VIEW_ALL_ADMIN), validators],
-  handler: editCategory,
+  middleware: [guard.check([VIEW_ALL_ADMIN, UPDATE_ALL_TAGS]), validators],
+  handler: editTag,
 };

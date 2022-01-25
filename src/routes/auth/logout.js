@@ -13,8 +13,10 @@ const logout = async function (req, res, next) {
       if (token) {
         const payload = jwt.verify(token, process.env.JWT_SECRET);
         if (payload && payload.jti) {
-          await UserSession.query().where("token_id", payload.jti).del();
-          await redis.del(`blacklist:${payload.jti}`);
+          await UserSession.query()
+            .where("refresh_token_id", payload.refresh_jti)
+            .del();
+          await redis.del(`blacklist:${payload.refresh_jti}`);
         }
       }
     }

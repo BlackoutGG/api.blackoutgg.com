@@ -30,8 +30,7 @@ class Category extends cursor(dateMixin(Model)) {
       properties: {
         id: { type: "integer" },
         name: { type: "string" },
-        event_banner: { type: "integer" },
-        page_header: { type: "integer" },
+        image: { type: "integer" },
         created_at: { type: "string" },
         updated_at: { type: "string" },
       },

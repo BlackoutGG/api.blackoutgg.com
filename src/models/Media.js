@@ -2,7 +2,11 @@
 const { Model } = require("objection");
 const dateMixin = require("$util/mixins/date")();
 const guid = require("$util/mixins/guid")();
-const cursor = require("objection-cursor")();
+const cursor = require("objection-cursor")({
+  pageInfo: {
+    hasMore: true,
+  },
+});
 
 class Media extends cursor(guid(dateMixin(Model))) {
   static get tableName() {
@@ -27,13 +31,47 @@ class Media extends cursor(guid(dateMixin(Model))) {
 
   static get relationMappings() {
     const User = require("$models/User");
+    // const Media = require("$models/Media");
     return {
       uploader: {
         relation: Model.BelongsToOneRelation,
         modelClass: User,
         join: {
-          from: "media.user_id",
+          from: "media.owner_id",
           to: "users.id",
+        },
+      },
+      media_shared_users: {
+        relation: Model.ManyToManyRelation,
+        modelClass: User,
+        join: {
+          from: "media.id",
+          through: {
+            from: "media_share.media_id",
+            to: "media_share.user_id",
+          },
+          to: "users.id",
+        },
+      },
+      // media_sharing: {
+      //   relation: Model.HasManyRelation,
+      //   modelClass: __filename,
+      //   join: {
+      //     from: "media_share.media_id",
+      //     to: "media.id",
+      //   },
+      // },
+
+      shared_media: {
+        relation: Model.ManyToManyRelation,
+        modelClass: __filename,
+        join: {
+          from: "users.id",
+          through: {
+            from: "media_share.user_id",
+            to: "media_share.media_id",
+          },
+          to: "media.id",
         },
       },
     };

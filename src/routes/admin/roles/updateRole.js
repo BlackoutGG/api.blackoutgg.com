@@ -55,6 +55,7 @@ const updateRole = async (req, res, next) => {
 
   try {
     await Roles.updateRole(req.params.id, req.body, trx);
+    await redis.del(`role_${req.params.id}`);
     await trx.commit();
   } catch (err) {
     console.log(err);

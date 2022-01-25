@@ -59,9 +59,9 @@ const refreshToken = async (req, res, next) => {
 
   /** UPDATE THE SESSION DATA WITH THE NEW ACCESS TOKEN JTI */
 
-  await UserSession.query()
-    .patch({ token_id: tokenData.jti })
-    .where("token_id", token.jti);
+  // await UserSession.query()
+  //   .patch({ token_id: tokenData.jti })
+  //   .where("token_id", token.jti);
 
   // await redis.del(`blacklist:${session.jti}`);
 

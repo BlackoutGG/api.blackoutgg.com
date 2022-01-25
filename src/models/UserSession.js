@@ -1,6 +1,6 @@
 "use strict";
 const { Model } = require("objection");
-const { addHours } = require("date-fns");
+const { addSeconds } = require("date-fns");
 const guid = require("$util/mixins/guid")();
 const dateMixin = require("$util/mixins/date")();
 
@@ -20,7 +20,7 @@ class UserSession extends guid(dateMixin(Model)) {
   static get jsonSchema() {
     return {
       type: "object",
-      required: ["token_id", "user_id", "expires"],
+      required: [/**"token_id"**/ "refresh_token_id", "user_id", "expires"],
       properties: {
         id: { type: "string" },
         user_id: { type: "integer" },
@@ -47,14 +47,19 @@ class UserSession extends guid(dateMixin(Model)) {
     };
   }
 
-  static async createSession(user, tokenData, trx, refreshExpiresIn = 1) {
+  static async createSession(
+    user,
+    tokenData,
+    trx,
+    refreshExpiresIn = 60 * 60 * 24 * 7
+  ) {
     const query = trx ? this.query(trx) : this.query();
 
     return query.insert({
-      token_id: tokenData.jti,
+      // token_id: tokenData.jti,
       refresh_token_id: tokenData.refresh_jti,
       user_id: user.id,
-      expires: addHours(Date.now(), refreshExpiresIn),
+      expires: addSeconds(Date.now(), refreshExpiresIn),
     });
   }
 }

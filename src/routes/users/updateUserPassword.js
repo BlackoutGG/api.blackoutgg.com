@@ -39,7 +39,7 @@ const updateUserPassword = async (req, res, next) => {
   const trx = await User.startTransaction();
 
   try {
-    const info = JSON.parse(await r.get(`pw:${id}`));
+    const info = JSON.parse(await redis.get(`pw:${id}`));
 
     if (code !== info.code) {
       return res
@@ -64,7 +64,7 @@ const updateUserPassword = async (req, res, next) => {
       .returning("id");
 
     await redis.del(`pw:${id}`);
-    await redis.del(`l_user:${id}`);
+    await redis.del(`login:user:${id}`);
 
     await trx.commit();
 

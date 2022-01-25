@@ -24,7 +24,7 @@ module.exports = {
           .notEmpty()
           .isString()
           .custom((v) => {
-            if (!/^\w+$/.test(v)) {
+            if (!/[\w\s]+/i.test(v)) {
               return false;
             }
             return true;

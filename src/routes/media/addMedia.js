@@ -3,10 +3,11 @@ const Media = require("$models/Media");
 const guard = require("express-jwt-permissions")();
 const { uploadFiles } = require("$services/upload");
 const { ADD_ALL_MEDIA } = require("$util/policies");
+const { transaction } = require("objection");
 
 const uploadFileMiddleware = async (req, res, next) => {
   const upload = uploadFiles({
-    dest: `uploads/media/${req.user.id}-${req.user.username}/`,
+    dest: `uploads/media/${req.user.username}-${req.user.id}/`,
     fields: [{ name: "media", maxCount: 10 }],
     bucket: process.env.AWS_BUCKET_NAME,
   });
@@ -22,8 +23,9 @@ const uploadFileMiddleware = async (req, res, next) => {
 
 const uploadMedia = async function (req, res, next) {
   const files = req.files.media;
-  if (!files.length) return res.status(400).send("Invalid Files");
-
+  if (!files.length) {
+    return res.sendStatus(500);
+  }
   const data = files.map((file) => ({
     mimetype: file.contentType,
     url: file.location,
@@ -33,8 +35,16 @@ const uploadMedia = async function (req, res, next) {
 
   console.log(data);
 
-  await Media.query().insert(data);
-  res.status(200).send();
+  const trx = await Media.startTransaction();
+
+  try {
+    await Media.query(trx).insert(data);
+    await trx.commit();
+    res.sendStatus(204);
+  } catch (err) {
+    await trx.rollback();
+    next(err);
+  }
 };
 
 module.exports = {

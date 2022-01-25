@@ -1,5 +1,5 @@
 const date = new Date().toISOString();
-const faker = require("faker");
+const blaver = require("blaver");
 
 const { Model } = require("objection");
 
@@ -67,26 +67,26 @@ const generateForms = async (num) => {
 
   for (let i = 0; i < num; i++) {
     const fields = [];
-    const fieldNum = faker.random.number({ min: 2, max: 10 });
+    const fieldNum = blaver.random.number({ min: 2, max: 10 });
 
     for (let f = 0; f <= fieldNum; f++) {
-      const type = types[faker.random.number({ min: 0, max: 4 })];
+      const type = types[blaver.random.number({ min: 0, max: 4 })];
 
       fields.push({
-        value: faker.lorem.words(),
+        value: blaver.lorem.words(),
         order: f,
         type,
-        optional: faker.random.boolean(),
+        optional: blaver.random.boolean(),
         options: hasOptions.some((t) => t === type)
-          ? JSON.stringify(faker.random.arrayElements())
+          ? JSON.stringify(blaver.random.arrayElements())
           : null,
       });
     }
 
     const form = {
-      name: faker.lorem.words(),
-      category_id: faker.random.number({ min: 1, max: 3 }),
-      description: faker.lorem.sentences(),
+      name: blaver.lorem.words(),
+      category_id: blaver.random.number({ min: 1, max: 3 }),
+      description: blaver.lorem.sentences(),
       status: false,
       fields,
       created_at: date,

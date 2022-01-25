@@ -22,7 +22,7 @@ const select = [
 
 const getApplicantForm = async (req, res, next) => {
   const form = await getCache(
-    `recruitForm_${req.params.id}`,
+    `r_form_${req.params.id}`,
     UserForm.query()
       .withGraphFetched(
         "[form.[category(returnName)], fields(order), applicant(defaultSelects)]"

@@ -24,39 +24,48 @@ const getSecondsToAdd = (interval, type) => {
 };
 
 const updateUsername = async (req, res, next) => {
+  console.log(req.body.username);
+
+  const [account, settings] = await Promise.all([
+    User.query()
+      .where({ active: true, id: req.user.id })
+      .select(["last_username_change"])
+      .throwIfNotFound()
+      .first(),
+    Settings.query().select("time_till_next_username_change").first(),
+  ]);
+
+  const [interval, type] = settings.time_till_next_username_change.split(" ");
+
+  if (account) {
+    const date = addSeconds(
+      account.last_username_change,
+      getSecondsToAdd(interval, type)
+    );
+
+    if (isFuture(date)) {
+      const time = formatDistance(new Date(), date);
+
+      return res
+        .status(400)
+        .send({ message: `Time till next username change: ${time}` });
+    }
+  }
+
   const trx = await User.startTransaction();
 
   try {
-    const [user, settings] = await Promise.all([
-      User.query(trx)
-        .patch({ username: req.body.username })
-        .where({ active: true, id: req.user.id })
-        .returning(["id", "username", "last_username_change"]),
-      Settings.query().select("time_till_next_username_change").first(),
-    ]);
+    const user = await User.query(trx)
+      .patch({
+        username: req.body.username,
+        last_username_change: new Date().toISOString(),
+      })
+      .where("id", req.user.id)
+      .returning(["id", "username"]);
 
-    const [interval, type] = settings.time_till_next_username_change.split(" ");
-
-    if (user) {
-      const date = addSeconds(
-        user.last_username_change,
-        getSecondsToAdd(interval, type)
-      );
-
-      if (isFuture(date)) {
-        await trx.rollback();
-
-        const time = formatDistance(new Date(), date);
-
-        return res
-          .status(400)
-          .send({ message: `Time till next username change: ${time}` });
-      }
-
-      await trx.commit();
-    }
-
+    await trx.commit();
     await redis.del(`me_${req.user.id}`);
+    await redis.del(`user_${req.user.id}`);
 
     res.status(200).send(user);
   } catch (err) {

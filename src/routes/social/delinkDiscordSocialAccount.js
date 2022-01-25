@@ -29,11 +29,11 @@ const delinkDiscordSocialAccount = async (req, res, next) => {
         .unrelate()
         .whereIn("id", roleIds);
 
-      // const sessions = await getUserSessionsByRoleID(roleIds);
-      // if (sessions && sessions.length) {
-      //   await redis.multi(sessions).exec();
-      //   emitter.of("index").to(`user:${req.user.id}`).emit("account-change");
-      // }
+      const sessions = await getUserSessionsByRoleID(roleIds);
+      if (sessions && sessions.length) {
+        await redis.multi(sessions).exec();
+        emitter.of("/index").to(`user:${req.user.id}`).emit("account-change");
+      }
     }
 
     await trx.commit();

@@ -3,6 +3,29 @@ const { validationResult } = require("express-validator");
 const jwt = require("jsonwebtoken");
 const phin = require("phin");
 
+const shouldRevokeToken = (req) => {
+  const { addPolicies, removePolicies, addRoles, removeRoles } = req.body;
+
+  console.log(removePolicies);
+  console.log(removeRoles);
+
+  if (
+    (addPolicies && Array.isArray(addPolicies)) ||
+    (removePolicies && Array.isArray(removePolicies))
+  ) {
+    return true;
+  }
+
+  if (
+    (addRoles && Array.isArray(addRoles)) ||
+    (removeRoles && Array.isArray(removeRoles))
+  ) {
+    return true;
+  }
+
+  return false;
+};
+
 const _formatDiscordRoles = (roles) => {
   return roles.map((role) => ({
     discord_role_id: role.id,
@@ -128,4 +151,5 @@ module.exports = {
   getDiscordRoles,
   verifyToken,
   checkIfRolesExist,
+  shouldRevokeToken,
 };
